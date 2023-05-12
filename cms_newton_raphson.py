@@ -199,7 +199,7 @@ def get_smix_z(Y, Z, lgp, lgt, mz=15.5):
     xh = x_H(Y, Z, mz)
     #print(x_He, xh, xz)
 
-    return (1 - Y)* (1 - Z) * s_h + Y * (1 - Z) * s_he + s_z * Z + s_nid_mix - ((guarded_log(xh) + guarded_log(xz) + guarded_log(x_He)) / erg_to_kbbar) 
+    return (1 - Y)* (1 - Z) * s_h + Y * (1 - Z) * s_he + s_z * Z + s_nid_mix*(1 - Z) - ((guarded_log(xh) + guarded_log(xz) + guarded_log(x_He)) / erg_to_kbbar) 
 
 # print(get_smix_z(1, 0, 12, 4, 0) * erg_to_kbbar)
 # print(get_smix_z(0, 1, 12, 4, 0) * erg_to_kbbar)

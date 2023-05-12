@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import brenth, brentq
 from state import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
-import aneos
+from state import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 eos_aneos = aneos.eos(path_to_data='state/aneos/', material='ice')
@@ -28,30 +28,37 @@ def get_rho_p_ideal(s, logp, m=15.5):
 def get_rho_aneos(logp, logt):
     return eos_aneos.get_logrho(logp, logt)
 
-def rho_mix(s, p, t, y, z, ideal):
+def rho_mix(p, t, y, z, ideal):
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
-
-    if z > 0:
+    try:
+        #t = get_t(s, p, y, z)
         if ideal:
-            rho_z = 10**get_rho_p_ideal(s, p)
+            rho_z = 10**get_rho_id(p, t)
         elif not ideal:
             rho_z = 10**get_rho_aneos(p, t)
+    except:
+        print(p, y, z)
 
-        return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
-    elif z == 0:
-         return np.log10(rho_hhe)
+    return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
+    # except:
+    #     print(s, p, y, z)
+    # raise
+    # #if z > 0:
+
+    # elif z == 0:
+    #      return np.log10(rho_hhe)
 
 def get_t(s, p, y, z):
     t_root = brenth(err, 0, 7, args=(p, y, z, s)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
     return t_root
 
-def get_rho(s, p, y, z, ideal):
-    try:
-        t = get_t(s, p, y, z)
-    except:
-        print(s, p, y, z)
-        raise
-    return rho_mix(s, p, t, y, z, ideal)
+# def get_rho(s, p, t, y, z, ideal):
+#     try:
+#         t = get_t(s, p, y, z)
+#     except:
+#         print(s, p, y, z)
+#         raise
+#     return rho_mix(s, p, t, y, z, ideal)
 
 def get_rhot(s, p, y, z, ideal):
     try:
@@ -59,7 +66,7 @@ def get_rhot(s, p, y, z, ideal):
     except:
         print(s, p, y, z)
         raise 
-    rho = rho_mix(s, p, t, y, z, ideal)
+    rho = rho_mix(p, t, y, z, ideal)
     return rho, t
 
 ###### derivatives ######
@@ -79,7 +86,7 @@ get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, meth
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
 def get_rho_t(s, p, y):
-    return get_rho(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
+    return get_rho_(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
 
 def get_c_p(s, p, y):
     cp_res = get_cp(np.array([y, s, p]).T)
@@ -103,11 +110,16 @@ def get_grad_ad(s, p, y):
 
 def get_gamma_1(s, p, y, z, ideal):
     gamma1_hhe = get_gamma1(np.array([y, s, p]).T)
-    if z > 0:
-        rho_tot = 10**np.array([get_rho(s[i], p[i], y[i], z[i], ideal) for i in range(len(p))])
-        rho_hhe = 10**np.array([get_rho(s[i], p[i], y[i], 0, ideal) for i in range(len(p))])
-        rho_z = 10**get_rho_p_ideal(s, p)
-        return 1/((1-z)*(rho_tot/rho_hhe) * (1/gamma1_hhe) + z*(rho_tot/rho_z) * (3/5))
-    else:
-        return gamma1_hhe
+    t = np.array([get_t(s[i], p[i], y[i], z[i]) for i in range(len(p))])
+    #if z > 0:
+    #z = np.full_like(p, z)
+    rho_tot = 10**np.array([rho_mix(p[i], t[i], y[i], z[i], ideal) for i in range(len(p))])
+    rho_hhe = 10**np.array([rho_mix(p[i], t[i], y[i], 0, ideal) for i in range(len(p))])
+    rho_z = 10**get_rho_id(p, t)
+    return 1/((1-z)*(rho_tot/rho_hhe) * (1/gamma1_hhe) + z*(rho_tot/rho_z) * (3/5))
+    #else:
+    #    return gamma1_hhe
     #return 1/((1-z)*(rho_hhe/rho_tot) * (1/gamma1_hhe) + z*(rho_z/rho_tot) * (3/5))
+
+def get_rho_id(logp, logt, m=15.5):
+    return np.log10(((10**logp) * m*1.6605390666e-24) / (1.380649e-16 * (10**logt)))
