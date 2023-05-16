@@ -1,11 +1,11 @@
 import numpy as np
 from scipy.optimize import brenth, brentq
-from state import cms_newton_raphson as cms
+from eos import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
-from state import aneos
+from eos import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
 
-eos_aneos = aneos.eos(path_to_data='state/aneos/', material='ice')
+eos_aneos = aneos.eos(path_to_data='/Users/Helios/planet_interiors/state/aneos', material='ice')
 
 erg_to_kbbar = 1.202723550011625e-08
 
@@ -71,7 +71,7 @@ def get_rhot(s, p, y, z, ideal):
 
 ###### derivatives ######
 
-s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('state/cms/cms_hg_thermo.npy')
+s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('/Users/Helios/planet_interiors/state/cms/cms_hg_thermo.npy')
 
 get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
 get_t_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
@@ -86,7 +86,7 @@ get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, meth
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
 def get_rho_t(s, p, y):
-    return get_rho_(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
+    return get_rho_(np.array([y, s, p]).T), get_t_(np.array([y, s, p]).T)
 
 def get_c_p(s, p, y):
     cp_res = get_cp(np.array([y, s, p]).T)
@@ -107,6 +107,9 @@ def get_chi_t(s, p, y):
 def get_grad_ad(s, p, y):
     grada = get_grada(np.array([y, s, p]).T)
     return grada
+
+def get_gamma_1_hhe(s, p, y):
+    return get_gamma1(np.array([y, s, p]).T)
 
 def get_gamma_1(s, p, y, z, ideal):
     gamma1_hhe = get_gamma1(np.array([y, s, p]).T)

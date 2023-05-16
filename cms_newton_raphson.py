@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.optimize import newton
-from scipy.interpolate import interp1d
+#from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline as RBS
 from astropy import units as u
 from astropy.constants import k_B, m_p
@@ -25,7 +25,7 @@ def cms_reader(tab_name):
     cols = ['logt','logp','logrho','logu','logs','dlrho/dlT_P','dlrho/dlP_T','dlS/dlT_P',    
            'dlS/dlP_T','grad_ad']
     
-    tab = np.loadtxt('state/cms/DirEOS2019/'+tab_name, comments='#')
+    tab = np.loadtxt('eos/cms/DirEOS2019/'+tab_name, comments='#')
     tab_df = pd.DataFrame(tab, columns=cols)
     data = tab_df[(tab_df['logt'] <= 7.0) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
                  ]
@@ -54,7 +54,7 @@ def grid_data(df):
 cms_hdata = grid_data(cms_reader('TABLE_H_TP_v1'))
 cms_hedata = grid_data(cms_reader('TABLE_HE_TP_v1'))
 
-data_hc = pd.read_csv('state/cms/HG23_Vmix_Smix.csv', delimiter=',')
+data_hc = pd.read_csv('eos/cms/HG23_Vmix_Smix.csv', delimiter=',')
 data_hc = data_hc[(data_hc['LOGT'] <= 5.0) & (data_hc['LOGT'] != 2.8)]
 data_hc = data_hc.rename(columns={'LOGT':'logt', 'LOGP':'logp'}).sort_values(by=['logt', 'logp'])
 
