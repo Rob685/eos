@@ -3,7 +3,9 @@ import numpy as np
 from scipy.optimize import root
 from scipy.interpolate import RegularGridInterpolator as RGI
 
+import os
 erg_to_kbbar = 1.202723550011625e-08
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def scvh_reader(tab_name):
     tab = []
@@ -89,7 +91,7 @@ def get_sp(r, t, yhe):
 def err_scvh(rt_pair, sval, pval, y):
     rho, temp = rt_pair
     s, p = get_sp(rho, temp, y)
-    
+
     return  s/sval - 1, p/pval -1
 
 def get_rho_p_ideal(s, logp, m=15.5):
@@ -102,7 +104,7 @@ def get_rho_p_ideal(s, logp, m=15.5):
 def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
     s = np.log10(s)
     sol = root(err_scvh, [-2, 2.1], args=(s, p, y))
-    
+
     # if z > 0:
     #     rho_hhe = 10**sol.x[0]
     #     rho_z = 10**get_rho_p_ideal(s, p)
@@ -112,7 +114,7 @@ def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
 
 ##### pressure-temperature #####
 
-logp_res, logt_res, logrho_res, s_res = np.load('/Users/Helios/planet_interiors/state/scvh/scvh_pt.npy')
+logp_res, logt_res, logrho_res, s_res = np.load('%S/SCVH/scvh_pt.npy' % CURR_DIR)
 yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
 get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)

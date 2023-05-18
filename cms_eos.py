@@ -1,16 +1,18 @@
 import numpy as np
 from scipy.optimize import brenth, brentq
-from eos import cms_newton_raphson as cms
+import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
-from eos import aneos
+# import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
 
-eos_aneos = aneos.eos(path_to_data='/Users/Helios/planet_interiors/state/aneos', material='ice')
+import os
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+# eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
 
 erg_to_kbbar = 1.202723550011625e-08
 
 def err(logt, logp, y, z, s_val, corr=True):
-    
+
     #s_ = cms.get_s_mix(logp, logt, y, corr)
     s_ = float(cms.get_smix_z(y, z, logp, logt, mz=15.5))
     s_val /= erg_to_kbbar # in cgs
@@ -25,8 +27,8 @@ def get_rho_p_ideal(s, logp, m=15.5):
     p = 10**logp
     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
-def get_rho_aneos(logp, logt):
-    return eos_aneos.get_logrho(logp, logt)
+# def get_rho_aneos(logp, logt):
+#     return eos_aneos.get_logrho(logp, logt)
 
 def rho_mix(p, t, y, z, ideal):
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
@@ -35,7 +37,8 @@ def rho_mix(p, t, y, z, ideal):
         if ideal:
             rho_z = 10**get_rho_id(p, t)
         elif not ideal:
-            rho_z = 10**get_rho_aneos(p, t)
+            rho_z = 10**get_rho_id(p, t)
+            # rho_z = 10**get_rho_aneos(p, t)
     except:
         print(p, y, z)
 
@@ -65,13 +68,13 @@ def get_rhot(s, p, y, z, ideal):
         t = get_t(s, p, y, z)
     except:
         print(s, p, y, z)
-        raise 
+        raise
     rho = rho_mix(p, t, y, z, ideal)
     return rho, t
 
 ###### derivatives ######
 
-s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('/Users/Helios/planet_interiors/state/cms/cms_hg_thermo.npy')
+s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
 
 get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
 get_t_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
@@ -125,7 +128,7 @@ def get_gamma1_calc(s, p, y, z, dp=0.001):
 
 def get_gamma_1(s, p, y, z, ideal):
 
-   
+
     t = np.array([get_t(s[i], p[i], y[i], z[i]) for i in range(len(p))])
     s_hhe = np.array([cms.get_smix_z(y[j], 0, p[j], t[j], mz=15.5) for j in range(len(p))])*erg_to_kbbar
 
