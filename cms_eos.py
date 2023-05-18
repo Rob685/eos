@@ -127,16 +127,19 @@ def get_gamma1_calc(s, p, y, z, dp=0.001):
     return 1/dlogrho_dlogP
 
 def get_gamma_1(s, p, y, z, ideal):
+    if not np.isscalar(p):
+        return np.array([get_gamma1(si, pi, yi, zi, ideal)
+                         for si, pi, yi, zi in zip(s, p, y, z)])
 
 
-    t = np.array([get_t(s[i], p[i], y[i], z[i]) for i in range(len(p))])
-    s_hhe = np.array([cms.get_smix_z(y[j], 0, p[j], t[j], mz=15.5) for j in range(len(p))])*erg_to_kbbar
+    t = get_t(s, p, y, z)
+    s_hhe = cms.get_smix_z(y, 0, p, t, mz=15.5)*erg_to_kbbar
 
-    gamma1_hhe = np.array([get_gamma1_calc(s_hhe[j], p[j], y[j], 0) for j in range(len(p))])
+    gamma1_hhe = get_gamma1_calc(s_hhe, p, y, 0)
     #if z > 0:
     #z = np.full_like(p, z)
-    rho_tot = 10**np.array([rho_mix(p[i], t[i], y[i], z[i], ideal) for i in range(len(p))])
-    rho_hhe = 10**np.array([rho_mix(p[i], t[i], y[i], 0, ideal) for i in range(len(p))])
+    rho_tot = 10**rho_mix(p, t, y, z, ideal)
+    rho_hhe = 10**rho_mix(p, t, y, 0, ideal)
     rho_z = 10**get_rho_id(p, t)
     return 1/((1-z)*(rho_tot/rho_hhe) * (1/gamma1_hhe) + z*(rho_tot/rho_z) * (3/5))
     #else:
