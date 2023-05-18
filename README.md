@@ -4,5 +4,7 @@ initial readme
 
 ## `tests` folder
 
-Owing to difficulty with python relative imports, please run from root directory
-of repo, e.g. `python test_gamma1.py`
+Python's relative import structure seems very difficult to use. One thing I
+found works is to run these tests from the root directory,
+
+`python -m tests.test_gamma1`
