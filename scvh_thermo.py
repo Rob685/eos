@@ -20,6 +20,7 @@ chit_arr = []
 grada_arr = []
 gamma1_arr = []
 
+# NB: no idea where this path is supposed to point
 for y in yvals:
     s, p, t, r, cp, cv, chirho, chit, grada, gamma1 = np.load('inverted_eos_data/eos_data/{}_{}.npy'.format('scvh_main_thermo', int(y*100)))
     s_arr.append(s)
@@ -35,7 +36,7 @@ for y in yvals:
     grada_arr.append(grada)
     gamma1_arr.append(gamma1)
 
-# saving to self to use later for composition gradients (03/23/23)    
+# saving to self to use later for composition gradients (03/23/23)
 y_arr = np.array([y for y in sorted(yvals)])
 s_arr = np.array([x for _, x in sorted(zip(y_arr, s_arr))])
 p_arr = np.array([x for _, x in sorted(zip(y_arr, p_arr))])
@@ -62,7 +63,7 @@ get_grada = RGI((y_arr, s_arr[0][:,0], p_arr[0,:][0]), grada_arr, method='linear
 get_gamma1 = RGI((y_arr, s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
 # def get_s(r, t):
-    
+
 #     sres = 10**np.array([scvh_nr.get_sp_sixpt(r[i], t[i])[0] for i in range(len(r))])
 
 #     return sres
@@ -121,7 +122,7 @@ def y(R, T):
 
 def get_s(R, T, yhe):
      # all of these have the same temperature ranges so I don't need to change the bounds each time
-    
+
     if 0.22 <= yhe < 0.25:
         y1, y2 = 0.22, 0.25
         tab1 = stabs[0]
@@ -131,25 +132,25 @@ def get_s(R, T, yhe):
         y1, y2 = 0.25, 0.28
         tab1 = stabs[1]
         tab2 = stabs[2]
-        
+
     elif 0.28 <= yhe <= 0.30:
         y1, y2 = 0.28, 0.30
         tab1 = stabs[2]
         tab2 = stabs[3]
-    
+
     x_arr = np.arange(0, 300, 1)
     y_arr = np.arange(0, 100, 1)
-    
+
     eta1 = (y2 - yhe)/(y2 - y1)
     eta2 = 1 - eta1
-    
+
     smix = eta1*tab1 + eta2*tab2
-    
+
     x_arr = np.arange(0, 300, 1)
     y_arr = np.arange(0, 100, 1)
-    
+
     interp_stab = RGI((x_arr, y_arr), smix, method='linear', bounds_error=False, fill_value=None)
-    
+
     return interp_stab((x(R), y(R, T)))
 
 # yvals_p = np.array([0.22, 0.25, 0.28, 0.32])
@@ -246,7 +247,7 @@ def get_s(R, T, yhe):
 #     # test
 #     #y_arr = y(logrho_array, get_tarr(r))
 #     interp_s = RGI((Y_he_arr, x_arr, y_arr), stabs, method='linear', bounds_error=False, fill_value=None)
-    
+
 #     return interp_s(np.array([Y, x(r), y(r, t)]).T)
 
 # def get_p(Y, r, t):
