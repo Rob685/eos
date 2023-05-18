@@ -8,7 +8,7 @@ erg_to_kbbar = 1.202723550011625e-08
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('state/scvh/eos/'+tab_name) as file:
+    with open('/Users/Helios/planet_interiors/state/scvh/eos/'+tab_name) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
@@ -112,7 +112,7 @@ def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
 
 ##### pressure-temperature #####
 
-logp_res, logt_res, logrho_res, s_res = np.load('state/scvh/scvh_pt.npy')
+logp_res, logt_res, logrho_res, s_res = np.load('/Users/Helios/planet_interiors/state/scvh/scvh_pt.npy')
 yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
 get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
@@ -124,7 +124,7 @@ def get_rhos_p_t(p, t, y):
 
 ###### derivatives ######
 
-s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('state/scvh/scvh_thermo.npy')
+s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('/Users/Helios/planet_interiors/state/scvh/scvh_thermo.npy')
 
 get_rho = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
 get_t= RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
@@ -175,7 +175,7 @@ def get_gamma_1(s, p, y):
 
 ####### composition derivatives #######
 
-dlogrho_dy, dlogs_dy = np.load('state/scvh/comp_derivatives_scvh.npy')
+dlogrho_dy, dlogs_dy = np.load('/Users/Helios/planet_interiors/state/scvh/comp_derivatives_scvh.npy')
 
 logtvals = np.linspace(2.1, 5, 100)
 logpvals = np.linspace(5, 14, 300)

@@ -111,9 +111,25 @@ def get_grad_ad(s, p, y):
 def get_gamma_1_hhe(s, p, y):
     return get_gamma1(np.array([y, s, p]).T)
 
+def get_logrho_mix(s, p, y, z):
+    t = get_t(s, p, y, z)
+    rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
+    rho_z = 10**get_rho_p_ideal(s, p)
+
+    return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
+
+def get_gamma1_calc(s, p, y, z, dp=0.001):
+    delta_logrho = -get_logrho_mix(s, p, y, z) + get_logrho_mix(s, p*(1+dp), y, z)
+    dlogrho_dlogP = delta_logrho/(p*dp)
+    return 1/dlogrho_dlogP
+
 def get_gamma_1(s, p, y, z, ideal):
-    gamma1_hhe = get_gamma1(np.array([y, s, p]).T)
+
+   
     t = np.array([get_t(s[i], p[i], y[i], z[i]) for i in range(len(p))])
+    s_hhe = np.array([cms.get_smix_z(y[j], 0, p[j], t[j], mz=15.5) for j in range(len(p))])*erg_to_kbbar
+
+    gamma1_hhe = np.array([get_gamma1_calc(s_hhe[j], p[j], y[j], 0) for j in range(len(p))])
     #if z > 0:
     #z = np.full_like(p, z)
     rho_tot = 10**np.array([rho_mix(p[i], t[i], y[i], z[i], ideal) for i in range(len(p))])

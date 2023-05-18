@@ -7,7 +7,7 @@ from eos import cms_newton_raphson as cms
 
 y_arr = np.array([0.2 , 0.22, 0.24, 0.26, 0.28, 0.3 , 0.32, 0.34, 0.36, 0.38, 0.4 ,0.42, 0.44, 0.46, 0.48])
 
-s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, grada_arr, gamma1_arr = np.load('/Users/Helios/planet_interiors/cms/cms_hg_thermo.npy')
+s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, grada_arr, gamma1_arr = np.load('/Users/Helios/planet_interiors/state/cms/cms_hg_thermo.npy')
 
 
 get_t = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
@@ -59,16 +59,18 @@ def get_gamma_1(s, p, y):
 
 #################### comp gradients ####################
 
-# dlogrho_dy, dlogs_dy = np.load('state/cms/comp_derivatives_cms.npy')
 
-# logtvals = np.linspace(2, 5, 100)
-# logpvals = np.linspace(5, 14, 300)
+dlogrho_dy, dlogs_dy = np.load('/Users/Helios/planet_interiors/state/cms/comp_derivatives_cms.npy')
+
+logpvals = np.linspace(5, 14, 500)
+logtvals = np.linspace(2, 5, 300)
 
 
-# ygrid = np.arange(0.22, 1.0, 0.01)
+ygrid = np.arange(0.22, 1.0, 0.02)
 
-# get_dlogrho_dy = RGI((logtvals, logpvals, ygrid), dlogrho_dy, method='linear', bounds_error=False, fill_value=None)
+get_dlogrho_dy = RGI((logtvals, logpvals, ygrid), dlogrho_dy, method='linear', bounds_error=False, fill_value=None)
 
-# def get_dlogrhody(p, t, y):
-#     drhody = get_dlogrho_dy(np.array([t, p, y]).T)
-#     return drhody
+
+def get_dlogrhody(p, t, y):
+    drhody = get_dlogrho_dy(np.array([t, p, y]).T)
+    return drhody

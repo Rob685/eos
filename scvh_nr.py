@@ -9,7 +9,7 @@ erg_to_kbbar = 1.202723550011625e-08
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('state/scvh/eos/'+tab_name) as file:
+    with open('/Users/Helios/planet_interiors/state/scvh/eos/'+tab_name) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
