@@ -20,7 +20,6 @@ chit_arr = []
 grada_arr = []
 gamma1_arr = []
 
-# NB: no idea where this path is supposed to point
 for y in yvals:
     s, p, t, r, cp, cv, chirho, chit, grada, gamma1 = np.load('inverted_eos_data/eos_data/{}_{}.npy'.format('scvh_main_thermo', int(y*100)))
     s_arr.append(s)

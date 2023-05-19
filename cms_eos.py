@@ -2,12 +2,12 @@ import numpy as np
 from scipy.optimize import brenth, brentq
 import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
-# import aneos
+import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-# eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
+eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
 
 erg_to_kbbar = 1.202723550011625e-08
 
@@ -27,8 +27,8 @@ def get_rho_p_ideal(s, logp, m=15.5):
     p = 10**logp
     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
-# def get_rho_aneos(logp, logt):
-#     return eos_aneos.get_logrho(logp, logt)
+def get_rho_aneos(logp, logt):
+    return eos_aneos.get_logrho(logp, logt)
 
 def rho_mix(p, t, y, z, ideal):
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
@@ -37,8 +37,7 @@ def rho_mix(p, t, y, z, ideal):
         if ideal:
             rho_z = 10**get_rho_id(p, t)
         elif not ideal:
-            rho_z = 10**get_rho_id(p, t)
-            # rho_z = 10**get_rho_aneos(p, t)
+            rho_z = 10**get_rho_aneos(p, t)
     except:
         print(p, y, z)
 

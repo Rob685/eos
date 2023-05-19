@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import RegularGridInterpolator
 from importlib import reload
+#from eos import aneos_rhot
 import aneos_rhot
 
 class eos:
