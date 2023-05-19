@@ -33,7 +33,6 @@ def get_rho_p_ideal(s, logp, m=15.5):
 def rho_mix(p, t, y, z, ideal):
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
     try:
-        #t = get_t(s, p, y, z)
         if ideal:
             rho_z = 10**get_rho_id(p, t)
         elif not ideal:
@@ -114,10 +113,11 @@ def get_grad_ad(s, p, y):
 def get_gamma_1_hhe(s, p, y):
     return get_gamma1(np.array([y, s, p]).T)
 
-def get_logrho_mix(s, p, y, z):
-    t = get_t(s, p, y, z)
+def get_logrho_mix(s, p, y, z, t=None):
+    if t is None:
+        t = get_t(s, p, y, z)
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
-    rho_z = 10**get_rho_p_ideal(s, p)
+    rho_z = 10**get_rho_id(p, t)
 
     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
 
