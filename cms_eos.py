@@ -142,3 +142,5 @@ def get_gamma_1(s, p, y, z, ideal):
 
 def get_rho_id(logp, logt, m=15.5):
     return np.log10(((10**logp) * m*1.6605390666e-24) / (1.380649e-16 * (10**logt)))
+
+ #def get_grad_ad_z(s, p, y, z)

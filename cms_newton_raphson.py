@@ -239,75 +239,118 @@ def get_rho_mix(lgp, lgt, y, hc_corr = False):
         vmix = 0
     return 1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y)
 
-def get_dsdp_mix(lgp, lgt, y, hc_corr = False):
-    s = get_s_mix(lgp, lgt, y, hc_corr)
-    s_h = 10 ** get_s_h.ev(lgt, lgp)
-    s_he = 10 ** get_s_he.ev(lgt, lgp)
-    
-    sp_h = get_sp_h.ev(lgt, lgp)
-    sp_he = get_sp_he.ev(lgt, lgp)
-    
-    dsdp = (1 - y) * (s_h / s) * sp_h + y * (s_he / s) * sp_he
-    
-    return dsdp
+def get_dsdt_mix_p(lgp, lgt, y): # eq. 45 in SCvH95
+    smix = get_s_mix(lgp, lgt, y)
+    s_h = 10**get_s_h.ev(lgt, lgp)
+    s_he = 10**get_s_he.ev(lgt, lgp)
 
-def get_dsdt_mix(lgp, lgt, y, hc_corr = False):
-    s = get_s_mix(lgp, lgt, y, hc_corr)
-    s_h = 10 ** get_s_h.ev(lgt, lgp)
-    s_he = 10 ** get_s_he.ev(lgt, lgp)
-    
-    st_h = get_st_h.ev(lgt, lgp)
-    st_he = get_st_he.ev(lgt, lgp)
-    
-    dsdt = (1 - y) * (s_h / s) * st_h + y * (s_he / s) * st_he
-    
-    return dsdt
+    s_corr = smix_interp.ev(lgt, lgp)*(1-y)*y
+    scorr_t = smix_interp.ev(lgt, lgp, dx=1) # dS/dlogT
 
-def get_dsdrho_mix(lgp, lgt, y, hc_corr = False):
-    dsdp = get_dsdp_mix(lgp, lgt, y, hc_corr)
-    dpdrho = get_dpdrho_mix(lgp, lgt, y, hc_corr)
-    
-    return dsdp*dpdrho # dP/dT
+    s_t_h = get_st_h.ev(lgt, lgp)
+    s_t_he = get_st_he.ev(lgt, lgp)
+    # s_t_h = get_s_h.ev(lgt, lgp, dx=1)
+    # s_t_he = get_s_he.ev(lgt, lgp, dx=1)
 
-def get_dpdrho_mix(lgp, lgt, y):
+    # s_t_h = tp_bases.get_st_h(lgt, lgp)
+    # s_t_he = tp_bases.get_st_he(lgt, lgp)
 
-    prho_h = 1/get_rhop_h.ev(lgt, lgp)
-    prho_he = 1/get_rhop_he.ev(lgt, lgp)
-    
-    dpdrho = (1 - y) * prho_h + y * prho_he
-    
-    return dpdrho
+    return (1 - y) * (smix/s_h) * s_t_h + y * (smix/s_he) * s_t_he #+ (s_corr/smix)*scorr_t
 
-def get_drhodt_mix(lgp, lgt, y, hc_corr=False):
-    
-    rhot_h = get_rhot_h.ev(lgt, lgp)
-    rhot_he = get_rhot_he.ev(lgt, lgp)
+def get_dsdp_mix_t(lgp, lgt, y): # eq. 46 in SCvH95
+    smix = get_s_mix(lgp, lgt, y)
+    s_h = 10**get_s_h.ev(lgt, lgp)
+    s_he = 10**get_s_he.ev(lgt, lgp)
 
-    rho_h = 10 ** get_rho_h.ev(lgt, lgp)
-    rho_he = 10 ** get_rho_he.ev(lgt, lgp)
+    s_corr = smix_interp.ev(lgt, lgp)*(1-y)*y
+    scorr_p = smix_interp.ev(lgt, lgp, dy=1)
 
-    rho_mixed = get_rho_mix(lgt, lgp, y, hc_corr)
-    
-    drhodt = (1 - y) * (rho_mixed / rho_h) * rhot_h + y * (rho_mixed /rho_he) * rhot_he
-    
-    return drhodt
+    s_p_h = get_sp_h.ev(lgt, lgp)
+    s_p_he = get_sp_he.ev(lgt, lgp)
 
-def get_dpdt_mix(lgp, lgt, y):
-    dpdrho = get_dpdrho_mix(lgp, lgt, y)
-    drhodt = get_drhodt_mix(lgp, lgt, y)
-    
-    return dpdrho*drhodt # dP/dT
+    # s_p_h = get_s_h.ev(lgt, lgp, dy=1)
+    # s_p_he = get_s_he.ev(lgt, lgp, dy=1)
 
-# def get_closest(s_val, y):
-    
-#     logs_val = np.log10(s_val/erg_to_kbbar) # converting to cgs
+    # s_p_h = tp_bases.get_sp_h(lgt, lgp)
+    # s_p_he = tp_bases.get_sp_he(lgt, lgp)
 
-#     svals = get_smix_table(y)
+    return (1 - y) * (smix/s_h) * s_p_h + y * (smix/s_he) * s_p_he #+ (s_corr/smix)*scorr_p
+
+def get_grada_mix(lgp, lgt, y): # eq. 47 in SCvH95
+    sp = get_dsdp_mix_t(lgp, lgt, y)
+    st = get_dsdt_mix_p(lgp, lgt, y)
+
+    return -sp/st
+
+# def get_dsdp_mix(lgp, lgt, y, hc_corr = False):
+#     s = get_s_mix(lgp, lgt, y, hc_corr)
+#     s_h = 10 ** get_s_h.ev(lgt, lgp)
+#     s_he = 10 ** get_s_he.ev(lgt, lgp)
     
-#     near_id_s = np.unravel_index((np.abs(svals - logs_val)).argmin(), svals.shape)
+#     sp_h = get_sp_h.ev(lgt, lgp)
+#     sp_he = get_sp_he.ev(lgt, lgp)
     
-#     #return  logrhovals[near_id_s[1]]
-#     return  logpvals[near_id_s[1]]
+#     dsdp = (1 - y) * (s_h / s) * sp_h + y * (s_he / s) * sp_he
+    
+#     return dsdp
+
+# def get_dsdt_mix(lgp, lgt, y, hc_corr = False):
+#     s = get_s_mix(lgp, lgt, y, hc_corr)
+#     s_h = 10 ** get_s_h.ev(lgt, lgp)
+#     s_he = 10 ** get_s_he.ev(lgt, lgp)
+    
+#     st_h = get_st_h.ev(lgt, lgp)
+#     st_he = get_st_he.ev(lgt, lgp)
+    
+#     dsdt = (1 - y) * (s_h / s) * st_h + y * (s_he / s) * st_he
+    
+#     return dsdt
+
+# def get_dsdrho_mix(lgp, lgt, y, hc_corr = False):
+#     dsdp = get_dsdp_mix(lgp, lgt, y, hc_corr)
+#     dpdrho = get_dpdrho_mix(lgp, lgt, y, hc_corr)
+    
+#     return dsdp*dpdrho # dP/dT
+
+# def get_dpdrho_mix(lgp, lgt, y):
+
+#     prho_h = 1/get_rhop_h.ev(lgt, lgp)
+#     prho_he = 1/get_rhop_he.ev(lgt, lgp)
+    
+#     dpdrho = (1 - y) * prho_h + y * prho_he
+    
+#     return dpdrho
+
+# def get_drhodt_mix(lgp, lgt, y, hc_corr=False):
+    
+#     rhot_h = get_rhot_h.ev(lgt, lgp)
+#     rhot_he = get_rhot_he.ev(lgt, lgp)
+
+#     rho_h = 10 ** get_rho_h.ev(lgt, lgp)
+#     rho_he = 10 ** get_rho_he.ev(lgt, lgp)
+
+#     rho_mixed = get_rho_mix(lgt, lgp, y, hc_corr)
+    
+#     drhodt = (1 - y) * (rho_mixed / rho_h) * rhot_h + y * (rho_mixed /rho_he) * rhot_he
+    
+#     return drhodt
+
+# def get_dpdt_mix(lgp, lgt, y):
+#     dpdrho = get_dpdrho_mix(lgp, lgt, y)
+#     drhodt = get_drhodt_mix(lgp, lgt, y)
+    
+#     return dpdrho*drhodt # dP/dT
+
+# # def get_closest(s_val, y):
+    
+# #     logs_val = np.log10(s_val/erg_to_kbbar) # converting to cgs
+
+# #     svals = get_smix_table(y)
+    
+# #     near_id_s = np.unravel_index((np.abs(svals - logs_val)).argmin(), svals.shape)
+    
+# #     #return  logrhovals[near_id_s[1]]
+# #     return  logpvals[near_id_s[1]]
 
 def err_rbs(logp, logt, y, s_val, corr):
     
