@@ -3,110 +3,18 @@ from astropy import units as u
 from astropy.constants import u as amu
 from astropy.constants import k_B
 from scipy.interpolate import RectBivariateSpline as RBS
-import cms_newton_raphson as cms
+from eos import cms_newton_raphson as cms
 import pandas as pd
 import main_eos as eos
 import pdb
 import os
 import re
-import scvh_nr
+#import scvh_nr
 
 '''This module calculates the derivatives at constant temperature/pressure or temperature/density.'''
 '''Call the thermo_sp.py module for derivatives at constant entropy or pressure'''
 
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
-
-# class thermo_sp:
-#     def __init__(self, Y):
-#         #self.Y = Y
-#         #self.tab = tab
-
-#         # in the inverted tables, s is in kb/baryon. Need to be in log cgs for later.
-#         self.s, self.p, self.t, self.r = eos.mixture(Y, 'cms_hc_lowes')
-#         #self.s, self.p = mixture.s_arr[0][:,0], mixture.p_arr[0,:][0]
-#         self.s /= erg_to_kbbar # converting to cgs
-
-#         # s should be in log of cgs for later
-#         self.rho_interp = RBS(np.log10(self.s[:,0]), self.p[0,:], self.r)
-#         self.t_interp = RBS(np.log10(self.s[:,0]), self.p[0,:], self.t)
-
-class scvh_thermo_tr:
-    def __init__(self, Y):
-        self.Y = Y
-        if 0.22 <= self.Y <= 0.25:
-            bounds_1, self.stab1 = scvh_nr.scvh_reader('s22scz.dat')
-            _, self.ptab1 = scvh_nr.scvh_reader('p22scz.dat')
-        
-            self.Y1, INDEX, self.R1, self.R2, self.T1, self.T2, self.T12, self.T22 = bounds_1
-
-            self.logrhovals1 = np.linspace(self.R1, self.R2, self.stab1.shape[0])
-
-            bounds_2, self.stab2 = scvh_nr.scvh_reader('s25scz.dat')
-            _, self.ptab2 = scvh_nr.scvh_reader('p25scz.dat')
-        
-            self.Y2, INDEX, self.R1, self.R2, self.T1, self.T2, self.T12, self.T22 = bounds_2
-
-            self.logrhovals2 = np.linspace(self.R1, self.R2, self.stab2.shape[0])
-        
-    def deltaT(self, R):
-        eta = (R - self.R1)/(self.R2 - self.R1)
-        return eta*(self.T2 - self.T1) + (1-eta)*(self.T22 - self.T12)
-
-    def get_tarr(self, R):
-        m1 = (self.T12 - self.T1)/(self.R2 - self.R1)
-        b = self.T1 - m1*self.R1
-        T1p = R*m1 + b
-        #T1p = (R - R1)*m1 + b
-        T2p = T1p + self.deltaT(R)
-
-        return np.linspace(T1p, T2p, 100)
-
-    def s_interp(self, R, logrho_array, SL):
-        logt_array = self.get_tarr(R)
-        interp_s = RBS(logrho_array, logt_array, SL)
-        #interp_p = RBS(logrho_array, logt_array, PL)
-
-        return interp_s
-
-    def p_interp(self, R, logrho_array, PL):
-        logt_array = self.get_tarr(R)
-        #interp_s = RBS(logrho_array, logt_array, SL)
-        interp_p = RBS(logrho_array, logt_array, PL)
-
-        return interp_p
-
-    # def get_s(self, R, T):
-    #     return self.s_interp.ev(R, self.logrhovals1, self.stab1).ev(R, T)
-
-    # def get_p(self, R, T):
-    #     return self.p_interp.ev(R, self.logrhovals1, self.stab1).ev(R, T)
-
-    def get_smix(self, R, T):
-        s_1 = (10**self.s_interp(R, self.logrhovals1, self.stab1).ev(R, T))/erg_to_kbbar
-        s_2 = (10**self.s_interp(R, self.logrhovals2, self.stab2).ev(R, T))/erg_to_kbbar
-
-        eta1 = (self.Y2 - self.Y)/(self.Y2 - self.Y1)
-        eta2 = 1-eta1
-        smix = eta1*s_1 + eta2*s_2
-        return smix
-
-    def get_pmix(self, R, T):
-        p_1 = (10**self.p_interp(R, self.logrhovals1, self.ptab1).ev(R, T))
-        p_2 = (10**self.p_interp(R, self.logrhovals2, self.ptab2).ev(R, T))
-
-        eta1 = (self.Y2 - self.Y)/(self.Y2 - self.Y1)
-        eta2 = 1-eta1
-        pmix = eta1*p_1 + eta2*p_2
-        return pmix
-                
-        # self.y_arr = np.array([y for y in sorted(yvals)])
-        # # sorted according to increasing y:
-        # self.s_arr = np.array([x for _, x in sorted(zip(self.y_arr, s_arr))])
-        # self.p_arr = np.array([x for _, x in sorted(zip(self.y_arr, p_arr))])
-        # self.t_arr = np.array([x for _, x in sorted(zip(self.y_arr, t_arr))])
-        # self.r_arr = np.array([x for _, x in sorted(zip(self.y_arr, r_arr))])
-
-
 class cms_thermo_tp:
     def __init__(self, tab):
         #self.Y = Y
@@ -116,8 +24,8 @@ class cms_thermo_tp:
         elif tab == 2021:
             hname = 'TABLE_H_TP_effective'
 
-        self.hdata = cms.grid_data(cms.cms_reader(hname, tab))
-        self.hedata = cms.grid_data(cms.cms_reader(hename, tab)) 
+        self.hdata = cms.grid_data(cms.cms_reader(hname))
+        self.hedata = cms.grid_data(cms.cms_reader(hename)) 
 
         # reading the smix correction values form Howard & Guillot (2023)
 
@@ -214,8 +122,8 @@ class cms_thermo_tr:
         elif tab == 2021:
             hname = 'TABLE_H_Trho_v1'
 
-        self.hdata = cms.grid_data(cms.cms_reader(hname, tab))
-        self.hedata = cms.grid_data(cms.cms_reader(hename, tab)) 
+        self.hdata = cms.grid_data(cms.cms_reader(hname))
+        self.hedata = cms.grid_data(cms.cms_reader(hename)) 
 
         #### H ####
 

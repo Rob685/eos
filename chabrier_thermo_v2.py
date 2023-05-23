@@ -1,4 +1,4 @@
-import cms_hhe as eos_hhe
+from eos import cms_hhe as eos_hhe
 import numpy as np
 from astropy import units as u
 from astropy.constants import u as amu
@@ -103,11 +103,13 @@ def get_dsdt_mix_p(lgp, lgt, y): # eq. 45 in SCvH95
     s_h = 10**tp_bases.get_s_h.ev(lgt, lgp)
     s_he = 10**tp_bases.get_s_he.ev(lgt, lgp)
 
-    s_corr = tp_bases.smix_interp.ev(lgt, lgp)
-    scorr_t = tp_bases.smix_interp.ev(lgt, lgp, dx=1) # dS/dlogT
+    # s_corr = tp_bases.smix_interp.ev(lgt, lgp)
+    # scorr_t = tp_bases.smix_interp.ev(lgt, lgp, dx=1) # dS/dlogT
 
-    s_t_h = tp_bases.get_st_h.ev(lgt, lgp)
-    s_t_he = tp_bases.get_st_he.ev(lgt, lgp)
+    # s_t_h = tp_bases.get_st_h.ev(lgt, lgp)
+    # s_t_he = tp_bases.get_st_he.ev(lgt, lgp)
+    s_t_h = tp_bases.get_s_h.ev(lgt, lgp, dx=1)
+    s_t_he = tp_bases.get_s_he.ev(lgt, lgp, dx=1)
 
     # s_t_h = tp_bases.get_st_h(lgt, lgp)
     # s_t_he = tp_bases.get_st_he(lgt, lgp)
@@ -119,11 +121,14 @@ def get_dsdp_mix_t(lgp, lgt, y): # eq. 46 in SCvH95
     s_h = 10**tp_bases.get_s_h.ev(lgt, lgp)
     s_he = 10**tp_bases.get_s_he.ev(lgt, lgp)
 
-    s_corr = tp_bases.smix_interp.ev(lgt, lgp)
-    scorr_p = tp_bases.smix_interp.ev(lgt, lgp, dy=1)
+    # s_corr = tp_bases.smix_interp.ev(lgt, lgp)
+    # scorr_p = tp_bases.smix_interp.ev(lgt, lgp, dy=1)
 
-    s_p_h = tp_bases.get_sp_h.ev(lgt, lgp)
-    s_p_he = tp_bases.get_sp_he.ev(lgt, lgp)
+    # s_p_h = tp_bases.get_sp_h.ev(lgt, lgp)
+    # s_p_he = tp_bases.get_sp_he.ev(lgt, lgp)
+
+    s_p_h = tp_bases.get_s_h.ev(lgt, lgp, dy=1)
+    s_p_he = tp_bases.get_s_he.ev(lgt, lgp, dy=1)
 
     # s_p_h = tp_bases.get_sp_h(lgt, lgp)
     # s_p_he = tp_bases.get_sp_he(lgt, lgp)
