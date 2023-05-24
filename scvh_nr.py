@@ -4,12 +4,14 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.interpolate import interp1d
 import pdb
 
+import os
 erg_to_kbbar = 1.202723550011625e-08
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('/Users/Helios/planet_interiors/state/scvh/eos/'+tab_name) as file:
+    with open('%s/scvh/eos/%s' % (CURR_DIR, tab_name)) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
@@ -77,7 +79,7 @@ def get_SP(R, T, method='RGI'):
 
     elif method == 'RGI':
         interp_s = RGI((logrho_array, logt_array), SL, method='linear', bounds_error=False, fill_value=None)
-        interp_p = RGI((logrho_array, logt_array), PL, method='linear', bounds_error=False, fill_value=None)  
+        interp_p = RGI((logrho_array, logt_array), PL, method='linear', bounds_error=False, fill_value=None)
 
         return interp_s((R, T)), interp_p((R, T))
 
@@ -87,14 +89,14 @@ def get_closest(S_val, P_val, closeval='S'):
     near_id_p = np.unravel_index((np.abs(PL - P_val)).argmin(), PL.shape)
 
     logrho_array = np.linspace(R1, R2, SL.shape[0])
-    
+
     if closeval == 'S':
         near_id = near_id_s
     elif closeval == 'P':
         near_id = near_id_p
 
     rho_near = logrho_array[near_id[0]]
-    
+
     logT_array = get_tarr(rho_near)
 
     T_near = logT_array[near_id[1]]
@@ -105,54 +107,54 @@ def get_sp_sixpt(rho_val, T_val):
     # edges
     alpha = T1 + (rho_val - R1)/(R2 - R1) * (T12 - T1)
     beta = T2-T1+((T22-T12)-(T2-T1))*(rho_val-R1)/(R2-R1)
-    
-    
+
+
     QL = (T_val - alpha)/beta
     delta = (rho_val - R1)/(R2 - R1) * 300.0
-    
+
     #print(rho_val, delta)
     JR = int(delta)
     JQ = int(100*QL)
-    
+
     A, B, C, D, E, F = 1, 1, 1, 1, 1, 1
     #try:
         # handling boundaries
-    if ((JR > INDEX-2) and (JQ > 98)): 
+    if ((JR > INDEX-2) and (JQ > 98)):
         JR, JQ = int(INDEX-2), 98
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif ((JR > INDEX-2) and (JQ < 0)): 
+    elif ((JR > INDEX-2) and (JQ < 0)):
         JR, JQ = int(INDEX-2), 1
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif ((JR < 0) and (JQ > 98)): 
+    elif ((JR < 0) and (JQ > 98)):
         JR, JQ = 1, 98
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif ((JR < 0) and (JQ < 0)): 
+    elif ((JR < 0) and (JQ < 0)):
         JR, JQ = 1, 1
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif JR < 0: 
+    elif JR < 0:
         JR = 1
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif JR > INDEX-2: 
+    elif JR > INDEX-2:
         JR = int(INDEX-2)
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif JQ < 0: 
+    elif JQ < 0:
         JQ = 1
         P = delta - JR
         Q = 100*QL - JQ
 
-    elif JQ > 98: 
+    elif JQ > 98:
         JQ = 98
         P = delta - JR
         Q = 100*QL - JQ
@@ -206,17 +208,17 @@ def newton_raphson(S_val, P_val, tol = 1e-6, interp_type='spt'):
         interp = get_sp_sixpt
     elif interp_type=='rbs':
         interp = get_SP
-    
+
     while error > tol:
         #eps = 0.1
         eps = 0.1 # for rbs testing
         # if i > 5:
         #     interp = get_SP
-        # else: 
+        # else:
         #     interp == get_sp_sixpt
 
         S0, P0 = interp(rho_old, T_old) # returns S, P in cgs
-        
+
         S1, P1 = interp(rho_old*(1 + eps), T_old)
         S2, P2 = interp(rho_old, T_old*(1 + eps))
         #pdb.set_trace()
@@ -225,23 +227,23 @@ def newton_raphson(S_val, P_val, tol = 1e-6, interp_type='spt'):
         DPDT = (P2 - P0)/(eps*(T_old))
         DSDT = (S2 - S0)/(eps*(T_old))
         DSDR = (S1 - S0)/(eps*(rho_old))
- 
-        
+
+
         DEN = DPDR*DSDT-DPDT*DSDR
 
-        
+
         DRXX = (((S0 - S_val)*DPDT + (P_val - P0)*DSDT)/(DEN*(rho_old)))*XF
         DTXX = (((S_val - S0)*DPDR - (P_val - P0)*DSDR)/(DEN*(T_old)))*XF
         if interp_type == 'spt':
             if i > 10:
                 XF = 0.5
                 i = 0
-                
-                
+
+
             if j > 20:
                 XF = 0.3
-                j = 0 
-                
+                j = 0
+
             if k > 30:
                 raise Exception('Timeout for S = {}, logP = {}'.format(10**S_val, P_val))
 
@@ -251,7 +253,7 @@ def newton_raphson(S_val, P_val, tol = 1e-6, interp_type='spt'):
                 #pdb.set_trace()
         delta_rho = DRXX*rho_old
         delta_T = DTXX*T_old
-        
+
         rho_old += delta_rho
         T_old += delta_T
         error = np.min([abs(DRXX), abs(DTXX)])
@@ -269,15 +271,15 @@ def newton_raphson(S_val, P_val, tol = 1e-6, interp_type='spt'):
     chit = DPDT # at const rho
     #grada = (cp - cv)/cp/DPDT
     #gamma1 = (cp/cv) * DPDR
-        
+
     #print('Converged!')
     print('\n')
     #return 10**rho_old, 10**T_old
     return rho_old, T_old, cp, cv, chirho, chit
-        
 
-    
-    
+
+
+
 # res = newton_raphson(np.log10(6), 6.5, interp_type='spt')
 # print('Six Pt rho, temp = {} {}'.format(res[0], res[1]))
 
