@@ -3,10 +3,12 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 
 ########### calculating entropy #############
 
+import os
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('/Users/Helios/burrows_research/scvh_eos_adam/eos/'+tab_name) as file:
+    with open(CURR_DIR + tab_name) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
@@ -60,7 +62,7 @@ def get_tarr(R):
 
 def get_s(R, T, yhe):
      # all of these have the same temperature ranges so I don't need to change the bounds each time
-    
+
     if 0.22 <= yhe < 0.25:
         y1, y2 = 0.22, 0.25
         tab1 = stabs[0]
@@ -70,20 +72,20 @@ def get_s(R, T, yhe):
         y1, y2 = 0.25, 0.28
         tab1 = stabs[1]
         tab2 = stabs[2]
-        
+
     elif 0.28 <= yhe <= 0.30:
         y1, y2 = 0.28, 0.30
         tab1 = stabs[2]
         tab2 = stabs[3]
-    
+
     # x_arr = np.arange(0, 300, 1)
     # y_arr = np.arange(0, 100, 1)
-    
+
     eta1 = (y2 - yhe)/(y2 - y1)
     eta2 = 1 - eta1
-    
+
     smix = eta1*tab1 + eta2*tab2
-    
+
     # x_arr = np.arange(0, 300, 1)
     # y_arr = np.arange(0, 100, 1)
 
@@ -95,13 +97,13 @@ def get_s(R, T, yhe):
     except:
         print(np.shape(logrho_array))
         raise
-    
+
     #return interp_stab(np.array([yhe, R, T]).T)
     return float(interp_stab((R, T)))
 
 def get_p(R, T, yhe):
      # all of these have the same temperature ranges so I don't need to change the bounds each time
-    
+
     if 0.22 <= yhe < 0.25:
         y1, y2 = 0.22, 0.25
         tab1 = ptabs[0]
@@ -111,20 +113,20 @@ def get_p(R, T, yhe):
         y1, y2 = 0.25, 0.28
         tab1 = ptabs[1]
         tab2 = ptabs[2]
-        
+
     elif 0.28 <= yhe <= 0.30:
         y1, y2 = 0.28, 0.30
         tab1 = ptabs[2]
         tab2 = ptabs[3]
-    
+
     # x_arr = np.arange(0, 300, 1)
     # y_arr = np.arange(0, 100, 1)
-    
+
     eta1 = (y2 - yhe)/(y2 - y1)
     eta2 = 1 - eta1
-    
+
     pmix = eta1*tab1 + eta2*tab2
-    
+
     # x_arr = np.arange(0, 300, 1)
     # y_arr = np.arange(0, 100, 1)
 
@@ -136,6 +138,6 @@ def get_p(R, T, yhe):
     except:
         print(np.shape(logrho_array))
         raise
-    
+
     #return interp_stab(np.array([yhe, R, T]).T)
     return float(interp_ptab((R, T)))

@@ -2,12 +2,14 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.interpolate import RectBivariateSpline as RBS
 from scipy.interpolate import RegularGridInterpolator as RGI
-from eos import cms_newton_raphson as cms
+import cms_newton_raphson as cms
 #import thermo_chabrier_v2 as pt_cms
 
+import os
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 y_arr = np.array([0.2 , 0.22, 0.24, 0.26, 0.28, 0.3 , 0.32, 0.34, 0.36, 0.38, 0.4 ,0.42, 0.44, 0.46, 0.48])
 
-s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, grada_arr, gamma1_arr = np.load('/Users/Helios/planet_interiors/state/cms/cms_hg_thermo.npy')
+s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, grada_arr, gamma1_arr = np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
 
 
 get_t = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
