@@ -72,13 +72,13 @@ interp_p = RGI((yhe_arr, x_arr, y_arr), ptabs, method='linear', bounds_error=Fal
 def get_s(r, t, yhe):
 
     if not hasattr(r, '__len__'):
-        return float(interp_s((yhe, r, t)))
+        return float(interp_s((yhe, x(r), y(r, t))))
     else:
         return interp_s(np.array([yhe, x(r), y(r, t)]).T)
 
 def get_p(r, t, yhe):
     if not hasattr(r, '__len__'):
-        return float(interp_p((yhe, x(r), t)))
+        return float(interp_p((yhe, x(r), y(r, t))))
     else:
         return interp_p(np.array([yhe, x(r), y(r, t)]).T)
 
@@ -101,7 +101,7 @@ def get_rho_p_ideal(s, logp, m=15.5):
     p = 10**logp
     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
-def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
+def get_rhot(s, p, y): # in-situ inversion
     s = np.log10(s)
     sol = root(err_scvh, [-2, 2.1], args=(s, p, y))
 
@@ -114,14 +114,19 @@ def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
 
 ##### pressure-temperature #####
 
-logp_res, logt_res, logrho_res, s_res = np.load('%S/SCVH/scvh_pt.npy' % CURR_DIR)
+#np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
+
+logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
 yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
 get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
 get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
 
-def get_rhos_p_t(p, t, y):
-    return get_rho_pt(np.array([y, t, p]).T), get_s_pt(np.array([y, t, p]).T)
+def get_rho_p_t(p, t, y):
+    return get_rho_pt(np.array([y, t, p]).T)
+
+def get_s_p_t(p, t, y):
+    return get_rho_pt(np.array([y, t, p]).T)
 
 
 ###### derivatives ######
@@ -144,6 +149,8 @@ def get_rho_t(s, p, y):
     # cp_res = get_cp(np.array([y, s, p]).T)
     # cv_res = get_cv(np.array([y, s, p]).T)
     return get_rho(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
+
+
 
 def get_c_p(s, p, y):
     cp_res = get_cp(np.array([y, s, p]).T)
@@ -175,9 +182,48 @@ def get_gamma_1(s, p, y):
     return gamma1_hhe
     #return 1/((1-z)*(rho_hhe/rho_tot) * (1/gamma1_hhe) + z*(rho_z/rho_tot) * (3/5))
 
+# def get_grad_a(s, p, y, dp=0.001):
+#     delta_logt = -get_t(np.array([y, s, p]).T) + get_t(np.array([y, s, p*(1+dp)]).T)
+#     dlogt_dlogP = delta_logt/(p*dp)
+#     return dlogt_dlogP
+
+def get_grad_a(s, p, y, dp=0.001):
+    delta_logt = -get_rhot(s, p, y)[-1] + get_rhot(s, p*(1+dp), y)[-1]
+    dlogt_dlogP = delta_logt/(p*dp)
+    return dlogt_dlogP
+
+def get_gamma1_(s, p, y, dp=0.001):
+    delta_logrho = -get_rhot(s, p, y)[0] + get_rhot(s, p*(1+dp), y)[0]
+    dlogrho_dlogP = delta_logrho/(p*dp)
+    return 1/dlogrho_dlogP
+
+def get_c_p_(s, p, y, ds=1e6):
+    
+    s /= erg_to_kbbar
+    s_prime = (s*(1+ds))
+    delta_logt = -get_rhot(s*erg_to_kbbar, p, y)[-1] + get_rhot(s_prime*erg_to_kbbar, p, y)[-1]
+    dlogs = -np.log10(s) + np.log10(s_prime)
+    #ds /= erg_to_kbbar
+    dlogs_dlogt = dlogs/delta_logt
+
+    return  s * dlogs_dlogt
+
+def get_c_v_(r, t, y, dt=0.001):
+    #s = (10**get_s(r, t, y))*erg_to_kbbar
+
+    s = (10**get_s(r, t, y))/erg_to_kbbar
+    dlogs = -np.log10(s) + np.log10((10**get_s(r, t*(1+dt), y))/erg_to_kbbar)
+
+    
+    dlogs_dlogt = dlogs/(t*dt)
+    return s*dlogs_dlogt
+
+
+
+
 ####### composition derivatives #######
 
-dlogrho_dy, dlogs_dy = np.load('/Users/Helios/planet_interiors/state/scvh/comp_derivatives_scvh.npy')
+dlogrho_dy, dlogs_dy = np.load('eos/scvh/comp_derivatives_scvh.npy')
 
 logtvals = np.linspace(2.1, 5, 100)
 logpvals = np.linspace(5, 14, 300)

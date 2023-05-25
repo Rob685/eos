@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.optimize import brenth, brentq
-import cms_newton_raphson as cms
+from eos import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
-import aneos
+#import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
+#eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
 
 erg_to_kbbar = 1.202723550011625e-08
 
