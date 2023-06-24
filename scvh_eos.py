@@ -116,17 +116,29 @@ def get_rhot(s, p, y): # in-situ inversion
 
 #np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
 
-logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
-yvals = np.array([0.22, 0.25, 0.28, 0.30])
+# logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
+# yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
-get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
-get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
+# get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
+# get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
 
-def get_rho_p_t(p, t, y):
-    return get_rho_pt(np.array([y, t, p]).T)
+# def get_rho_p_t(p, t, y):
+#     return get_rho_pt(np.array([y, t, p]).T)
 
-def get_s_p_t(p, t, y):
-    return get_rho_pt(np.array([y, t, p]).T)
+# def get_s_p_t(p, t, y):
+#     return get_rho_pt(np.array([y, t, p]).T)
+
+logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_prho.npy' % CURR_DIR)
+yvals = np.array([0.22, 0.25, 0.28, 0.292])
+
+get_t_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), logrho_res)
+get_s_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), s_res)
+
+def get_t_rhop(r, p, y):
+    return get_t_pr(np.array([y, r, p]).T)
+
+def get_s_rhop(r, p, y):
+    return get_s_pr(np.array([y, r, p]).T)
 
 
 ###### derivatives ######
@@ -223,15 +235,15 @@ def get_c_v_(r, t, y, dt=0.001):
 
 ####### composition derivatives #######
 
-dlogrho_dy, dlogs_dy = np.load('eos/scvh/comp_derivatives_scvh.npy')
+dlogt_dy, dlogs_dy = np.load('eos/scvh/t_s_der_prho.npy')
 
-logtvals = np.linspace(2.1, 5, 100)
-logpvals = np.linspace(5, 14, 300)
+# logtvals = np.linspace(2.1, 5, 100)
+# logpvals = np.linspace(5, 14, 300)
 
 ygrid = np.arange(0.22, 1.0, 0.01)
 
-get_dlogrho_dy = RGI((logtvals, logpvals, ygrid), dlogrho_dy, method='linear', bounds_error=False, fill_value=None)
+get_dlogs_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogs_dy, method='linear', bounds_error=False, fill_value=None)
 
-def get_dlogrhody(p, t, y):
-    drhody = get_dlogrho_dy(np.array([t, p, y]).T)
-    return drhody
+def get_dlogsdy(p, t, y):
+    dsdy = get_dlogs_dy(np.array([r, p, y]).T)
+    return dsdy
