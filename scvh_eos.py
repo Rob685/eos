@@ -131,7 +131,7 @@ def get_rhot(s, p, y): # in-situ inversion
 logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_prho.npy' % CURR_DIR)
 yvals = np.array([0.22, 0.25, 0.28, 0.292])
 
-get_t_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), logrho_res)
+get_t_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), logt_res)
 get_s_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), s_res)
 
 def get_t_rhop(r, p, y):
@@ -244,6 +244,13 @@ ygrid = np.arange(0.22, 1.0, 0.01)
 
 get_dlogs_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogs_dy, method='linear', bounds_error=False, fill_value=None)
 
-def get_dlogsdy(p, t, y):
+get_dlogt_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogt_dy, method='linear', bounds_error=False, fill_value=None)
+
+
+def get_dlogsdy(r, p , y):
     dsdy = get_dlogs_dy(np.array([r, p, y]).T)
     return dsdy
+
+def get_dlogtdy(r, p , y):
+    dtdy = get_dlogt_dy(np.array([r, p, y]).T)
+    return dtdy
