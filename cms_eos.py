@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import brenth, brentq
-import cms_newton_raphson as cms
+from . import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
 import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
@@ -114,6 +114,9 @@ def get_gamma_1_hhe(s, p, y):
     return get_gamma1(np.array([y, s, p]).T)
 
 def get_logrho_mix(s, p, y, z):
+    if not np.isscalar(s):
+        return np.array([get_logrho_mix(si, pi, yi, zi)
+                         for si, pi, yi, zi in zip(s, p, y, z)])
     t = get_t(s, p, y, z)
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
     rho_z = 10**get_rho_p_ideal(s, p)
