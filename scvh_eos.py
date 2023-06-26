@@ -10,7 +10,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('/Users/Helios/planet_interiors/state/scvh/eos/'+tab_name) as file:
+    with open('%s/scvh/eos/%s' % (CURR_DIR, tab_name)) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
@@ -114,7 +114,7 @@ def get_rhot(s, p, y, z, ideal=None): # in-situ inversion
 
 ##### pressure-temperature #####
 
-logp_res, logt_res, logrho_res, s_res = np.load('%S/SCVH/scvh_pt.npy' % CURR_DIR)
+logp_res, logt_res, logrho_res, s_res = np.load('%s/SCVH/scvh_pt.npy' % CURR_DIR)
 yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
 get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
@@ -177,7 +177,7 @@ def get_gamma_1(s, p, y):
 
 ####### composition derivatives #######
 
-dlogrho_dy, dlogs_dy = np.load('/Users/Helios/planet_interiors/state/scvh/comp_derivatives_scvh.npy')
+dlogrho_dy, dlogs_dy = np.load('%s/scvh/comp_derivatives_scvh.npy' % CURR_DIR)
 
 logtvals = np.linspace(2.1, 5, 100)
 logpvals = np.linspace(5, 14, 300)
