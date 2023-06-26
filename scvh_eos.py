@@ -10,7 +10,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 def scvh_reader(tab_name):
     tab = []
     head = []
-    with open('/Users/Helios/planet_interiors/state/scvh/eos/'+tab_name) as file:
+    with open('%s/scvh/eos/%s' % (CURR_DIR, tab_name)) as file:
         for j, line in enumerate(file):
             line = line.rstrip('\n')
             if line.startswith("#"):
@@ -235,7 +235,7 @@ def get_c_v_(r, t, y, dt=0.001):
 
 ####### composition derivatives #######
 
-dlogt_dy, dlogs_dy = np.load('eos/scvh/t_s_der_prho.npy')
+dlogt_dy, dlogs_dy = np.load('%s/scvh/t_s_der_prho.npy' % CURR_DIR)
 
 # logtvals = np.linspace(2.1, 5, 100)
 # logpvals = np.linspace(5, 14, 300)
