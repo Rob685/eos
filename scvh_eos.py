@@ -88,11 +88,22 @@ def get_sp(r, t, yhe):
     else:
         return interp_s(np.array([yhe, x(r), y(r, t)]).T), interp_p(np.array([yhe, x(r), y(r, t)]).T)
 
-def err_scvh(rt_pair, sval, pval, y):
+def sackur_tetrode(lgp, lgt, mz):
+    # lgp must be in log cgs
+
+    return 4.61664 + np.log((10**lgt / 1e3)**(5/2) / (10**lgp / 1e11) * mz**(3/2))
+
+def err_scvh(rt_pair, sval, pval, y, z):
     rho, temp = rt_pair
     s, p = get_sp(rho, temp, y)
 
-    return  s/sval - 1, p/pval -1
+    if z > 0:
+        sz_ideal = sackur_tetrode(p, temp, mz=15.5)
+        stot = (1 - z)*s + z*sz_ideal
+        return stot/sval - 1, p/pval -1
+
+    else:
+        return  s/sval - 1, p/pval -1
 
 def get_rho_p_ideal(s, logp, m=15.5):
     # done from ideal gas
@@ -101,9 +112,9 @@ def get_rho_p_ideal(s, logp, m=15.5):
     p = 10**logp
     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
-def get_rhot(s, p, y): # in-situ inversion
+def get_rhot(s, p, y, z=0): # in-situ inversion
     s = np.log10(s)
-    sol = root(err_scvh, [-2, 2.1], args=(s, p, y))
+    sol = root(err_scvh, [-2, 2.1], args=(s, p, y, z))
 
     # if z > 0:
     #     rho_hhe = 10**sol.x[0]
@@ -116,29 +127,29 @@ def get_rhot(s, p, y): # in-situ inversion
 
 #np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
 
-# logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
-# yvals = np.array([0.22, 0.25, 0.28, 0.30])
+logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
+yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
-# get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
-# get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
+get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
+get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
 
-# def get_rho_p_t(p, t, y):
-#     return get_rho_pt(np.array([y, t, p]).T)
+def get_rho_p_t(p, t, y):
+    return get_rho_pt(np.array([y, t, p]).T)
 
-# def get_s_p_t(p, t, y):
-#     return get_rho_pt(np.array([y, t, p]).T)
+def get_s_p_t(p, t, y):
+    return get_rho_pt(np.array([y, t, p]).T)
 
-logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_prho.npy' % CURR_DIR)
-yvals = np.array([0.22, 0.25, 0.28, 0.292])
+# logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_prho.npy' % CURR_DIR)
+# yvals = np.array([0.22, 0.25, 0.28, 0.292])
 
-get_t_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), logt_res)
-get_s_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), s_res)
+# get_t_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), logt_res, method='linear', bounds_error=False, fill_value=None)
+# get_s_pr = RGI((yvals, logrho_res[0][:,0], logp_res[0][0]), s_res, method='linear', bounds_error=False, fill_value=None)
 
-def get_t_rhop(r, p, y):
-    return get_t_pr(np.array([y, r, p]).T)
+# def get_t_rhop(r, p, y):
+#     return get_t_pr(np.array([y, r, p]).T)
 
-def get_s_rhop(r, p, y):
-    return get_s_pr(np.array([y, r, p]).T)
+# def get_s_rhop(r, p, y):
+#     return get_s_pr(np.array([y, r, p]).T)
 
 
 ###### derivatives ######
@@ -161,8 +172,6 @@ def get_rho_t(s, p, y):
     # cp_res = get_cp(np.array([y, s, p]).T)
     # cv_res = get_cv(np.array([y, s, p]).T)
     return get_rho(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
-
-
 
 def get_c_p(s, p, y):
     cp_res = get_cp(np.array([y, s, p]).T)
@@ -230,27 +239,111 @@ def get_c_v_(r, t, y, dt=0.001):
     dlogs_dlogt = dlogs/(t*dt)
     return s*dlogs_dlogt
 
-
-
-
 ####### composition derivatives #######
 
-dlogt_dy, dlogs_dy = np.load('%s/scvh/t_s_der_prho.npy' % CURR_DIR)
+y_arr = np.arange(0.22, 1.0, 0.01)
 
-# logtvals = np.linspace(2.1, 5, 100)
-# logpvals = np.linspace(5, 14, 300)
+dlogrho_dy_pt, dlogs_dy_pt = np.load('%s/scvh/rho_s_der_pt.npy' % CURR_DIR)
+dlogrho_dy_sp, dlogt_dy_sp = np.load('%s/scvh/rho_t_der_sp.npy' % CURR_DIR)
 
-ygrid = np.arange(0.22, 1.0, 0.01)
+get_dlogs_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
+get_dlogrho_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
 
-get_dlogs_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogs_dy, method='linear', bounds_error=False, fill_value=None)
+get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
+get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
 
-get_dlogt_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogt_dy, method='linear', bounds_error=False, fill_value=None)
+
+def get_dlogsdy_pt(p, t, y):
+    return get_dlogs_dy_pt(np.array([t, p, y]).T)
+
+def get_dlogrhody_pt(p, t, y):
+    return get_dlogrho_dy_pt(np.array([t, p, y]).T)
+
+def get_dlogtdy_sp(s, p, y):
+    return get_dlogt_dy_sp(np.array([s, p, y]).T)
+
+def get_dlogrhody_sp(s, p, y):
+    return get_dlogrho_dy_sp(np.array([s, p, y]).T)
 
 
-def get_dlogsdy(r, p , y):
-    dsdy = get_dlogs_dy(np.array([r, p, y]).T)
-    return dsdy
 
-def get_dlogtdy(r, p , y):
-    dtdy = get_dlogt_dy(np.array([r, p, y]).T)
-    return dtdy
+
+####### P(rho, s, y) #######
+
+logp_res_rhos, logrho_res_rhos, s_res_rhos = np.load('%s/scvh/scvh_rho_s.npy' % CURR_DIR)
+
+yvals = np.arange(0.22, 0.305, 0.005)
+get_p_s_r = RGI((yvals, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rhos, method='linear', bounds_error=False, fill_value=None)
+
+def get_p_sr(r, s, y):
+    return get_p_s_r(np.array([y, s, r]).T)
+
+y_arr = np.arange(0.22, 1.0, 0.01)
+
+#dlogrho_dY = []
+dlogp_dY = []
+for i, s in enumerate(s_res_rhos[0][:,0]):
+    #drho_dY = []
+    dp_dY = []
+    for j, r in enumerate(logrho_res_rhos[0][0]):
+        logp = get_p_sr(np.full_like(y_arr, r), np.full_like(y_arr, s), y_arr) # at constant rho, s
+        #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
+        dlogpdy = np.gradient(logp)/np.gradient(y_arr)
+        #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
+        #drho_dY.append(dlogrhodY)
+        dp_dY.append(dlogpdy)
+        
+    #dlogrho_dY.append(drho_dY)
+    dlogp_dY.append(dp_dY)
+    
+s_arr = np.arange(5.5, 10.01, 0.01)
+
+dlogp_dlogs = []
+for i, y_ in enumerate(yvals):
+    #drho_dY = []
+    dp_ds = []
+    for j, r in enumerate(logrho_res_rhos[0][0]):
+        logp = get_p_sr(np.full_like(s_arr, r), s_arr, np.full_like(s_arr, y_)) # at constant rho, Y
+        #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
+        dlogs = np.gradient(np.log10(s_arr/erg_to_kbbar))
+        dlogpdlogs = np.gradient(logp)/dlogs
+        #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
+        #drho_dY.append(dlogrhodY)
+        dp_ds.append(dlogpdlogs)
+        
+    #dlogrho_dY.append(drho_dY)
+    dlogp_dlogs.append(dp_ds)
+
+
+get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
+get_dlogp_dlogs = RGI((yvals, np.array(logrho_res_rhos)[0][0], s_arr), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
+
+def get_dpdy(r, s, y):
+    return get_dlogp_dy(np.array([s, r, y]).T)*(10**get_p_sr(r, s, y))
+
+def get_dpds(r, s, y):
+    return get_dlogp_dlogs(np.array([y, r, s]).T)*(10**get_p_sr(r, s, y))/(s/erg_to_kbbar)
+
+
+
+# dlogt_dy, dlogs_dy = np.load('%s/scvh/t_s_der_prho.npy' % CURR_DIR)
+
+# # logtvals = np.linspace(2.1, 5, 100)
+# # logpvals = np.linspace(5, 14, 300)
+
+# ygrid = np.arange(0.22, 1.0, 0.01)
+
+# get_dlogs_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogs_dy, method='linear', bounds_error=False, fill_value=None)
+
+# get_dlogt_dy = RGI((logrho_res[0][:,0], logp_res[0][0], ygrid), dlogt_dy, method='linear', bounds_error=False, fill_value=None)
+
+
+# def get_dlogsdy(r, p , y):
+#     dsdy = get_dlogs_dy(np.array([r, p, y]).T)
+#     return dsdy
+
+# def get_dlogtdy(r, p , y):
+#     dtdy = get_dlogt_dy(np.array([r, p, y]).T)
+#     return dtdy
+
+
