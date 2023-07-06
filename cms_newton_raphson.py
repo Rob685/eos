@@ -180,6 +180,8 @@ def get_smix_id_y(Y):
     return -1*(guarded_log(xh) + guarded_log(xhe))
 
 def get_smix_nd(Y, lgp, lgt):
+
+    # the HG23 \Delta S_mix is the combination of the non-ideal and ideal entropy of mixing
     smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
     smix_id = get_smix_id_y(Y) / erg_to_kbbar
 
