@@ -11,7 +11,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 erg_to_kbbar = 1.202723550011625e-08
 
-def err(logt, logp, y, z, s_val, corr=True, m=15.5):
+def err(logt, logp, y, z, s_val, m=15.5, corr=True):
 
     #s_ = cms.get_s_mix(logp, logt, y, corr)
     s_ = float(cms.get_smix_z(y, z, logp, logt, mz=m))
@@ -34,7 +34,7 @@ def rho_mix(p, t, y, z, ideal, m=15.5):
     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
     try:
         #t = get_t(s, p, y, z)
-        rho_z = 10**get_rho_id(p, t, m=15.5)
+        rho_z = 10**get_rho_id(p, t, m=m)
         # if ideal:
         #     rho_z = 10**get_rho_id(p, t)
         # elif not ideal:
@@ -52,7 +52,7 @@ def rho_mix(p, t, y, z, ideal, m=15.5):
     #      return np.log10(rho_hhe)
 
 def get_t(s, p, y, z, m=15.5):
-    t_root = brenth(err, 0, 7, args=(p, y, z, s)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+    t_root = brenth(err, 0, 7, args=(p, y, z, s, m)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
     return t_root
 
 # def get_rho(s, p, t, y, z, ideal):
