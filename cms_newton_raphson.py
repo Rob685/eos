@@ -188,7 +188,6 @@ def get_smix_nd(Y, lgp, lgt):
     return smix_hg23 - smix_id
 
 def get_smix_z(Y, Z, lgp, lgt, mz=15.5):
-
     #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
     #xhe_prime = x_i(Y)
     #s_nid_mix = smix_hg23 + ((guarded_log(1-xhe_prime) + guarded_log(xhe_prime)) / erg_to_kbbar)

@@ -93,15 +93,13 @@ def get_sp(r, t, yhe):
     else:
         return interp_s(np.array([yhe, x(r), y(r, t)]).T), interp_p(np.array([yhe, x(r), y(r, t)]).T)
 
-def err_scvh(rt_pair, sval, pval, y, z):
+def err_scvh(rt_pair, sval, pval, y, z, z_eos):
     rho, temp = rt_pair
     s, p = get_sp(rho, temp, y)
-
     if z > 0:
         #sz_ideal = sackur_tetrode(p, temp, mz=15.5)
-        stot = np.log10(get_smix_z(y, z, p, temp))
+        stot = float(np.log10(get_smix_z(y, z, p, temp, z_eos)))
         return stot/sval - 1, p/pval -1
-
     else:
         return  s/sval - 1, p/pval -1
 
@@ -112,9 +110,9 @@ def get_rho_p_ideal(s, logp, m=15.5):
     p = 10**logp
     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
-def get_rhot(s, p, y, z=0): # in-situ inversion
+def get_rhot(s, p, y, z=0, z_eos='ideal'): # in-situ inversion
     s = np.log10(s)
-    sol = root(err_scvh, [-2, 2.1], args=(s, p, y, z))
+    sol = root(err_scvh, [-2, 2.1], args=(s, p, y, z, z_eos))
 
     if z > 0:
         rho_hhe = 10**sol.x[0]
@@ -133,8 +131,8 @@ def x_i(Y):
 logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_pt.npy' % CURR_DIR)
 yvals = np.array([0.22, 0.25, 0.28, 0.30])
 
-get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res)
-get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res)
+get_rho_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), logrho_res, method='linear', bounds_error=False, fill_value=None)
+get_s_pt = RGI((yvals, logt_res[0][:,0], logp_res[0][0]), s_res, method='linear', bounds_error=False, fill_value=None)
 
 def get_rho_p_t(p, t, y):
     return get_rho_pt(np.array([y, t, p]).T)
@@ -188,9 +186,9 @@ def get_smix_z(Y, Z, lgp, lgt, z_eos):
 
     # returning in kb/baryon
     if Z > 0:
-        return (s_xy*(1-Z) + s_z*Z - ((guarded_log(xh) + guarded_log(xhe) + guarded_log(xz)) / erg_to_kbbar))*erg_to_kbbar
+        return (s_xy*(1-Z) + s_z*Z) - ((guarded_log(xh) + guarded_log(xhe) + guarded_log(xz)) / erg_to_kbbar)
     elif Z == 0:
-        return s_xy * erg_to_kbbar
+        return s_xy 
 # logp_res, logt_res, logrho_res, s_res = np.load('%s/scvh/scvh_prho.npy' % CURR_DIR)
 # yvals = np.array([0.22, 0.25, 0.28, 0.292])
 
@@ -302,16 +300,16 @@ def get_c_v_(r, t, y, dt=0.001):
 
 ####### composition derivatives #######
 
-y_arr = np.arange(0.22, 1.0, 0.01)
+y_arr2 = np.arange(0.22, 1.0, 0.01)
 
 dlogrho_dy_pt, dlogs_dy_pt = np.load('%s/scvh/rho_s_der_pt.npy' % CURR_DIR)
 dlogrho_dy_sp, dlogt_dy_sp = np.load('%s/scvh/rho_t_der_sp.npy' % CURR_DIR)
 
-get_dlogs_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
-get_dlogrho_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
+get_dlogs_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr2), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
+get_dlogrho_dy_pt = RGI((logt_res[0][:,0], logp_res[0][0], y_arr2), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
 
-get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
-get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
+get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
+get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
 
 
 def get_dlogsdy_pt(p, t, y):
@@ -339,7 +337,7 @@ get_p_s_r = RGI((yvals, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rho
 def get_p_sr(r, s, y):
     return get_p_s_r(np.array([y, s, r]).T)
 
-y_arr = np.arange(0.22, 1.0, 0.01)
+y_arr3 = np.arange(0.22, 1.0, 0.01)
 
 #dlogrho_dY = []
 dlogp_dY = []
@@ -347,9 +345,9 @@ for i, s in enumerate(s_res_rhos[0][:,0]):
     #drho_dY = []
     dp_dY = []
     for j, r in enumerate(logrho_res_rhos[0][0]):
-        logp = get_p_sr(np.full_like(y_arr, r), np.full_like(y_arr, s), y_arr) # at constant rho, s
+        logp = get_p_sr(np.full_like(y_arr3, r), np.full_like(y_arr3, s), y_arr3) # at constant rho, s
         #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
-        dlogpdy = np.gradient(logp)/np.gradient(y_arr)
+        dlogpdy = np.gradient(logp)/np.gradient(y_arr3)
         #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
         #drho_dY.append(dlogrhodY)
         dp_dY.append(dlogpdy)
@@ -376,7 +374,7 @@ for i, y_ in enumerate(yvals):
     dlogp_dlogs.append(dp_ds)
 
 
-get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
+get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr3), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
 get_dlogp_dlogs = RGI((yvals, np.array(logrho_res_rhos)[0][0], s_arr2), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
 
 def get_dpdy(r, s, y):
