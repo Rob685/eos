@@ -60,6 +60,9 @@ class eos:
     def get_logrho(self, logp, logt):
         return self._get_logrho((logp, logt))
 
+    def get_logs(self, logp, logt):
+        return self._get_logs((logp, logt))
+
     def get(self, logp, logt):
         res = {}
         logrho = res['logrho'] = self._get_logrho((logp, logt))
