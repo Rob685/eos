@@ -98,7 +98,7 @@ def err_scvh(rt_pair, sval, pval, y, z, z_eos):
     s, p = get_sp(rho, temp, y)
     if z > 0:
         #sz_ideal = sackur_tetrode(p, temp, mz=15.5)
-        stot = float(np.log10(get_smix_z(y, z, p, temp, z_eos)))
+        stot = float(np.log10(get_smix_z(y, z, p, temp, z_eos)*erg_to_kbbar))
         return stot/sval - 1, p/pval -1
     else:
         return  s/sval - 1, p/pval -1
