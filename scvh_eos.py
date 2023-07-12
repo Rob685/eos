@@ -10,7 +10,7 @@ mhe = 4.0026
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
-eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='ice')
+eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='serpentine')
 
 def scvh_reader(tab_name):
     tab = []
