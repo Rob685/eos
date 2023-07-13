@@ -248,7 +248,7 @@ def get_dpds(r, s, y):
 #     return get_dsdy_ur(np.array([y, r, u]).T)
 
 
-u_res = np.load('eos/cms/u_sry.npy')
+u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
 
 s_arr3 = np.linspace(5.5, 10, 40)
 rho_arr = np.linspace(-3.4, -0.2, 50)
@@ -260,7 +260,7 @@ get_u_sr = RGI((y_arr4, rho_arr, s_arr3), u_res, \
 def get_u_s_r(s, r, y):
     return get_u_sr(np.array([y, r, s]).T)
 
-dudy_sr = np.load('eos/cms/dudy_sry.npy')
+dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
 
 yvals = np.linspace(0.22, 0.43, 100)
 
