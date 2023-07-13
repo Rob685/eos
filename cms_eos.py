@@ -225,24 +225,47 @@ def get_dpds(r, s, y):
 
 ########### energy ###########
 
-s_res = np.load('%s/cms/s_ry.npy' % CURR_DIR)
+# s_res = np.load('%s/cms/s_ry.npy' % CURR_DIR)
 
-u_arr = np.linspace(20, 25, 100)
-rho_arr = np.linspace(-4.5, -0.7, 50)
+# u_arr = np.linspace(20, 25, 100)
+# rho_arr = np.linspace(-4.5, -0.7, 50)
+# y_arr4 = np.arange(0.20, 0.42, 0.02)
+
+# get_s_ur = RGI((y_arr4, rho_arr, u_arr), s_res, \
+#                 method='linear', bounds_error=False, fill_value=None)
+
+# def get_s_u_r(u, r, y):
+#     return get_s_ur(np.array([y, r, u]).T)
+
+# dsdy_ur = np.load('%s/cms/dsdy_ur.npy' % CURR_DIR)
+
+# yvals = np.linspace(0.22, 0.43, 100)
+
+# get_dsdy_ur = RGI((yvals, rho_arr, u_arr), dsdy_ur, \
+#                 method='linear', bounds_error=False, fill_value=None)
+
+# def get_dsdy_u_r(u, r, y):
+#     return get_dsdy_ur(np.array([y, r, u]).T)
+
+
+u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
+
+s_arr3 = np.linspace(5.5, 10, 40)
+rho_arr = np.linspace(-3.4, -0.2, 50)
 y_arr4 = np.arange(0.20, 0.42, 0.02)
 
-get_s_ur = RGI((y_arr4, rho_arr, u_arr), s_res, \
+get_u_sr = RGI((y_arr4, rho_arr, s_arr3), u_res, \
                 method='linear', bounds_error=False, fill_value=None)
 
-def get_s_u_r(u, r, y):
-    return get_s_ur(np.array([y, r, u]).T)
+def get_u_s_r(s, r, y):
+    return get_u_sr(np.array([y, r, s]).T)
 
-dsdy_ur = np.load('%s/cms/dsdy_ur.npy' % CURR_DIR)
+dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
 
 yvals = np.linspace(0.22, 0.43, 100)
 
-get_dsdy_ur = RGI((yvals, rho_arr, u_arr), dsdy_ur, \
+get_dsdy_ur = RGI((s_arr3, rho_arr, yvals), dudy_sr, \
                 method='linear', bounds_error=False, fill_value=None)
 
-def get_dsdy_u_r(u, r, y):
-    return get_dsdy_ur(np.array([y, r, u]).T)
+def get_dudy_s_r(s, r, y):
+    return get_dsdy_ur(np.array([s, r, y]).T)
