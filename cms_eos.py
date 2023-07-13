@@ -225,7 +225,7 @@ def get_dpds(r, s, y):
 
 ########### energy ###########
 
-s_res = np.load('eos/cms/s_ry.npy')
+s_res = np.load('%s/cms/s_ry.npy' % CURR_DIR)
 
 u_arr = np.linspace(20, 25, 100)
 rho_arr = np.linspace(-4.5, -0.7, 50)
@@ -237,7 +237,7 @@ get_s_ur = RGI((y_arr4, rho_arr, u_arr), s_res, \
 def get_s_u_r(u, r, y):
     return get_s_ur(np.array([y, r, u]).T)
 
-dsdy_ur = np.load('eos/cms/dsdy_ur.npy')
+dsdy_ur = np.load('%s/cms/dsdy_ur.npy' % CURR_DIR)
 
 yvals = np.linspace(0.22, 0.43, 100)
 
