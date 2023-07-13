@@ -186,7 +186,7 @@ for i, s in enumerate(s_res_rhos[0][:,0]):
     #drho_dY = []
     dp_dY = []
     for j, r in enumerate(logrho_res_rhos[0][0]):
-        logp = get_p_sr(np.full_like(y_arr3, r), np.full_like(y_arr3, s), y_arr) # at constant rho, s
+        logp = get_p_sr(np.full_like(y_arr3, r), np.full_like(y_arr3, s), y_arr3) # at constant rho, s
         #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
         dlogpdy = np.gradient(logp)/np.gradient(y_arr3)
         #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
@@ -203,7 +203,7 @@ for i, y_ in enumerate(yarr):
     #drho_dY = []
     dp_ds = []
     for j, r in enumerate(logrho_res_rhos[0][0]):
-        logp = get_p_sr(np.full_like(s_arr2, r), s_arr, np.full_like(s_arr2, y_)) # at constant rho, Y
+        logp = get_p_sr(np.full_like(s_arr2, r), s_arr2, np.full_like(s_arr2, y_)) # at constant rho, Y
         #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
         dlogs = np.gradient(np.log10(s_arr2/erg_to_kbbar))
         dlogpdlogs = np.gradient(logp)/dlogs
@@ -222,3 +222,27 @@ def get_dpdy(r, s, y):
 
 def get_dpds(r, s, y):
     return get_dlogp_dlogs(np.array([y, r, s]).T)*(10**get_p_sr(r, s, y))/(s/erg_to_kbbar)
+
+########### energy ###########
+
+s_res = np.load('eos/cms/s_ry.npy')
+
+u_arr = np.linspace(20, 25, 100)
+rho_arr = np.linspace(-4.5, -0.7, 50)
+y_arr4 = np.arange(0.20, 0.42, 0.02)
+
+get_s_ur = RGI((y_arr4, rho_arr, u_arr), s_res, \
+                method='linear', bounds_error=False, fill_value=None)
+
+def get_s_u_r(u, r, y):
+    return get_s_ur(np.array([y, r, u]).T)
+
+dsdy_ur = np.load('eos/cms/dsdy_ur.npy')
+
+yvals = np.linspace(0.22, 0.43, 100)
+
+get_dsdy_ur = RGI((yvals, rho_arr, u_arr), dsdy_ur, \
+                method='linear', bounds_error=False, fill_value=None)
+
+def get_dsdy_u_r(u, r, y):
+    return get_dsdy_ur(np.array([y, r, u]).T)
