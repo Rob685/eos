@@ -259,8 +259,8 @@ def get_rho_mix(lgp, lgt, y, hc_corr = False):
     return 1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y)
 
 def get_logu_mix(lgp, lgt, y):
-    u_h = (10**get_logu_h(lgt, lgp)) # MJ/kg to erg/g
-    u_he = (10**get_logu_he(lgt, lgp))
+    u_h = (10**get_logu_h.ev(lgt, lgp)) # MJ/kg to erg/g
+    u_he = (10**get_logu_he.ev(lgt, lgp))
 
     return np.log10((1-y)*u_h + y*u_he) # in log cgs
 

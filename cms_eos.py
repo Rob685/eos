@@ -248,24 +248,37 @@ def get_dpds(r, s, y):
 #     return get_dsdy_ur(np.array([y, r, u]).T)
 
 
-u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
+# u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
 
-s_arr3 = np.linspace(5.5, 10, 40)
-rho_arr = np.linspace(-3.4, -0.2, 50)
-y_arr4 = np.arange(0.20, 0.42, 0.02)
+# s_arr3 = np.linspace(5.5, 10, 40)
+# rho_arr = np.linspace(-3.4, -0.2, 50)
+# y_arr4 = np.arange(0.20, 0.42, 0.02)
 
-get_u_sr = RGI((y_arr4, rho_arr, s_arr3), u_res, \
+# get_u_sr = RGI((y_arr4, rho_arr, s_arr3), u_res, \
+#                 method='linear', bounds_error=False, fill_value=None)
+
+# def get_u_s_r(s, r, y):
+#     return get_u_sr(np.array([y, r, s]).T)
+
+# dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
+
+# yvals = np.linspace(0.22, 0.43, 100)
+
+# get_dsdy_ur = RGI((s_arr3, rho_arr, yvals), dudy_sr, \
+#                 method='linear', bounds_error=False, fill_value=None)
+
+# def get_dudy_s_r(s, r, y):
+#     return get_dsdy_ur(np.array([s, r, y]).T)
+
+rho_arr = np.linspace(-4, 1, 50)
+y_arr4 = np.arange(0, 1, 0.02)
+t_arr2 = np.linspace(2.1, 5, 100)
+
+dudy_rt = np.load('eos/cms/dudy_rty.npy')
+
+get_dsdy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
                 method='linear', bounds_error=False, fill_value=None)
 
-def get_u_s_r(s, r, y):
-    return get_u_sr(np.array([y, r, s]).T)
+def get_dudy_r_t(r, t, y):
+    return get_dsdy_rt(np.array([t, r, y]).T)
 
-dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
-
-yvals = np.linspace(0.22, 0.43, 100)
-
-get_dsdy_ur = RGI((s_arr3, rho_arr, yvals), dudy_sr, \
-                method='linear', bounds_error=False, fill_value=None)
-
-def get_dudy_s_r(s, r, y):
-    return get_dsdy_ur(np.array([s, r, y]).T)
