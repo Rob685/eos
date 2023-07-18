@@ -4,6 +4,7 @@ from . import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
 # import aneos
 from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.optimize import root, root_scalar
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -281,4 +282,29 @@ get_dsdy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
 
 def get_dudy_r_t(r, t, y):
     return get_dsdy_rt(np.array([t, r, y]).T)
+
+###### inversions ######
+
+def err_rhot_1D(lgt, lgp, rhoval, y):
+    #lgp, lgt = pt_pair
+    logrho = np.log10(cms.get_rho_mix(lgp, lgt, y, hc_corr=True))
+    #s *= erg_to_kbbar
+    return  logrho/rhoval - 1
+
+def get_t_r(p, r, y): # doesn't work very well...
+    sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
+    return sol.root
+
+def get_s_rp(r, p, y):
+    t = get_t_r(p, r, y)
+    #print(10**t)
+    s = cms.get_s_mix(p, t, y, hc_corr=True)
+    return s # in cgs
+
+def get_dsdy_rp(r, p, y, dy=0.001):
+    s0 = get_s_rp(r, p, y)
+    s1 = get_s_rp(r, p, y*(1+dy))
+
+    dsdy = (s1 - s0)/(y*dy)
+    return dsdy
 
