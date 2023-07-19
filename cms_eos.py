@@ -350,5 +350,11 @@ def get_dsdy_rp(r, p, y, dy=0.001):
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
 
+def get_dudy_sr(s, r, y, dy=0.001):
+    u0 = 10**get_u_s(s, r, y)
+    u1 = 10**get_u_s(s, r, y*(1+dy))
+
+    return (u1 - u0)/(y*dy)
+
 
 
