@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import brenth, brentq
+from scipy.optimize import brenth
 from . import cms_newton_raphson as cms
 #import cms_tables_rgi as cms_rgi
 # import aneos
@@ -285,15 +285,57 @@ def get_dudy_r_t(r, t, y):
 
 ###### inversions ######
 
+def err_energy_2D(pt_pair, sval, uval, y):
+    lgp, lgt = pt_pair
+    s, logu = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_logu_mix(lgp, lgt, y)
+    s *= erg_to_kbbar
+    return  s/sval - 1, logu/uval -1
+
+def get_pt(s, u, y):
+    sol = root(err_energy_2D, [7, 2.5], args=(s, u, y))
+    return sol.x
+
 def err_rhot_1D(lgt, lgp, rhoval, y):
     #lgp, lgt = pt_pair
     logrho = np.log10(cms.get_rho_mix(lgp, lgt, y, hc_corr=True))
     #s *= erg_to_kbbar
     return  logrho/rhoval - 1
 
+def err_rhop_1D(lgp, lgt, rhoval, y):
+    #lgp, lgt = pt_pair
+    logrho = np.log10(cms.get_rho_mix(lgp, lgt, y, hc_corr=True))
+    #s *= erg_to_kbbar
+    return  logrho/rhoval - 1
+
+def err_sr_1D(lgt, lgr, sval, y):
+    s = get_s_r(lgr, lgt, y)*erg_to_kbbar
+    return s/sval - 1
+
 def get_t_r(p, r, y): # doesn't work very well...
     sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
     return sol.root
+
+def get_t_sr(s, r, y):
+    sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth', args=(r, s, y))
+    return sol.root
+
+def get_s_r(r, t, y):
+    p = get_p_r(r, t, y)
+    s = cms.get_s_mix(p, t, y, hc_corr=True)
+    return s # in cgs
+
+def get_p_r(r, t, y):
+    sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
+    return sol.root
+
+def get_logu_r(r, t, y):
+    p = get_p_r(r, t, y) 
+    logu = float(cms.get_logu_mix(p, t, y)) 
+    return logu
+
+def get_u_s(s, r, y):
+    t = get_t_sr(s, r, y)
+    return get_logu_r(r, t, y)
 
 def get_s_rp(r, p, y):
     t = get_t_r(p, r, y)
@@ -307,4 +349,6 @@ def get_dsdy_rp(r, p, y, dy=0.001):
 
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
+
+
 
