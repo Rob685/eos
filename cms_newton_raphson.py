@@ -89,7 +89,7 @@ get_s_h = RBS(logtvals, logpvals, svals_h) # x or y are not changing so can leav
 
 get_rho_h = RBS(logtvals, logpvals, rhovals_h)
 
-get_logu_h = RBS(logtvals, logpvals, loguvals_h)
+get_logu_h = RBS(logtvals, logpvals, loguvals_h, s=0)
 
 # derivatives
 
@@ -117,7 +117,7 @@ get_s_he = RBS(logtvals, logpvals, svals_he) # x or y are not changing so can le
 
 get_rho_he = RBS(logtvals, logpvals, rhovals_he)
 
-get_logu_he = RBS(logtvals, logpvals, loguvals_he)
+get_logu_he = RBS(logtvals, logpvals, loguvals_he, s=0)
 
 # derivatives
 
@@ -237,19 +237,21 @@ def get_smix_table(y, hc_corr = False):
         #smix = 0
     return np.log10((1 - y) * s_htab + y * s_hetab + smix) # testing ideal entropy mixing
 
-def get_s_mix(lgp, lgt, y, hc_corr = False):
+def get_s_mix(lgp, lgt, y, hc_corr = True):
     s_h = 10 ** get_s_h.ev(lgt, lgp)
     s_he = 10 ** get_s_he.ev(lgt, lgp)
-    if hc_corr:
-        smix = smix_interp.ev(lgt, lgp)*(1 - y)*y
-    elif not hc_corr:
-        smix = get_smix_id_y(y)/erg_to_kbbar
-        #smix = 0
+    smix = smix_interp.ev(lgt, lgp)*(1 - y)*y
+    #if hc_corr==True:
+        
+    if hc_corr==False:
+        #smix = get_smix_id_y(y)/erg_to_kbbar
+        smix -= get_smix_nd(y, lgp, lgt)
+    
 
     return (1 - y) * s_h + y * s_he + smix # this was multiplied by XY before, changing to smix if statement to allow for ideal option
 
 
-def get_rho_mix(lgp, lgt, y, hc_corr = False):
+def get_rho_mix(lgp, lgt, y, hc_corr = True):
     rho_h = 10 ** get_rho_h.ev(lgt, lgp)
     rho_he = 10 ** get_rho_he.ev(lgt, lgp)
     if hc_corr:
@@ -259,8 +261,8 @@ def get_rho_mix(lgp, lgt, y, hc_corr = False):
     return 1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y)
 
 def get_logu_mix(lgp, lgt, y):
-    u_h = (10**get_logu_h.ev(lgt, lgp)) # MJ/kg to erg/g
-    u_he = (10**get_logu_he.ev(lgt, lgp))
+    u_h = 10**get_logu_h.ev(lgt, lgp) # MJ/kg to erg/g
+    u_he = 10**get_logu_he.ev(lgt, lgp)
 
     return np.log10((1-y)*u_h + y*u_he) # in log cgs
 
