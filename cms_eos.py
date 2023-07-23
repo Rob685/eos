@@ -277,11 +277,11 @@ t_arr2 = np.linspace(2.1, 5, 100)
 
 dudy_rt = np.load('eos/cms/dudy_rty.npy')
 
-get_dsdy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
+get_dudy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
                 method='linear', bounds_error=False, fill_value=None)
 
 def get_dudy_r_t(r, t, y):
-    return get_dsdy_rt(np.array([t, r, y]).T)
+    return get_dudy_rt(np.array([t, r, y]).T)
 
 ###### inversions ######
 
@@ -291,8 +291,19 @@ def err_energy_2D(pt_pair, sval, uval, y):
     s *= erg_to_kbbar
     return  s/sval - 1, logu/uval -1
 
-def get_pt(s, u, y):
+def err_energy_2D_rhot(pt_pair, sval, rval, y):
+    lgp, lgt = pt_pair
+    s, rho = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_rho_mix(lgp, lgt, y, hc_corr=True)
+    s *= erg_to_kbbar
+    logrho = np.log10(rho)
+    return  s/sval - 1, logrho/rval -1
+
+def get_pt_su(s, u, y):
     sol = root(err_energy_2D, [7, 2.5], args=(s, u, y))
+    return sol.x
+
+def get_pt_sr(s, r, y):
+    sol = root(err_energy_2D_rhot, [7, 2.5], args=(s, r, y))
     return sol.x
 
 def err_rhot_1D(lgt, lgp, rhoval, y):
@@ -346,6 +357,13 @@ def get_s_rp(r, p, y):
 def get_dsdy_rp(r, p, y, dy=0.001):
     s0 = get_s_rp(r, p, y)
     s1 = get_s_rp(r, p, y*(1+dy))
+
+    dsdy = (s1 - s0)/(y*dy)
+    return dsdy
+
+def get_dsdy_rt(r, t, y, dy=0.001):
+    s0 = get_s_r(r, t, y)
+    s1 = get_s_r(r, t, y*(1+dy))
 
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
