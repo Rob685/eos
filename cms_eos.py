@@ -326,95 +326,151 @@ def get_pt_sr(s, r, y):
     sol = root(err_energy_2D_rhot, [7, 2.5], args=(s, r, y))
     return sol.x
 
-def get_t_r(p, r, x): # doesn't work very well...
-    y = cms.n_to_Y(x)
+def get_t_r(p, r, y): # doesn't work very well...
+    #y = cms.n_to_Y(x)
     sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
     return sol.root
 
-def get_t_sr(s, r, x):
-    y = cms.n_to_Y(x)
+def get_t_sr(s, r, y):
+    #y = cms.n_to_Y(x)
     sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth', args=(r, s, y))
     return sol.root
 
-def get_t_ur(u, r, x):
-    y = cms.n_to_Y(x)
+def get_t_ur(u, r, y):
+    #y = cms.n_to_Y(x)
     sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth', args=(r, u, y))
     return sol.root
 
-def get_s_r(r, t, x):
-    y = cms.n_to_Y(x)
+def get_s_r(r, t, y):
+    #y = cms.n_to_Y(x)
     p = get_p_r(r, t, y)
     s = cms.get_s_mix(p, t, y, hc_corr=True)
     return s # in cgs
 
-def get_p_r(r, t, x):
-    y = cms.n_to_Y(x)
+def get_p_r(r, t, y):
+    #y = cms.n_to_Y(x)
     sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
     return sol.root
 
-def get_logu_r(r, t, x):
-    y = cms.n_to_Y(x)
-    p = get_p_r(r, t, x) 
+def get_logu_r(r, t, y):
+    #y = cms.n_to_Y(x)
+    p = get_p_r(r, t, y) 
     logu = float(cms.get_logu_mix(p, t, y)) 
     return logu
 
-def get_u_s(s, r, x):
+# def get_u_sx(s, r, x):
+#     y = cms.n_to_Y(x)
+#     t = get_t_sr(s, r, y)
+#     return 10**get_logu_r(r, t, y)
+
+def get_u_s(s, r, y):
     #y = cms.n_to_Y(x)
-    t = get_t_sr(s, r, x)
-    return 10**get_logu_r(r, t, x)
+    t = get_t_sr(s, r, y)
+    return 10**get_logu_r(r, t, y)
 
-def get_s_u(u, r, x):
-    t = get_t_ur(u, r, x)
-    return get_s_r(r, t, x) # in cgs
+def get_s_u(u, r, y):
+    t = get_t_ur(u, r, y)
+    return get_s_r(r, t, y) # in cgs
 
-def get_s_rp(r, p, x):
-    t = get_t_r(p, r, x)
-    y = cms.n_to_Y(x)
+def get_s_rp(r, p, y):
+    t = get_t_r(p, r, y)
+    #y = cms.n_to_Y(y)
     s = cms.get_s_mix(p, t, y, hc_corr=True)
     return s # in cgs
 
-def get_dsdx_rp(r, p, x, dx=0.001):
-    s0 = get_s_rp(r, p, x)
-    s1 = get_s_rp(r, p, x*(1+dx))
+############## derivatives ##############
 
-    dsdx = (s1 - s0)/(x*dx)
-    return dsdx
 
-def get_dsdx_rt(r, t, x, dx=0.001):
-    s0 = get_s_r(r, t, x)
-    s1 = get_s_r(r, t, x*(1+dx))
+### composition gradients ###
+def get_dsdy_rp(r, p, y, dy=0.001):
+    s0 = get_s_rp(r, p, y)
+    s1 = get_s_rp(r, p, y*(1+dy))
 
-    dsdx = (s1 - s0)/(x*dx)
-    return dsdx
+    dsdy = (s1 - s0)/(y*dy)
+    return dsdy
 
-def get_dsdu_rx(u, r, x, du = 0.01):
+def get_dsdy_rt(r, t, y, dy=0.001):
+    s0 = get_s_r(r, t, y)
+    s1 = get_s_r(r, t, y*(1+dy))
+
+    dsdy = (s1 - s0)/(y*dy)
+    return dsdy
+
+def get_dudy_sr(s, r, y, dy=0.001):
+    u0 = get_u_s(s, r, y)
+    u1 = get_u_s(s, r, y*(1+dy))
+
+    return (u1 - u0)/(y*dy)
+
+def get_dtdy_rp(r, p, y, dy=0.001):
+    t0 = 10**get_t_r(p, r, y)
+    t1 = 10**get_t_r(p, r, y*(1+dy))
+
+    dtdy = (t1 - t0)/(y*dy)
+    return dtdy
+
+def get_dlogt_dy_rp(r, p, y, dy=0.001):
+    t0 = get_t_r(p, r, y)
+    t1 = get_t_r(p, r, y*(1+dy))
+
+    dtdy = (t1 - t0)/(y*dy)
+    return dtdy
+
+### entropy gradients ###
+
+def get_dsdu_ry(u, r, y, du = 0.01):
     u1 = 10**u # cgs
     u2 = np.log10(u1*(1+du))
-    s0 = get_s_u(u, r, x) # need to be logs
-    s1 = get_s_u(u2, r, x)
+    s0 = get_s_u(u, r, y) # need to be logs
+    s1 = get_s_u(u2, r, y)
 
     return (s1 - s0)/(u1*du)
 
-
-def get_dudx_sr(s, r, x, dx=0.001):
-    u0 = get_u_s(s, r, x)
-    u1 = get_u_s(s, r, x*(1+dx))
-
-    return (u1 - u0)/(x*dx)
-
-def get_dlogs_dlogt_rt(r, t, x, dt=0.1):
-    s0 = np.log10(get_s_r(r, t, x))
-    s1 = np.log10(get_s_r(r, t*(1+dt), x))
+def get_dlogs_dlogt_rt(r, t, y, dt=0.1):
+    s0 = np.log10(get_s_r(r, t, y))
+    s1 = np.log10(get_s_r(r, t*(1+dt), y))
 
     dsdt = (s1 - s0)/(t*dt) # dlogs/dlogt |_rho, x
     return dsdt
 
-def get_nabla_ad(s, p, x, dp=0.1):
-    y = cms.n_to_Y(x)
-    t1 = get_rho_t(s, p, y)[-1]
-    t2 = get_rho_t(s, p*(1+dp), y)[-1]
+### density gradients ###
 
-    return (t2 - t1)/(p*dp)
+def get_drhods_py(s, p, y, ds=0.01):
+    
+    s1_cgs = s/erg_to_kbbar
+    s2 = s*(1+ds)
+    s2_cgs = s2/erg_to_kbbar 
+
+    #s2_cgs = s1_cgs*(1+ds_cgs)
+    #y = cms.n_to_Y(x)
+    rho0 = 10**get_rho_t(s, p, y)[0]
+    rho1 = 10**get_rho_t(s2, p, y)[0]
+
+    drhods = (rho1 - rho0)/(s2_cgs - s1_cgs)
+
+    return drhods
+
+def get_dlogrho_dlogt_py(p, t, y, dt=0.01):
+    #y = cms.n_to_Y(x)
+    rho0 = np.log10(cms.get_rho_mix(p, t, y))
+    rho1 = np.log10(cms.get_rho_mix(p, t*(1+dt), y))
+
+    drhodt = (rho1 - rho0)/(t*dt)
+
+    return drhodt
+
+def get_dtdy_sp(s, p, y, dy=0.001):
+    t0 = 10**get_rho_t(s, p, y)[-1]
+    t1 = 10**get_rho_t(s, p, y*(1+dy))[-1]
+
+    dtdy = (t1 - t0)/(y*dy)
+    return dtdy
+# def get_nabla_ad(s, p, x, dp=0.1):
+#     y = cms.n_to_Y(x)
+#     t1 = get_rho_t(s, p, y)[-1]
+#     t2 = get_rho_t(s, p*(1+dp), y)[-1]
+
+#     return (t2 - t1)/(p*dp)
 
 # def get_dsdt_rx(r, t, x, dt=0.1):
 #     s0 = get_s_r(r, t, x)
@@ -423,43 +479,13 @@ def get_nabla_ad(s, p, x, dp=0.1):
 #     dsdt = (s1 - s0)/(t*dt)
 #     return dsdt
 
-def get_dtdx_rp(r, p, x, dx=0.001):
-    t0 = 10**get_t_r(p, r, x)
-    t1 = 10**get_t_r(p, r, x*(1+dx))
 
-    dtdx= (t1 - t0)/(x*dx)
-    return dtdx
 
-def get_dlogt_dx_rp(r, p, x, dx=0.001):
-    t0 = get_t_r(p, r, x)
-    t1 = get_t_r(p, r, x*(1+dx))
 
-    dtdx= (t1 - t0)/(x*dx)
-    return dtdx
 
-def get_drhods_px(s, p, x, ds=0.01):
-    
-    s1_cgs = s/erg_to_kbbar
-    s2 = s*(1+ds)
-    s2_cgs = s2/erg_to_kbbar 
 
-    #s2_cgs = s1_cgs*(1+ds_cgs)
-    y = cms.n_to_Y(x)
-    rho0 = 10**get_rho_t(s, p, y)[0]
-    rho1 = 10**get_rho_t(s2, p, y)[0]
 
-    drhods = (rho1 - rho0)/(s2_cgs - s1_cgs)
 
-    return drhods
-
-def get_dlogrho_dlogt_px(p, t, x, dt=0.01):
-    y = cms.n_to_Y(x)
-    rho0 = np.log10(cms.get_rho_mix(p, t, y))
-    rho1 = np.log10(cms.get_rho_mix(p, t*(1+dt), y))
-
-    drhodt = (rho1 - rho0)/(t*dt)
-
-    return drhodt
 
 # def get_B_grad(r, p, x):
 #     dlogT_dlogX_rp = get_dlogt_dx_rp(r, p, x)
