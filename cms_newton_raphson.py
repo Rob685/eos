@@ -159,8 +159,18 @@ mhe = 4.0026
 #     xi = 4*mp*Y/(4*mp*(Y) + mp*(1-Y)) # number fraction
 #     return xi.value
 
-def x_i(Y):
+def Y_to_n(Y):
     return ((Y/mhe)/(((1 - Y)/mh) + (Y/mhe)))
+
+def nb(logrho):
+    rho = 10**logrho
+
+    return rho/mp
+
+#def Y_i(x, )
+
+def n_to_Y(x):
+    return (mhe * x)/(1 + 3.0026*x)
 
 def x_H(Y, Z, mz):
     Ntot = (1-Y)*(1-Z)/mh + (Y*(1-Z)/mhe) + Z/mz
@@ -185,7 +195,7 @@ def guarded_log(x):
 
 def get_smix_id_y(Y):
     #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
-    xhe = x_i(Y)
+    xhe = Y_to_n(Y)
     xh = 1 - xhe
     return -1*(guarded_log(xh) + guarded_log(xhe))
 
