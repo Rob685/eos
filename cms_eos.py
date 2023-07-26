@@ -332,25 +332,25 @@ def get_pt_sr(s, r, y):
 
 def get_t_r(p, r, y):
     if np.isscalar(r):
-        sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
+        sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth', args=(p, r, y))
         return sol.root
     else:
         #guess = np.zeros(len(r))+2.5
         res = []
         for p_, r_, y_ in zip(p, r, y):
-            sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth',args=(p_, r_, y_))
+            sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth',args=(p_, r_, y_))
             res.append(sol.root)
         return np.array(res)
 
 def get_t_sr(s, r, y):
     if np.isscalar(r):
         #guess = 2.5
-        sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth', args=(r, s, y))
+        sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
         return sol.root
     else:
         res = []
         for s_, r_, y_ in zip(s, r, y):
-            sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth',args=(r_, s_, y_))
+            sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
             res.append(sol.root)
         return np.array(res)
 
@@ -358,12 +358,12 @@ def get_t_ur(u, r, y):
     #y = cms.n_to_Y(x)
     if np.isscalar(r):
         #guess = 2.5
-        sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth', args=(r, u, y))
+        sol = root_scalar(err_ur_1D, bracket=[0, 5], method='brenth', args=(r, u, y))
         return sol.root
     else:
         res = []
         for u_, r_, y_ in zip(u, r, y):
-            sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth',args=(r_, u_, y_))
+            sol = root_scalar(err_ur_1D, bracket=[0, 5], method='brenth',args=(r_, u_, y_))
             res.append(sol.root)
         return np.array(res)
 
@@ -371,12 +371,12 @@ def get_p_r(r, t, y):
     #y = cms.n_to_Y(x)
     if np.isscalar(r):
         #guess = 7
-        sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
+        sol = root_scalar(err_rhop_1D, bracket=[4, 17], method='brenth', args=(t, r, y))
         return sol.root
     else:
         res = []
         for r_, t_, y_ in zip(r, t, y):
-            sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth',args=(t_, r_, y_))
+            sol = root_scalar(err_rhop_1D, bracket=[4, 17], method='brenth',args=(t_, r_, y_))
             res.append(sol.root)
         return np.array(res)
 
