@@ -249,17 +249,17 @@ def get_dpds(r, s, y):
 #     return get_dsdy_ur(np.array([y, r, u]).T)
 
 
-# u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
+u_res = np.load('%s/cms/u_sry.npy' % CURR_DIR)
 
-# s_arr3 = np.linspace(5.5, 10, 40)
-# rho_arr = np.linspace(-3.4, -0.2, 50)
-# y_arr4 = np.arange(0.20, 0.42, 0.02)
+s_arr3 = np.linspace(5.75, 9, 30)
+rho_arr = np.linspace(-4, 1, 50)
+y_arr4 = np.linspace(0.01, 1, 100)
 
-# get_u_sr = RGI((y_arr4, rho_arr, s_arr3), u_res, \
-#                 method='linear', bounds_error=False, fill_value=None)
+get_u_sr_rgi = RGI((s_arr3, rho_arr, y_arr4), u_res, \
+                method='linear', bounds_error=False, fill_value=None)
 
-# def get_u_s_r(s, r, y):
-#     return get_u_sr(np.array([y, r, s]).T)
+def get_u_s(s, r, y):
+    return get_u_sr_rgi(np.array([s, r, y]).T)
 
 # dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
 
@@ -300,6 +300,8 @@ def err_energy_2D_rhot(pt_pair, sval, rval, y):
     logrho = np.log10(rho)
     return  s/sval - 1, logrho/rval -1
 
+#def err_rhos_1D(logp, s)
+
 def err_rhot_1D(lgt, lgp, rhoval, y):
     #lgp, lgt = pt_pair
     logrho = np.log10(cms.get_rho_mix(lgp, lgt, y, hc_corr=True))
@@ -321,25 +323,37 @@ def err_sr_1D(lgt, lgr, sval, y):
     return s/sval - 1
 
 def get_pt_su(s, u, y):
-    sol = root(err_energy_2D, [7, 2.5], args=(s, u, y))
+    if u > 12:
+        guess = [10, 4]
+    else:
+        guess = [7, 2.5]
+    sol = root(err_energy_2D, guess, args=(s, u, y))
     return sol.x
 
 def get_pt_sr(s, r, y):
-    sol = root(err_energy_2D_rhot, [7, 2.5], args=(s, r, y))
+    # if r > 0:
+    #     guess = [10, 3]
+    # else:
+    guess = [8, 2.7]
+    sol = root(err_energy_2D_rhot, guess, args=(s, r, y))
     return sol.x
 
 ### inversion functions ###
 
 def get_t_r(p, r, y):
     if np.isscalar(r):
-        sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth', args=(p, r, y))
+        sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
         return sol.root
     else:
         #guess = np.zeros(len(r))+2.5
         res = []
         for p_, r_, y_ in zip(p, r, y):
-            sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth',args=(p_, r_, y_))
-            res.append(sol.root)
+            try:
+                sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth',args=(p_, r_, y_))
+                res.append(sol.root)
+            except:
+                print('failed at:', p_, r_, y_)
+                raise
         return np.array(res)
 
 def get_t_sr(s, r, y):
@@ -363,6 +377,7 @@ def get_t_ur(u, r, y):
     else:
         res = []
         for u_, r_, y_ in zip(u, r, y):
+            
             sol = root_scalar(err_ur_1D, bracket=[0, 5], method='brenth',args=(r_, u_, y_))
             res.append(sol.root)
         return np.array(res)
@@ -380,16 +395,13 @@ def get_p_r(r, t, y):
             res.append(sol.root)
         return np.array(res)
 
+#def get_p_s(s, r, y):
+
 def get_s_r(r, t, y):
     #y = cms.n_to_Y(x)
     p = get_p_r(r, t, y)
     s = cms.get_s_mix(p, t, y, hc_corr=True)
     return s # in cgs
-
-# def get_p_r(r, t, y):
-#     #y = cms.n_to_Y(x)
-#     sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
-#     return sol.root
 
 def get_logu_r(r, t, y):
     #y = cms.n_to_Y(x)
@@ -397,10 +409,11 @@ def get_logu_r(r, t, y):
     logu = cms.get_logu_mix(p, t, y)
     return logu
 
-def get_u_s(s, r, y):
-    #y = cms.n_to_Y(x)
-    t = get_t_sr(s, r, y)
-    return 10**get_logu_r(r, t, y)
+# def get_u_s(s, r, y):
+#     #y = cms.n_to_Y(x)
+#     #t = get_t_sr(s, r, y)
+#     p, t = get_pt_sr(s, r, y)
+#     return 10**cms.get_logu_mix(p, t, y)
 
 def get_s_u(u, r, y):
     t = get_t_ur(u, r, y)
