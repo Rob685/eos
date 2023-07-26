@@ -271,20 +271,22 @@ def get_dpds(r, s, y):
 # def get_dudy_s_r(s, r, y):
 #     return get_dsdy_ur(np.array([s, r, y]).T)
 
-rho_arr = np.linspace(-4, 1, 50)
-y_arr4 = np.arange(0, 1, 0.02)
-t_arr2 = np.linspace(2.1, 5, 100)
+# rho_arr = np.linspace(-4, 1, 50)
+# y_arr4 = np.arange(0, 1, 0.02)
+# t_arr2 = np.linspace(2.1, 5, 100)
 
-dudy_rt = np.load('eos/cms/dudy_rty.npy')
+# dudy_rt = np.load('eos/cms/dudy_rty.npy')
 
-get_dudy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
-                method='linear', bounds_error=False, fill_value=None)
+# get_dudy_rt = RGI((t_arr2, rho_arr, y_arr4), dudy_rt, \
+#                 method='linear', bounds_error=False, fill_value=None)
 
-def get_dudy_r_t(r, t, y):
-    return get_dudy_rt(np.array([t, r, y]).T)
+# def get_dudy_r_t(r, t, y):
+#     return get_dudy_rt(np.array([t, r, y]).T)
 
 ###### inversions ######
 
+
+### error functions ###
 def err_energy_2D(pt_pair, sval, uval, y):
     lgp, lgt = pt_pair
     s, logu = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_logu_mix(lgp, lgt, y)
@@ -326,20 +328,57 @@ def get_pt_sr(s, r, y):
     sol = root(err_energy_2D_rhot, [7, 2.5], args=(s, r, y))
     return sol.x
 
-def get_t_r(p, r, y): # doesn't work very well...
-    #y = cms.n_to_Y(x)
-    sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
-    return sol.root
+### inversion functions ###
+
+def get_t_r(p, r, y):
+    if np.isscalar(r):
+        sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth', args=(p, r, y))
+        return sol.root
+    else:
+        #guess = np.zeros(len(r))+2.5
+        res = []
+        for p_, r_, y_ in zip(p, r, y):
+            sol = root_scalar(err_rhot_1D, bracket=[0, 7], method='brenth',args=(p_, r_, y_))
+            res.append(sol.root)
+        return np.array(res)
 
 def get_t_sr(s, r, y):
-    #y = cms.n_to_Y(x)
-    sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth', args=(r, s, y))
-    return sol.root
+    if np.isscalar(r):
+        #guess = 2.5
+        sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth', args=(r, s, y))
+        return sol.root
+    else:
+        res = []
+        for s_, r_, y_ in zip(s, r, y):
+            sol = root_scalar(err_sr_1D, bracket=[0, 7], method='brenth',args=(r_, s_, y_))
+            res.append(sol.root)
+        return np.array(res)
 
 def get_t_ur(u, r, y):
     #y = cms.n_to_Y(x)
-    sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth', args=(r, u, y))
-    return sol.root
+    if np.isscalar(r):
+        #guess = 2.5
+        sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth', args=(r, u, y))
+        return sol.root
+    else:
+        res = []
+        for u_, r_, y_ in zip(u, r, y):
+            sol = root_scalar(err_ur_1D, bracket=[0, 7], method='brenth',args=(r_, u_, y_))
+            res.append(sol.root)
+        return np.array(res)
+
+def get_p_r(r, t, y):
+    #y = cms.n_to_Y(x)
+    if np.isscalar(r):
+        #guess = 7
+        sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
+        return sol.root
+    else:
+        res = []
+        for r_, t_, y_ in zip(r, t, y):
+            sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth',args=(t_, r_, y_))
+            res.append(sol.root)
+        return np.array(res)
 
 def get_s_r(r, t, y):
     #y = cms.n_to_Y(x)
@@ -347,21 +386,16 @@ def get_s_r(r, t, y):
     s = cms.get_s_mix(p, t, y, hc_corr=True)
     return s # in cgs
 
-def get_p_r(r, t, y):
-    #y = cms.n_to_Y(x)
-    sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
-    return sol.root
+# def get_p_r(r, t, y):
+#     #y = cms.n_to_Y(x)
+#     sol = root_scalar(err_rhop_1D, bracket=[5, 15], method='brenth', args=(t, r, y))
+#     return sol.root
 
 def get_logu_r(r, t, y):
     #y = cms.n_to_Y(x)
     p = get_p_r(r, t, y) 
-    logu = float(cms.get_logu_mix(p, t, y)) 
+    logu = cms.get_logu_mix(p, t, y)
     return logu
-
-# def get_u_sx(s, r, x):
-#     y = cms.n_to_Y(x)
-#     t = get_t_sr(s, r, y)
-#     return 10**get_logu_r(r, t, y)
 
 def get_u_s(s, r, y):
     #y = cms.n_to_Y(x)
@@ -465,30 +499,6 @@ def get_dtdy_sp(s, p, y, dy=0.001):
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
-# def get_nabla_ad(s, p, x, dp=0.1):
-#     y = cms.n_to_Y(x)
-#     t1 = get_rho_t(s, p, y)[-1]
-#     t2 = get_rho_t(s, p*(1+dp), y)[-1]
-
-#     return (t2 - t1)/(p*dp)
-
-# def get_dsdt_rx(r, t, x, dt=0.1):
-#     s0 = get_s_r(r, t, x)
-#     s1 = get_s_r(r, t*(1+dt), x)
-
-#     dsdt = (s1 - s0)/(t*dt)
-#     return dsdt
-
-
-
-
-
-
-
-
-
-# def get_B_grad(r, p, x):
-#     dlogT_dlogX_rp = get_dlogt_dx_rp(r, p, x)
 
 
 
