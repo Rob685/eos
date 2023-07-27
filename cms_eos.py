@@ -12,10 +12,10 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 erg_to_kbbar = 1.202723550011625e-08
 
-def err(logt, logp, y, z, s_val, m=15.5, corr=True):
+def err(logt, logp, y, s_val, corr):
 
     #s_ = cms.get_s_mix(logp, logt, y, corr)
-    s_ = float(cms.get_smix_z(y, z, logp, logt, mz=m))
+    s_ = float(cms.get_s_mix(logp, logt, y, corr))
     s_val /= erg_to_kbbar # in cgs
     #print((s_/s_val) - 1, logt, logp)
     #return (s_/s_val) - 1
@@ -31,8 +31,8 @@ def get_rho_p_ideal(s, logp, m=15.5):
 # def get_rho_aneos(logp, logt):
 #     return eos_aneos.get_logrho(logp, logt)
 
-def rho_mix(p, t, y, z, ideal, m=15.5):
-    rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True))
+def rho_mix(p, t, y, z, hc_corr, m=15.5):
+    rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr))
     try:
         #t = get_t(s, p, y, z)
         rho_z = 10**get_rho_id(p, t, m=m)
@@ -52,9 +52,13 @@ def rho_mix(p, t, y, z, ideal, m=15.5):
     # elif z == 0:
     #      return np.log10(rho_hhe)
 
-def get_t(s, p, y, z, m=15.5):
-    t_root = brenth(err, 0, 7, args=(p, y, z, s, m)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
-    return t_root
+def get_t(s, p, y, corr):
+    try:
+        t_root = brenth(err, 0, 5, args=(p, y, s, corr)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+        return t_root
+    except:
+        print(s, p, y)
+        raise
 
 # def get_rho(s, p, t, y, z, ideal):
 #     try:
@@ -64,18 +68,21 @@ def get_t(s, p, y, z, m=15.5):
 #         raise
 #     return rho_mix(s, p, t, y, z, ideal)
 
-def get_rhot(s, p, y, z, ideal, m=15.5):
+def get_rhot(s, p, y, hc_corr):
     try:
-        t = get_t(s, p, y, z, m=m)
+        t = get_t(s, p, y, hc_corr)
     except:
-        print(s, p, y, z)
+        print(s, p, y)
         raise
-    rho = rho_mix(p, t, y, z, ideal, m=m)
+    #rho = rho_mix(p, t, y, z, hc_corr, m=m)
+    rho = np.log10(cms.get_rho_mix(p, t, y, hc_corr))
     return rho, t
 
-###### derivatives ######
-
+###### inverted table ######
+"""To revert to the old version with the HG corrections, uncomment the first line.
+All functions should be the same for ease of use."""
 s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
+#s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, grada_arr = np.load('%s/cms/cms_thermo.npy' % CURR_DIR)
 
 get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
 get_t_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
@@ -112,69 +119,69 @@ def get_grad_ad(s, p, y):
     grada = get_grada(np.array([y, s, p]).T)
     return grada
 
-def get_gamma_1_hhe(s, p, y):
-    return get_gamma1(np.array([y, s, p]).T)
+# def get_gamma_1_hhe(s, p, y):
+#     return get_gamma1(np.array([y, s, p]).T)
 
-def get_logrho_mix(s, p, y, z, m=15.5):
-    if not np.isscalar(s):
-        return np.array([get_logrho_mix(si, pi, yi, zi, m=m)
-                         for si, pi, yi, zi in zip(s, p, y, z)])
-    try:
-        t = get_t(s, p, y, z, m=m)
-    except:
-        print(s, p, y, z)
-        raise
-    rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
-    rho_z = 10**get_rho_p_ideal(s, p, m=m)
+# def get_logrho_mix(s, p, y, z, m=15.5):
+#     if not np.isscalar(s):
+#         return np.array([get_logrho_mix(si, pi, yi, zi, m=m)
+#                          for si, pi, yi, zi in zip(s, p, y, z)])
+#     try:
+#         t = get_t(s, p, y, z, m=m)
+#     except:
+#         print(s, p, y, z)
+#         raise
+#     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
+#     rho_z = 10**get_rho_p_ideal(s, p, m=m)
 
-    return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
+#     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
 
-def get_gamma1_calc(s, p, y, z, m=15.5, dp=0.001):
-    delta_logrho = (-get_logrho_mix(s, p, y, z, m=m)
-                    + get_logrho_mix(s, p*(1+dp), y, z, m=m))
-    dlogrho_dlogP = delta_logrho/(p*dp)
-    return 1/dlogrho_dlogP
+# def get_gamma1_calc(s, p, y, z, m=15.5, dp=0.001):
+#     delta_logrho = (-get_logrho_mix(s, p, y, z, m=m)
+#                     + get_logrho_mix(s, p*(1+dp), y, z, m=m))
+#     dlogrho_dlogP = delta_logrho/(p*dp)
+#     return 1/dlogrho_dlogP
 
-def get_rho_id(logp, logt, m=15.5):
-    return np.log10(((10**logp) * m*1.6605390666e-24) / (1.380649e-16 * (10**logt)))
+# def get_rho_id(logp, logt, m=15.5):
+#     return np.log10(((10**logp) * m*1.6605390666e-24) / (1.380649e-16 * (10**logt)))
 
 
 ####### composition derivatives #######
 
-y_arr2 = np.arange(0.22, 1.0, 0.01)
+# y_arr2 = np.arange(0.22, 1.0, 0.01)
 
-dlogrho_dy_pt, dlogs_dy_pt = np.load('%s/cms/rho_s_der_pt.npy' % CURR_DIR)
-dlogrho_dy_sp, dlogt_dy_sp = np.load('%s/cms/rho_t_der_sp.npy' % CURR_DIR)
+# dlogrho_dy_pt, dlogs_dy_pt = np.load('%s/cms/rho_s_der_pt.npy' % CURR_DIR)
+# dlogrho_dy_sp, dlogt_dy_sp = np.load('%s/cms/rho_t_der_sp.npy' % CURR_DIR)
 
-logtvals = np.linspace(2.1, 5, 100)
-logpvals = np.linspace(6, 14, 300)
+# logtvals = np.linspace(2.1, 5, 100)
+# logpvals = np.linspace(6, 14, 300)
 
-get_dlogs_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
-get_dlogrho_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
+# get_dlogs_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
+# get_dlogrho_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
 
-get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
-get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
+# get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
+# get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
 
 
-def get_dlogsdy_pt(p, t, y):
-    return get_dlogs_dy_pt(np.array([t, p, y]).T)
+# def get_dlogsdy_pt(p, t, y):
+#     return get_dlogs_dy_pt(np.array([t, p, y]).T)
 
-def get_dlogrhody_pt(p, t, y):
-    return get_dlogrho_dy_pt(np.array([t, p, y]).T)
+# def get_dlogrhody_pt(p, t, y):
+#     return get_dlogrho_dy_pt(np.array([t, p, y]).T)
 
-def get_dlogtdy_sp(s, p, y):
-    return get_dlogt_dy_sp(np.array([s, p, y]).T)
+# def get_dlogtdy_sp(s, p, y):
+#     return get_dlogt_dy_sp(np.array([s, p, y]).T)
 
-def get_dlogrhody_sp(s, p, y):
-    return get_dlogrho_dy_sp(np.array([s, p, y]).T)
+# def get_dlogrhody_sp(s, p, y):
+#     return get_dlogrho_dy_sp(np.array([s, p, y]).T)
 
 
 ####### P(rho, s, y) #######
 
 logp_res_rhos, logrho_res_rhos, s_res_rhos = np.load('%s/cms/cms_rho_s.npy' % CURR_DIR)
-yarr = np.arange(0.22, 0.46, 0.02)
+yarr2 = np.arange(0.22, 0.46, 0.02)
 
-get_p_s_r = RGI((yarr, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rhos, method='linear', bounds_error=False, fill_value=None)
+get_p_s_r = RGI((yarr2, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rhos, method='linear', bounds_error=False, fill_value=None)
 
 def get_p_sr(r, s, y):
     return get_p_s_r(np.array([y, s, r]).T)
@@ -200,7 +207,7 @@ for i, s in enumerate(s_res_rhos[0][:,0]):
 s_arr2 = np.arange(5.6, 10.1, 0.1)
 
 dlogp_dlogs = []
-for i, y_ in enumerate(yarr):
+for i, y_ in enumerate(yarr2):
     #drho_dY = []
     dp_ds = []
     for j, r in enumerate(logrho_res_rhos[0][0]):
@@ -216,7 +223,7 @@ for i, y_ in enumerate(yarr):
     dlogp_dlogs.append(dp_ds)
 
 get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr3), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
-get_dlogp_dlogs = RGI((yarr, np.array(logrho_res_rhos)[0][0], s_arr2), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
+get_dlogp_dlogs = RGI((yarr2, np.array(logrho_res_rhos)[0][0], s_arr2), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
 
 def get_dpdy(r, s, y):
     return get_dlogp_dy(np.array([s, r, y]).T)*(10**get_p_sr(r, s, y))
@@ -409,11 +416,11 @@ def get_logu_r(r, t, y):
     logu = cms.get_logu_mix(p, t, y)
     return logu
 
-# def get_u_s(s, r, y):
-#     #y = cms.n_to_Y(x)
-#     #t = get_t_sr(s, r, y)
-#     p, t = get_pt_sr(s, r, y)
-#     return 10**cms.get_logu_mix(p, t, y)
+def get_u_sr(s, r, y):
+    #y = cms.n_to_Y(x)
+    t = get_t_sr(s, r, y)
+    #p, t = get_pt_sr(s, r, y)
+    return 10**get_logu_r(r, t, y)
 
 def get_s_u(u, r, y):
     t = get_t_ur(u, r, y)

@@ -253,9 +253,9 @@ def get_s_mix(lgp, lgt, y, hc_corr = True):
     smix = smix_interp.ev(lgt, lgp)*(1 - y)*y
     #if hc_corr==True:
         
-    # if hc_corr==False:
-    #     #smix = get_smix_id_y(y)/erg_to_kbbar
-    #     smix -= get_smix_nd(y, lgp, lgt)
+    if hc_corr==False:
+        #smix = get_smix_id_y(y)/erg_to_kbbar
+        smix -= get_smix_nd(y, lgp, lgt)
     
 
     return (1 - y) * s_h + y * s_he + smix # this was multiplied by XY before, changing to smix if statement to allow for ideal option
