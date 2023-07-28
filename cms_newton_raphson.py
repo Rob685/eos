@@ -270,11 +270,31 @@ def get_rho_mix(lgp, lgt, y, hc_corr = True):
         vmix = 0
     return 1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y)
 
-def get_logu_mix(lgp, lgt, y):
+# def get_logu_mix(lgp, lgt, y):
+#     u_h = 10**get_logu_h.ev(lgt, lgp) # MJ/kg to erg/g
+#     u_he = 10**get_logu_he.ev(lgt, lgp)
+
+#     return np.log10((1-y)*u_h + y*u_he) # in log cgs
+
+def get_delta_u(lgp, lgt, y):
+    T = 10**lgt
+    P = 10**lgp
+
+    delta_V = vmix_interp.ev(lgt, lgp)*(1 - y)*y
+    delta_S = smix_interp.ev(lgt, lgp)*(1 - y)*y
+
+    delta_u = T*delta_S - P*delta_V
+
+    return delta_u
+
+def get_logu_mix(lgp, lgt, y, corr):
     u_h = 10**get_logu_h.ev(lgt, lgp) # MJ/kg to erg/g
     u_he = 10**get_logu_he.ev(lgt, lgp)
+    umix = get_delta_u(lgp, lgt, y)*(1 - y)*y
+    if corr==False:
+        umix = 0
 
-    return np.log10((1-y)*u_h + y*u_he) # in log cgs
+    return np.log10((1-y)*u_h + y*u_he + umix)
 
 
 # def get_dsdp_mix(lgp, lgt, y, hc_corr = False):

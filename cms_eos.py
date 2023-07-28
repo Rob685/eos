@@ -268,6 +268,9 @@ get_u_sr_rgi = RGI((s_arr3, rho_arr, y_arr4), u_res, \
 def get_u_s(s, r, y):
     return get_u_sr_rgi(np.array([s, r, y]).T)
 
+def get_u_t(p, t, y, corr):
+    return 10**cms.get_logu_mix(p, t, y, corr)
+
 # dudy_sr = np.load('%s/cms/dudy_sry.npy' % CURR_DIR)
 
 # yvals = np.linspace(0.22, 0.43, 100)
@@ -321,6 +324,16 @@ def err_rhop_1D(lgp, lgt, rhoval, y):
     #s *= erg_to_kbbar
     return  logrho/rhoval - 1
 
+def err_energy_1D(lgp, s, uval, y):
+    logt = get_rho_t(s, lgp, y)[-1]
+    logu = cms.get_logu_mix(lgp, logt, y, corr=False)
+    return logu/uval - 1
+
+def err_rhou_1D(lgr, s, uval, y): #uval in log10
+    #logt = get_rho_t(s, lgp, y)[-1]
+    logu = np.log10(get_u_sr(s, lgr, y))
+    return logu/uval - 1
+
 def err_ur_1D(lgt, lgr, uval, y):
     logu = float(get_logu_r(lgr, lgt, y))
     return logu/uval - 1
@@ -346,6 +359,14 @@ def get_pt_sr(s, r, y):
     return sol.x
 
 ### inversion functions ###
+
+def get_p_us(s, u, y):
+    sol = root_scalar(err_energy_1D, bracket=[5, 14], method='brenth', args=(s, u, y))
+    return sol.root
+
+def get_rho_us(s, u, y):
+    sol = root_scalar(err_rhou_1D, bracket=[-4, 1], method='brenth', args=(s, u, y))
+    return sol.root
 
 def get_t_r(p, r, y):
     if np.isscalar(r):
@@ -402,7 +423,8 @@ def get_p_r(r, t, y):
             res.append(sol.root)
         return np.array(res)
 
-#def get_p_s(s, r, y):
+#def get_rho_us(u, s, y):
+
 
 def get_s_r(r, t, y):
     #y = cms.n_to_Y(x)
@@ -413,7 +435,7 @@ def get_s_r(r, t, y):
 def get_logu_r(r, t, y):
     #y = cms.n_to_Y(x)
     p = get_p_r(r, t, y) 
-    logu = cms.get_logu_mix(p, t, y)
+    logu = cms.get_logu_mix(p, t, y, corr=True)
     return logu
 
 def get_u_sr(s, r, y):
