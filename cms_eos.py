@@ -443,6 +443,20 @@ def get_s_rp(r, p, y):
 
 
 ### composition gradients ###
+
+def get_dsdy_rp_new(s, r, y, dy=0.001, ds=0.001):
+    P0 = 10**get_p_sr(s, r, y)
+    P1 = 10**get_p_sr(s, r, y*(1+dy))
+    P2 = 10**get_p_sr(s*(1+ds), r, y)
+
+    S1 = s/erg_to_kbbar
+    s2 = s*(1+ds)
+    S2 = s2/erg_to_kbbar
+    
+    dpdy_sr = (P1 - P0)/(y*dy)
+    dpds_ry = (P2 - P0)/(S2 - S1)
+    return -dpdy_sr/dpds_ry
+
 def get_dsdy_rp(r, p, y, dy=0.01):
     s0 = get_s_rp(r, p, y)
     s1 = get_s_rp(r, p, y*(1+dy))
