@@ -34,7 +34,7 @@ def cms_reader(tab_name):
 
     tab = np.loadtxt('%s/cms/DirEOS2019/%s' % (CURR_DIR, tab_name), comments='#')
     tab_df = pd.DataFrame(tab, columns=cols)
-    data = tab_df[(tab_df['logt'] <= 5.0) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
+    data = tab_df[(tab_df['logt'] <= 7.0) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
                  ]
 
     data['logp'] += 10 # 1 GPa = 1e10 cgs

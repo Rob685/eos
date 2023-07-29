@@ -78,7 +78,9 @@ def get_rhot(s, p, y, hc_corr):
     rho = np.log10(cms.get_rho_mix(p, t, y, hc_corr))
     return rho, t
 
-###### inverted table ######
+###### inverted tables ######
+
+## t, rho (s, p, y) ##
 """To revert to the old version with the HG corrections, uncomment the first line.
 All functions should be the same for ease of use."""
 s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
@@ -119,117 +121,80 @@ def get_grad_ad(s, p, y):
     grada = get_grada(np.array([y, s, p]).T)
     return grada
 
-# def get_gamma_1_hhe(s, p, y):
-#     return get_gamma1(np.array([y, s, p]).T)
+## p, t (s, rho, y) ##
 
-# def get_logrho_mix(s, p, y, z, m=15.5):
-#     if not np.isscalar(s):
-#         return np.array([get_logrho_mix(si, pi, yi, zi, m=m)
-#                          for si, pi, yi, zi in zip(s, p, y, z)])
-#     try:
-#         t = get_t(s, p, y, z, m=m)
-#     except:
-#         print(s, p, y, z)
-#         raise
-#     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr=True)) # already in cgs
-#     rho_z = 10**get_rho_p_ideal(s, p, m=m)
+p_sry, t_sry = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
 
-#     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
+svals = np.arange(5.5, 9.1, 0.01)
+logrhovals = np.arange(-4, 1, 0.1)
+yvals = np.arange(0.01, 1, 0.01)
 
-# def get_gamma1_calc(s, p, y, z, m=15.5, dp=0.001):
-#     delta_logrho = (-get_logrho_mix(s, p, y, z, m=m)
-#                     + get_logrho_mix(s, p*(1+dp), y, z, m=m))
-#     dlogrho_dlogP = delta_logrho/(p*dp)
-#     return 1/dlogrho_dlogP
+get_p_rgi = RGI((svals, logrhovals, yvals), p_sry, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi = RGI((svals, logrhovals, yvals), t_sry, method='linear', \
+            bounds_error=False, fill_value=None)
 
-# def get_rho_id(logp, logt, m=15.5):
-#     return np.log10(((10**logp) * m*1.6605390666e-24) / (1.380649e-16 * (10**logt)))
+def get_p_sr(s, r, y):
+    return get_p_rgi(np.array([s, r, y]).T)
 
-
-####### composition derivatives #######
-
-# y_arr2 = np.arange(0.22, 1.0, 0.01)
-
-# dlogrho_dy_pt, dlogs_dy_pt = np.load('%s/cms/rho_s_der_pt.npy' % CURR_DIR)
-# dlogrho_dy_sp, dlogt_dy_sp = np.load('%s/cms/rho_t_der_sp.npy' % CURR_DIR)
-
-# logtvals = np.linspace(2.1, 5, 100)
-# logpvals = np.linspace(6, 14, 300)
-
-# get_dlogs_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogs_dy_pt, method='linear', bounds_error=False, fill_value=None)
-# get_dlogrho_dy_pt = RGI((logtvals, logpvals, y_arr2), dlogrho_dy_pt, method='linear', bounds_error=False, fill_value=None)
-
-# get_dlogt_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogt_dy_sp, method='linear', bounds_error=False, fill_value=None)
-# get_dlogrho_dy_sp = RGI((s_arr[0][:,0], p_arr[0][0], y_arr2), dlogrho_dy_sp, method='linear', bounds_error=False, fill_value=None)
-
-
-# def get_dlogsdy_pt(p, t, y):
-#     return get_dlogs_dy_pt(np.array([t, p, y]).T)
-
-# def get_dlogrhody_pt(p, t, y):
-#     return get_dlogrho_dy_pt(np.array([t, p, y]).T)
-
-# def get_dlogtdy_sp(s, p, y):
-#     return get_dlogt_dy_sp(np.array([s, p, y]).T)
-
-# def get_dlogrhody_sp(s, p, y):
-#     return get_dlogrho_dy_sp(np.array([s, p, y]).T)
+def get_t_sr(s, r, y):
+    return get_t_rgi(np.array([s, r, y]).T)
 
 
 ####### P(rho, s, y) #######
 
-logp_res_rhos, logrho_res_rhos, s_res_rhos = np.load('%s/cms/cms_rho_s.npy' % CURR_DIR)
-yarr2 = np.arange(0.22, 0.46, 0.02)
+#logp_res_rhos, logrho_res_rhos, s_res_rhos = np.load('%s/cms/cms_rho_s.npy' % CURR_DIR)
+#yarr2 = np.arange(0.22, 0.46, 0.02)
 
-get_p_s_r = RGI((yarr2, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rhos, method='linear', bounds_error=False, fill_value=None)
+#get_p_s_r = RGI((yarr2, s_res_rhos[0][:,0], logrho_res_rhos[0][0]), logp_res_rhos, method='linear', bounds_error=False, fill_value=None)
 
-def get_p_sr(r, s, y):
-    return get_p_s_r(np.array([y, s, r]).T)
+# def get_p_sr(r, s, y):
+#     return get_p_s_r(np.array([y, s, r]).T)
 
-y_arr3 = np.arange(0.22, 0.75, 0.01)
+#y_arr3 = np.arange(0.22, 0.75, 0.01)
 
 #dlogrho_dY = []
-dlogp_dY = []
-for i, s in enumerate(s_res_rhos[0][:,0]):
-    #drho_dY = []
-    dp_dY = []
-    for j, r in enumerate(logrho_res_rhos[0][0]):
-        logp = get_p_sr(np.full_like(y_arr3, r), np.full_like(y_arr3, s), y_arr3) # at constant rho, s
-        #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
-        dlogpdy = np.gradient(logp)/np.gradient(y_arr3)
-        #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
-        #drho_dY.append(dlogrhodY)
-        dp_dY.append(dlogpdy)
+# dlogp_dY = []
+# for i, s in enumerate(s_res_rhos[0][:,0]):
+#     #drho_dY = []
+#     dp_dY = []
+#     for j, r in enumerate(logrho_res_rhos[0][0]):
+#         logp = get_p_sr(np.full_like(y_arr3, r), np.full_like(y_arr3, s), y_arr3) # at constant rho, s
+#         #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
+#         dlogpdy = np.gradient(logp)/np.gradient(y_arr3)
+#         #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
+#         #drho_dY.append(dlogrhodY)
+#         dp_dY.append(dlogpdy)
         
-    #dlogrho_dY.append(drho_dY)
-    dlogp_dY.append(dp_dY)
+#     #dlogrho_dY.append(drho_dY)
+#     dlogp_dY.append(dp_dY)
     
-s_arr2 = np.arange(5.6, 10.1, 0.1)
+# s_arr2 = np.arange(5.6, 10.1, 0.1)
 
-dlogp_dlogs = []
-for i, y_ in enumerate(yarr2):
-    #drho_dY = []
-    dp_ds = []
-    for j, r in enumerate(logrho_res_rhos[0][0]):
-        logp = get_p_sr(np.full_like(s_arr2, r), s_arr2, np.full_like(s_arr2, y_)) # at constant rho, Y
-        #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
-        dlogs = np.gradient(np.log10(s_arr2/erg_to_kbbar))
-        dlogpdlogs = np.gradient(logp)/dlogs
-        #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
-        #drho_dY.append(dlogrhodY)
-        dp_ds.append(dlogpdlogs)
+# dlogp_dlogs = []
+# for i, y_ in enumerate(yarr2):
+#     #drho_dY = []
+#     dp_ds = []
+#     for j, r in enumerate(logrho_res_rhos[0][0]):
+#         logp = get_p_sr(np.full_like(s_arr2, r), s_arr2, np.full_like(s_arr2, y_)) # at constant rho, Y
+#         #s = get_s_p_t(np.full_like(y_arr, p), np.full_like(y_arr, t), y_arr)
+#         dlogs = np.gradient(np.log10(s_arr2/erg_to_kbbar))
+#         dlogpdlogs = np.gradient(logp)/dlogs
+#         #dlogsdY = np.gradient(np.log10(s/erg_to_kbbar))/np.gradient(y_arr)
+#         #drho_dY.append(dlogrhodY)
+#         dp_ds.append(dlogpdlogs)
         
-    #dlogrho_dY.append(drho_dY)
-    dlogp_dlogs.append(dp_ds)
+#     #dlogrho_dY.append(drho_dY)
+#     dlogp_dlogs.append(dp_ds)
 
-get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr3), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
-get_dlogp_dlogs = RGI((yarr2, np.array(logrho_res_rhos)[0][0], s_arr2), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
+# get_dlogp_dy = RGI((np.array(s_res_rhos)[0][:,0], np.array(logrho_res_rhos)[0][0], y_arr3), dlogp_dY, method='linear', bounds_error=False, fill_value=None)
+# get_dlogp_dlogs = RGI((yarr2, np.array(logrho_res_rhos)[0][0], s_arr2), dlogp_dlogs, method='linear', bounds_error=False, fill_value=None)
 
-def get_dpdy(r, s, y):
-    return get_dlogp_dy(np.array([s, r, y]).T)*(10**get_p_sr(r, s, y))
+# def get_dpdy(r, s, y):
+#     return get_dlogp_dy(np.array([s, r, y]).T)*(10**get_p_sr(r, s, y))
 
-def get_dpds(r, s, y):
-    return get_dlogp_dlogs(np.array([y, r, s]).T)*(10**get_p_sr(r, s, y))/(s/erg_to_kbbar)
+# def get_dpds(r, s, y):
+#     return get_dlogp_dlogs(np.array([y, r, s]).T)*(10**get_p_sr(r, s, y))/(s/erg_to_kbbar)
 
 ########### energy ###########
 
@@ -306,7 +271,7 @@ def err_energy_2D(pt_pair, sval, uval, y):
 def err_energy_2D_rhot(pt_pair, sval, rval, y):
     lgp, lgt = pt_pair
     s, rho = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_rho_mix(lgp, lgt, y, hc_corr=True)
-    s *= erg_to_kbbar
+    sval /= erg_to_kbbar
     logrho = np.log10(rho)
     return  s/sval - 1, logrho/rval -1
 
@@ -324,15 +289,21 @@ def err_rhop_1D(lgp, lgt, rhoval, y):
     #s *= erg_to_kbbar
     return  logrho/rhoval - 1
 
+
 def err_energy_1D(lgp, s, uval, y):
     logt = get_rho_t(s, lgp, y)[-1]
     logu = cms.get_logu_mix(lgp, logt, y, corr=False)
     return logu/uval - 1
 
-def err_rhou_1D(lgr, s, uval, y): #uval in log10
+def err_rhous_1D(lgr, s, uval, y): #uval in log10
     #logt = get_rho_t(s, lgp, y)[-1]
     logu = np.log10(get_u_sr(s, lgr, y))
     return logu/uval - 1
+
+# def err_rhoup_1D(lgr, uval, pval, y): #uval in log10
+#     #logt = get_rho_t(s, lgp, y)[-1]
+#     logu = np.log10(get_u_r(s, lgr, y))
+#     return logu/uval - 1
 
 def err_ur_1D(lgt, lgr, uval, y):
     logu = float(get_logu_r(lgr, lgt, y))
@@ -342,6 +313,11 @@ def err_sr_1D(lgt, lgr, sval, y):
     s = get_s_r(lgr, lgt, y)*erg_to_kbbar
     return s/sval - 1
 
+def err_ps_1D(lgp, lgr, sval, y):
+    t = get_t_sr(sval, lgr, y)
+    sres = cms.get_s_mix(lgp, t, y)*erg_to_kbbar
+    return sres/sval - 1
+
 def get_pt_su(s, u, y):
     if u > 12:
         guess = [10, 4]
@@ -350,22 +326,26 @@ def get_pt_su(s, u, y):
     sol = root(err_energy_2D, guess, args=(s, u, y))
     return sol.x
 
-def get_pt_sr(s, r, y):
+def get_pt_sr(s, r, y, guess=[7, 2.7], alg='hybr'):
     # if r > 0:
     #     guess = [10, 3]
     # else:
-    guess = [8, 2.7]
-    sol = root(err_energy_2D_rhot, guess, args=(s, r, y))
+    #guess = [7, 2.7]
+    sol = root(err_energy_2D_rhot, guess, tol=1e-8, method=alg, args=(s, r, y))
     return sol.x
+
+# def get_p_sr(s, r, y):
+#     sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
+#     return sol.root
 
 ### inversion functions ###
 
 def get_p_us(s, u, y):
     sol = root_scalar(err_energy_1D, bracket=[5, 14], method='brenth', args=(s, u, y))
     return sol.root
-
+ 
 def get_rho_us(s, u, y):
-    sol = root_scalar(err_rhou_1D, bracket=[-4, 1], method='brenth', args=(s, u, y))
+    sol = root_scalar(err_rhous_1D, bracket=[-4, 1], method='brenth', args=(s, u, y))
     return sol.root
 
 def get_t_r(p, r, y):
@@ -384,17 +364,21 @@ def get_t_r(p, r, y):
                 raise
         return np.array(res)
 
-def get_t_sr(s, r, y):
-    if np.isscalar(r):
-        #guess = 2.5
-        sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
-        return sol.root
-    else:
-        res = []
-        for s_, r_, y_ in zip(s, r, y):
-            sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
-            res.append(sol.root)
-        return np.array(res)
+def get_t_rp(p, r, y):
+    sol = root(err_rhot_1D, [2.5], tol=1e-8, method='hybr', args=(p, r, y))
+    return sol.x
+
+# def get_t_sr(s, r, y):
+#     #if np.isscalar(r):
+#         #guess = 2.5
+#     sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
+#     return sol.root
+    # else:
+    #     res = []
+    #     for s_, r_, y_ in zip(s, r, y):
+    #         sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
+    #         res.append(sol.root)
+    #     return np.array(res)
 
 def get_t_ur(u, r, y):
     #y = cms.n_to_Y(x)
@@ -435,14 +419,15 @@ def get_s_r(r, t, y):
 def get_logu_r(r, t, y):
     #y = cms.n_to_Y(x)
     p = get_p_r(r, t, y) 
-    logu = cms.get_logu_mix(p, t, y, corr=True)
+    logu = cms.get_logu_mix(p, t, y, corr=False)
     return logu
 
 def get_u_sr(s, r, y):
     #y = cms.n_to_Y(x)
-    t = get_t_sr(s, r, y)
-    #p, t = get_pt_sr(s, r, y)
-    return 10**get_logu_r(r, t, y)
+    #t = get_t_sr(s, r, y)
+    p, t = get_p_sr(s, r, y), get_t_sr(s, r, y)
+    #return 10**get_logu_r(r, t, y)
+    return 10**cms.get_logu_mix(p, t, y, corr=False)
 
 def get_s_u(u, r, y):
     t = get_t_ur(u, r, y)
@@ -458,34 +443,36 @@ def get_s_rp(r, p, y):
 
 
 ### composition gradients ###
-def get_dsdy_rp(r, p, y, dy=0.001):
+def get_dsdy_rp(r, p, y, dy=0.01):
     s0 = get_s_rp(r, p, y)
     s1 = get_s_rp(r, p, y*(1+dy))
 
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
 
-def get_dsdy_rt(r, t, y, dy=0.001):
+def get_dsdy_rt(r, t, y, dy=0.01):
     s0 = get_s_r(r, t, y)
     s1 = get_s_r(r, t, y*(1+dy))
 
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
 
-def get_dudy_sr(s, r, y, dy=0.001):
-    u0 = get_u_s(s, r, y)
-    u1 = get_u_s(s, r, y*(1+dy))
+def get_dudy_sr(s, r, y, dy=0.01):
+    # u0 = get_u_s(s, r, y)
+    # u1 = get_u_s(s, r, y*(1+dy))
+    u0 = get_u_sr(s, r, y)
+    u1 = get_u_sr(s, r, y*(1+dy))
 
     return (u1 - u0)/(y*dy)
 
-def get_dtdy_rp(r, p, y, dy=0.001):
+def get_dtdy_rp(r, p, y, dy=0.01):
     t0 = 10**get_t_r(p, r, y)
     t1 = 10**get_t_r(p, r, y*(1+dy))
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
 
-def get_dlogt_dy_rp(r, p, y, dy=0.001):
+def get_dlogt_dy_rp(r, p, y, dy=0.01):
     t0 = get_t_r(p, r, y)
     t1 = get_t_r(p, r, y*(1+dy))
 
@@ -535,7 +522,7 @@ def get_dlogrho_dlogt_py(p, t, y, dt=0.01):
 
     return drhodt
 
-def get_dtdy_sp(s, p, y, dy=0.001):
+def get_dtdy_sp(s, p, y, dy=0.01):
     t0 = 10**get_rho_t(s, p, y)[-1]
     t1 = 10**get_rho_t(s, p, y*(1+dy))[-1]
 
