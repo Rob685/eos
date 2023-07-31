@@ -536,12 +536,20 @@ def get_dlogrho_dlogt_py(p, t, y, dt=0.01):
 
     return drhodt
 
+### temperature gradients ###
+
 def get_dtdy_sp(s, p, y, dy=0.01):
     t0 = 10**get_rho_t(s, p, y)[-1]
     t1 = 10**get_rho_t(s, p, y*(1+dy))[-1]
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
+
+def get_dtdy_sr(s, r, y, dy=0.01):
+    t0 = 10**get_t_sr(s, r, y)
+    t1 = 10**get_t_sr(s, r, y*(1+dy))
+
+    return (t1 - t0)/(y*dy)
 
 
 
