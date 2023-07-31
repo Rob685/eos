@@ -21,27 +21,27 @@ def err(logt, logp, y, s_val, corr):
     #return (s_/s_val) - 1
     return s_ - s_val
 
-def get_rho_p_ideal(s, logp, m=15.5):
-    # done from ideal gas
-    # note: 10 is average molecular weight for solar comp
-    # for Y = 0.25, m = 3 * (1 * 1 + 1 * 0) + (1 * 4) / 7 = 1
-    p = 10**logp
-    return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
+# def get_rho_p_ideal(s, logp, m=15.5):
+#     # done from ideal gas
+#     # note: 10 is average molecular weight for solar comp
+#     # for Y = 0.25, m = 3 * (1 * 1 + 1 * 0) + (1 * 4) / 7 = 1
+#     p = 10**logp
+#     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
 
 # def get_rho_aneos(logp, logt):
 #     return eos_aneos.get_logrho(logp, logt)
 
-def rho_mix(p, t, y, z, hc_corr, m=15.5):
-    rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr))
-    try:
-        #t = get_t(s, p, y, z)
-        rho_z = 10**get_rho_id(p, t, m=m)
-        # if ideal:
-        #     rho_z = 10**get_rho_id(p, t)
-        # elif not ideal:
-        #     rho_z = 10**get_rho_aneos(p, t)
-    except:
-        print(p, y, z)
+# def rho_mix(p, t, y, z, hc_corr, m=15.5):
+#     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr))
+#     try:
+#         #t = get_t(s, p, y, z)
+#         rho_z = 10**get_rho_id(p, t, m=m)
+#         # if ideal:
+#         #     rho_z = 10**get_rho_id(p, t)
+#         # elif not ideal:
+#         #     rho_z = 10**get_rho_aneos(p, t)
+#     except:
+#         print(p, y, z)
 
     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
     # except:
@@ -125,9 +125,9 @@ def get_grad_ad(s, p, y):
 
 p_sry, t_sry = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
 
-svals = np.arange(5.5, 9.1, 0.01)
-logrhovals = np.arange(-4, 1, 0.1)
-yvals = np.arange(0.01, 1, 0.01)
+svals = np.arange(5.75, 9.1, 0.01)
+logrhovals = np.arange(-4, 1, 0.05)
+yvals = np.arange(0.1, 1, 0.01)
 
 get_p_rgi = RGI((svals, logrhovals, yvals), p_sry, method='linear', \
             bounds_error=False, fill_value=None)
@@ -536,12 +536,20 @@ def get_dlogrho_dlogt_py(p, t, y, dt=0.01):
 
     return drhodt
 
+### temperature gradients ###
+
 def get_dtdy_sp(s, p, y, dy=0.01):
     t0 = 10**get_rho_t(s, p, y)[-1]
     t1 = 10**get_rho_t(s, p, y*(1+dy))[-1]
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
+
+def get_dtdy_sr(s, r, y, dy=0.01):
+    t0 = 10**get_t_sr(s, r, y)
+    t1 = 10**get_t_sr(s, r, y*(1+dy))
+
+    return (t1 - t0)/(y*dy)
 
 
 
