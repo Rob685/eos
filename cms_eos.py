@@ -268,12 +268,7 @@ def err_energy_2D(pt_pair, sval, uval, y):
     s *= erg_to_kbbar
     return  s/sval - 1, logu/uval -1
 
-def err_energy_2D_rhot(pt_pair, sval, rval, y):
-    lgp, lgt = pt_pair
-    s, rho = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_rho_mix(lgp, lgt, y, hc_corr=True)
-    sval /= erg_to_kbbar
-    logrho = np.log10(rho)
-    return  s/sval - 1, logrho/rval -1
+\
 
 #def err_rhos_1D(logp, s)
 
