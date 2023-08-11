@@ -1,8 +1,8 @@
 import numpy as np
 #import scvh_nr
-from scipy.optimize import root
+from scipy.optimize import root, root_scalar
 from scipy.interpolate import RegularGridInterpolator as RGI
-from eos import aneos
+from eos import aneos, scvh_man
 import os
 erg_to_kbbar = 1.202723550011625e-08
 mh = 1 
@@ -11,6 +11,7 @@ mhe = 4.0026
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='serpentine')
+eos_scvh = scvh_man.eos(path_to_data='%s/scvh_mesa' % CURR_DIR)
 
 def scvh_reader(tab_name):
     tab = []
@@ -404,5 +405,88 @@ def get_dpds(r, s, y):
 # def get_dlogtdy(r, p , y):
 #     dtdy = get_dlogt_dy(np.array([r, p, y]).T)
 #     return dtdy
+def err_ps_1D(lgp, lgr, sval, y):
+    t = get_t_sry(sval, lgr, y)
+    sres = get_s_p_t(lgp, t, y)
+    return sres/sval - 1
 
+def err_rhot_1D(lgt, lgr, pval, y):
+    #lgp, lgt = pt_pair
+    logp = get_p(lgr, lgt, y)
+    #s *= erg_to_kbbar
+    return  logp/pval - 1
 
+def err_energy_2D_rhot(pt_pair, sval, rval, y):
+    lgp, lgt = pt_pair
+    s, logrho = float(get_s_p_t(lgp, lgt, y)), float(get_rho_p_t(lgp, lgt, y))
+    return  s/sval - 1, logrho/rval -1
+
+def err_sr_1D(lgt, lgr, sval, y):
+    s = 10**get_s(lgr, lgt, y)
+    return s/sval - 1
+
+def get_t_r(p, r, y):
+    if np.isscalar(r):
+        sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth', args=(r, p, y))
+        return sol.root
+    else:
+        #guess = np.zeros(len(r))+2.5
+        res = []
+        for p_, r_, y_ in zip(p, r, y):
+            try:
+                sol = root_scalar(err_rhot_1D, bracket=[0, 5], method='brenth',args=(r_, p_, y_))
+                res.append(sol.root)
+            except:
+                print('failed at:', p_, r_, y_)
+                raise
+        return np.array(res)
+
+def get_s_rp(r, p, y):
+    t = get_t_r(p, r, y)
+    #y = cms.n_to_Y(y)
+    s = (10**get_s(r, t, y))/erg_to_kbbar
+    return s # in cgs
+
+def get_dsdy_rp(r, p, y, dy=0.01):
+    s0 = get_s_rp(r, p, y)
+    s1 = get_s_rp(r, p, y*(1+dy))
+
+    dsdy = (s1 - s0)/(y*dy)
+    return dsdy
+
+def get_pt_sr(s, r, y, guess=[7, 2.7], alg='hybr'):
+
+    sol = root(err_energy_2D_rhot, guess, tol=1e-8, method=alg, args=(s, r, y))
+    return sol.x
+
+def get_t_sry(s, r, y):
+    if np.isscalar(r):
+        #guess = 2.5
+        sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
+        return sol.root
+    else:
+        res = []
+        for s_, r_, y_ in zip(s, r, y):
+            sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
+            res.append(sol.root)
+        return np.array(res)
+
+def get_p_sry(s, r, y):
+    # sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
+    # return sol.root
+
+    if np.isscalar(r):
+            #guess = 2.5
+            sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
+            return sol.root
+    else:
+        res = []
+        for s_, r_, y_ in zip(s, r, y):
+            sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth',args=(r_, s_, y_))
+            res.append(sol.root)
+        return np.array(res)
+
+def get_u_sry(s, r, y):
+    p, t = get_pt_sr(s, r, y)
+    logu = eos_scvh.get_logu(p, t, y)
+    return 10**logu
