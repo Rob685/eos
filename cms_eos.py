@@ -12,71 +12,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 erg_to_kbbar = 1.202723550011625e-08
 
-def err(logt, logp, y, s_val, corr):
 
-    #s_ = cms.get_s_mix(logp, logt, y, corr)
-    s_ = float(cms.get_s_mix(logp, logt, y, corr))
-    s_val /= erg_to_kbbar # in cgs
-    #print((s_/s_val) - 1, logt, logp)
-    #return (s_/s_val) - 1
-    return s_ - s_val
-
-# def get_rho_p_ideal(s, logp, m=15.5):
-#     # done from ideal gas
-#     # note: 10 is average molecular weight for solar comp
-#     # for Y = 0.25, m = 3 * (1 * 1 + 1 * 0) + (1 * 4) / 7 = 1
-#     p = 10**logp
-#     return np.log10(np.maximum(np.exp((2/5) * (5.096 - s)) * (np.maximum(p, 0) / 1e11)**(3/5) * m**(8/5), np.full_like(p, 1e-10)))
-
-# def get_rho_aneos(logp, logt):
-#     return eos_aneos.get_logrho(logp, logt)
-
-# def rho_mix(p, t, y, z, hc_corr, m=15.5):
-#     rho_hhe = float(cms.get_rho_mix(p, t, y, hc_corr))
-#     try:
-#         #t = get_t(s, p, y, z)
-#         rho_z = 10**get_rho_id(p, t, m=m)
-#         # if ideal:
-#         #     rho_z = 10**get_rho_id(p, t)
-#         # elif not ideal:
-#         #     rho_z = 10**get_rho_aneos(p, t)
-#     except:
-#         print(p, y, z)
-
-    return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
-    # except:
-    #     print(s, p, y, z)
-    # raise
-    # #if z > 0:
-
-    # elif z == 0:
-    #      return np.log10(rho_hhe)
-
-def get_t(s, p, y, corr):
-    try:
-        t_root = brenth(err, 0, 5, args=(p, y, s, corr)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
-        return t_root
-    except:
-        print(s, p, y)
-        raise
-
-# def get_rho(s, p, t, y, z, ideal):
-#     try:
-#         t = get_t(s, p, y, z)
-#     except:
-#         print(s, p, y, z)
-#         raise
-#     return rho_mix(s, p, t, y, z, ideal)
-
-def get_rhot(s, p, y, hc_corr):
-    try:
-        t = get_t(s, p, y, hc_corr)
-    except:
-        print(s, p, y)
-        raise
-    #rho = rho_mix(p, t, y, z, hc_corr, m=m)
-    rho = np.log10(cms.get_rho_mix(p, t, y, hc_corr))
-    return rho, t
 
 ###### inverted tables ######
 
@@ -89,7 +25,7 @@ s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_
 get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
 get_t_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
 
-get_cp = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), cp_arr, method='linear', bounds_error=False, fill_value=None)
+get_cp_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), cp_arr, method='linear', bounds_error=False, fill_value=None)
 get_cv = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), cv_arr, method='linear', bounds_error=False, fill_value=None)
 
 get_chirho = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chirho_arr, method='linear', bounds_error=False, fill_value=None)
@@ -98,11 +34,19 @@ get_chit = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chit_arr, method
 get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, method='linear', bounds_error=False, fill_value=None)
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
+#def get_rhot(s, p, y, method):
+    #try:
+    #     get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='cubic')
+    # except:
+    #     get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
+
+    # return g
+
 def get_rho_t(s, p, y):
     return get_rho_(np.array([y, s, p]).T), get_t_(np.array([y, s, p]).T)
 
 def get_c_p(s, p, y):
-    cp_res = get_cp(np.array([y, s, p]).T)
+    cp_res = get_cp_(np.array([y, s, p]).T)
     return cp_res
 
 def get_c_v(s, p, y):
@@ -120,6 +64,14 @@ def get_chi_t(s, p, y):
 def get_grad_ad(s, p, y):
     grada = get_grada(np.array([y, s, p]).T)
     return grada
+
+def get_cp(s, p, y, ds=0.1):
+    S1 = np.log10(s/erg_to_kbbar)
+    S2 = np.log10(S1*(1+ds))
+    T1 = get_t(S1*erg_to_kbbar, p, y)[-1]
+    T2 = get_t(S2*erg_to_kbbar, p, y)[-1]
+
+    return S1*((S2 - S1)/(T2 - T1))
 
 ## p, t (s, rho, y) ##
 
@@ -139,6 +91,21 @@ def get_p_sr(s, r, y):
 
 def get_t_sr(s, r, y):
     return get_t_rgi(np.array([s, r, y]).T)
+
+def get_c_v_t(r, t, y, dt=0.01):
+    P1 = get_p_r(r, t, y)
+    P2 = get_p_r(r, t*(1+dt), y)
+
+    S1 = cms.get_s_mix(P1, t, y, hc_corr=True)
+    S2 = cms.get_s_mix(P2, t*(1+dt), y, hc_corr=True)
+    return S1*(np.log10(S2) - np.log10(S1))/(t*dt)
+
+def get_c_v_s(s, r, y, ds=0.1):
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+    T1 = get_t_sry(S1*erg_to_kbbar, r, y)
+    T2 = get_t_sry(S2*erg_to_kbbar, r, y)
+    return S1*(np.log10(S2) - np.log10(S1))/(T2 - T1)
 
 
 ####### P(rho, s, y) #######
@@ -262,13 +229,30 @@ def get_u_t(p, t, y, corr):
 
 
 ### error functions ###
+
+def err_t_sp(logt, logp, y, s_val, corr):
+    s_ = float(cms.get_s_mix(logp, logt, y, corr))
+    s_val /= erg_to_kbbar # in cgs
+
+    return (s_/s_val) - 1
+
+def get_rhot_sp(s, p, y, hc_corr=True):
+    if np.isscalar(s):
+        try:
+            t = get_t_sp(s, p, y, hc_corr)
+        except:
+            print(s, p, y)
+            raise
+    else:
+        t = np.array([get_t_sp(s_, p_, y_, hc_corr) for s_, p_, y_ in zip(s, p, y)])
+    #rho = rho_mix(p, t, y, z, hc_corr, m=m)
+    rho = np.log10(cms.get_rho_mix(p, t, y, hc_corr))
+    return rho, t
 def err_energy_2D(pt_pair, sval, uval, y):
     lgp, lgt = pt_pair
     s, logu = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_logu_mix(lgp, lgt, y)
     s *= erg_to_kbbar
     return  s/sval - 1, logu/uval -1
-
-\
 
 #def err_rhos_1D(logp, s)
 
@@ -290,6 +274,13 @@ def err_energy_1D(lgp, s, uval, y):
     logu = cms.get_logu_mix(lgp, logt, y, corr=False)
     return logu/uval - 1
 
+def err_energy_2D_rhot(pt_pair, sval, rval, y):
+    lgp, lgt = pt_pair
+    s, rho = cms.get_s_mix(lgp, lgt, y, hc_corr=True), cms.get_rho_mix(lgp, lgt, y, hc_corr=True)
+    sval /= erg_to_kbbar
+    logrho = np.log10(rho)
+    return  s/sval - 1, logrho/rval -1
+
 def err_rhous_1D(lgr, s, uval, y): #uval in log10
     #logt = get_rho_t(s, lgp, y)[-1]
     logu = np.log10(get_u_sr(s, lgr, y))
@@ -309,7 +300,7 @@ def err_sr_1D(lgt, lgr, sval, y):
     return s/sval - 1
 
 def err_ps_1D(lgp, lgr, sval, y):
-    t = get_t_sr(sval, lgr, y)
+    t = get_t_sry(sval, lgr, y)
     sres = cms.get_s_mix(lgp, t, y)*erg_to_kbbar
     return sres/sval - 1
 
@@ -329,9 +320,20 @@ def get_pt_sr(s, r, y, guess=[7, 2.7], alg='hybr'):
     sol = root(err_energy_2D_rhot, guess, tol=1e-8, method=alg, args=(s, r, y))
     return sol.x
 
-# def get_p_sr(s, r, y):
-#     sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
-#     return sol.root
+def get_p_sry(s, r, y):
+    # sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
+    # return sol.root
+
+    if np.isscalar(r):
+            #guess = 2.5
+            sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth', args=(r, s, y))
+            return sol.root
+    else:
+        res = []
+        for s_, r_, y_ in zip(s, r, y):
+            sol = root_scalar(err_ps_1D, bracket=[5, 14], method='brenth',args=(r_, s_, y_))
+            res.append(sol.root)
+        return np.array(res)
 
 ### inversion functions ###
 
@@ -359,21 +361,29 @@ def get_t_r(p, r, y):
                 raise
         return np.array(res)
 
+def get_t_sp(s, p, y, corr=True):
+    try:
+        t_root = brenth(err_t_sp, 0, 5, args=(p, y, s, corr)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+        return t_root
+    except:
+        print(s, p, y)
+        raise
+
 def get_t_rp(p, r, y):
     sol = root(err_rhot_1D, [2.5], tol=1e-8, method='hybr', args=(p, r, y))
     return sol.x
 
-# def get_t_sr(s, r, y):
-#     #if np.isscalar(r):
-#         #guess = 2.5
-#     sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
-#     return sol.root
-    # else:
-    #     res = []
-    #     for s_, r_, y_ in zip(s, r, y):
-    #         sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
-    #         res.append(sol.root)
-    #     return np.array(res)
+def get_t_sry(s, r, y):
+    if np.isscalar(r):
+        #guess = 2.5
+        sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth', args=(r, s, y))
+        return sol.root
+    else:
+        res = []
+        for s_, r_, y_ in zip(s, r, y):
+            sol = root_scalar(err_sr_1D, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
+            res.append(sol.root)
+        return np.array(res)
 
 def get_t_ur(u, r, y):
     #y = cms.n_to_Y(x)
@@ -439,7 +449,7 @@ def get_s_rp(r, p, y):
 
 ### composition gradients ###
 
-def get_dsdy_rp_new(s, r, y, dy=0.001, ds=0.001):
+def get_dsdy_rp_new(s, r, y, dy=0.001, ds=0.1):
     P0 = 10**get_p_sr(s, r, y)
     P1 = 10**get_p_sr(s, r, y*(1+dy))
     P2 = 10**get_p_sr(s*(1+ds), r, y)
@@ -465,6 +475,12 @@ def get_dsdy_rt(r, t, y, dy=0.01):
 
     dsdy = (s1 - s0)/(y*dy)
     return dsdy
+
+def get_dsdy_pt(p, t, y, dy=0.01):
+    S1 = cms.get_s_mix(p, t, y)
+    S2 = cms.get_s_mix(p, t, y*(1+dy))
+
+    return (S2 - S1)/(y*dy)
 
 def get_dudy_sr(s, r, y, dy=0.01):
     # u0 = get_u_s(s, r, y)
@@ -546,5 +562,21 @@ def get_dtdy_sr(s, r, y, dy=0.01):
 
     return (t1 - t0)/(y*dy)
 
+# def get_B1(s, r, y):
+#     p = get_p_sr(s, r, y)
+#     c_p = get_cp(s, p, y)
+#     dsdy_rhop = get_dsdy_rp_new(s, r, y, dy=0.01, ds=0.1)
+#     return (10**p/c_p)*dsdy_rhop
 
+def get_B1(s, r, y, dy=0.1): # neesd to be multiplied by dY/dP
+    p = get_p_sr(s, r, y)
+    c_p = get_c_p(s, p, y)
+    dsdy_rhop = get_dsdy_rp(r, p, y, dy=dy)
+    return ((10**p)/c_p)*dsdy_rhop
+
+def get_B2(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
+    t = get_rho_t(s, p, y)[-1]
+    c_p = get_c_p(s, p, y)
+    dsdy_pt = get_dsdy_pt(p, t, y, dy=dy)
+    return -((10**p)/c_p)*dsdy_pt
 

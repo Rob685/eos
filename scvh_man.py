@@ -1,5 +1,5 @@
 import numpy as np
-import constants as const
+import const
 from scipy.interpolate import RegularGridInterpolator, splrep, splev
 from scipy.interpolate import RectBivariateSpline as rbs
 from scipy.optimize import brentq
@@ -24,8 +24,8 @@ class eos:
         # not using these at present, just making them available for reference
         self.logtmin, self.logtmax = 2.10, 7.06
 
-        self.path_to_h_data = '{}/scvh_h.dat'.format(path_to_data)
-        self.path_to_he_data = '{}/scvh_he.dat'.format(path_to_data)
+        self.path_to_h_data = '{}/h_tab.dat'.format(path_to_data)
+        self.path_to_he_data = '{}/he_tab.dat'.format(path_to_data)
 
         if os.path.exists('{}/scvh_h.dat.pkl'.format(path_to_data)) and os.path.exists('{}/scvh_he.dat.pkl'.format(path_to_data)):
             with open('{}/scvh_h.dat.pkl'.format(path_to_data), 'rb') as f:
