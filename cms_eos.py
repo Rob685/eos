@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.interpolate import RectBivariateSpline as RBS
 from astropy import units as u
-from scipy.optimize import root, root_scalar, brenth
+from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
 
@@ -32,7 +32,7 @@ def cms_reader(tab_name):
 
     tab = np.loadtxt('%s/cms/DirEOS2019/%s' % (CURR_DIR, tab_name), comments='#')
     tab_df = pd.DataFrame(tab, columns=cols)
-    data = tab_df[(tab_df['logt'] <= 7.0) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
+    data = tab_df[(tab_df['logt'] <= 5) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
                  ]
 
     data['logp'] += 10 # 1 GPa = 1e10 cgs
@@ -62,8 +62,16 @@ svals_hc = grid_hc['Smix']
 logpvals_hc = grid_hc['logp'][0]
 logtvals_hc = grid_hc['logt'][:,0]
 
-smix_interp = RBS(logtvals_hc, logpvals_hc, grid_hc['Smix']) # Smix will be in cgs... not log cgs.
-vmix_interp = RBS(logtvals_hc, logpvals_hc, grid_hc['Vmix'])
+# smix_interp = RBS(logtvals_hc, logpvals_hc, grid_hc['Smix']) # Smix will be in cgs... not log cgs.
+# vmix_interp = RBS(logtvals_hc, logpvals_hc, grid_hc['Vmix'])
+
+smix_interp_rgi = RGI((logtvals_hc, logpvals_hc), grid_hc['Smix'], method='linear', bounds_error=False, fill_value=None) # Smix will be in cgs... not log cgs.
+vmix_interp_rgi = RGI((logtvals_hc, logpvals_hc), grid_hc['Vmix'], method='linear', bounds_error=False, fill_value=None)
+
+def smix_interp(lgt, lgp):
+    return smix_interp_rgi(np.array([lgt, lgp]).T)
+def vmix_interp(lgt, lgp):
+    return vmix_interp_rgi(np.array([lgt, lgp]).T)
 
 # interpolations
 
@@ -76,11 +84,20 @@ svals_h = cms_hdata['logs']
 rhovals_h = cms_hdata['logrho']
 loguvals_h = cms_hdata['logu']
 
-get_s_h = RBS(logtvals, logpvals, svals_h) # x or y are not changing so can leave out to speed things up
+# get_s_h = RBS(logtvals, logpvals, svals_h) # x or y are not changing so can leave out to speed things up
+# get_rho_h = RBS(logtvals, logpvals, rhovals_h)
+# get_logu_h = RBS(logtvals, logpvals, loguvals_h, s=0)
 
-get_rho_h = RBS(logtvals, logpvals, rhovals_h)
+get_s_h_rgi = RGI((logtvals, logpvals), svals_h, method='linear', bounds_error=False, fill_value=None)
+get_rho_h_rgi = RGI((logtvals, logpvals), rhovals_h, method='linear', bounds_error=False, fill_value=None)
+get_logu_h_rgi = RGI((logtvals, logpvals), loguvals_h, method='linear', bounds_error=False, fill_value=None)
 
-get_logu_h = RBS(logtvals, logpvals, loguvals_h, s=0)
+def get_s_h(lgt, lgp):
+    return get_s_h_rgi(np.array([lgt, lgp]).T)
+def get_rho_h(lgt, lgp):
+    return get_rho_h_rgi(np.array([lgt, lgp]).T)
+def get_logu_h(lgt, lgp):
+    return get_logu_h_rgi(np.array([lgt, lgp]).T)
 
 # derivatives
 
@@ -95,38 +112,16 @@ svals_he = cms_hedata['logs']
 rhovals_he = cms_hedata['logrho']
 loguvals_he = cms_hedata['logu']
 
-# s(t, rho)
-# p(t, rho)
-get_s_he = RBS(logtvals, logpvals, svals_he) # x or y are not changing so can leave out to speed things up
+get_s_he_rgi = RGI((logtvals, logpvals), svals_he, method='linear', bounds_error=False, fill_value=None)
+get_rho_he_rgi = RGI((logtvals, logpvals), rhovals_he, method='linear', bounds_error=False, fill_value=None)
+get_logu_he_rgi = RGI((logtvals, logpvals), loguvals_he, method='linear', bounds_error=False, fill_value=None)
 
-get_rho_he = RBS(logtvals, logpvals, rhovals_he)
-
-get_logu_he = RBS(logtvals, logpvals, loguvals_he, s=0)
-
-# derivatives
-
-# get_rhot_he = RBS(logtvals, logpvals, cms_hedata['dlrho/dlT_P'])
-# get_rhop_he = RBS(logtvals, logpvals, cms_hedata['dlrho/dlP_T'])
-# get_sp_he = RBS(logtvals, logpvals, cms_hedata['dlS/dlP_T'])
-# get_st_he = RBS(logtvals, logpvals,cms_hedata['dlS/dlT_P'])
-
-#### He data ####
-
-svals_he = cms_hedata['logs']
-rhovals_he = cms_hedata['logrho']
-
-# s(t, rho)
-# p(t, rho)
-get_s_he = RBS(logtvals, logpvals, svals_he) # x or y are not changing so can leave out to speed things up
-
-get_rho_he = RBS(logtvals, logpvals, rhovals_he)
-
-# derivatives
-
-# get_rhot_he = RBS(logtvals, logpvals, cms_hedata['dlrho/dlT_P'])
-# get_rhop_he = RBS(logtvals, logpvals, cms_hedata['dlrho/dlP_T'])
-# get_sp_he = RBS(logtvals, logpvals, cms_hedata['dlS/dlP_T'])
-# get_st_he = RBS(logtvals, logpvals,cms_hedata['dlS/dlT_P'])
+def get_s_he(lgt, lgp):
+    return get_s_he_rgi(np.array([lgt, lgp]).T)
+def get_rho_he(lgt, lgp):
+    return get_rho_he_rgi(np.array([lgt, lgp]).T)
+def get_logu_he(lgt, lgp):
+    return get_logu_he_rgi(np.array([lgt, lgp]).T)
 
 ###### H-He mixing ######
 
@@ -153,32 +148,32 @@ def get_smix_id_y(Y):
 def get_smix_nd(Y, lgp, lgt):
 
     # the HG23 \Delta S_mix is the combination of the non-ideal and ideal entropy of mixing
-    smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
+    smix_hg23 = smix_interp(lgt, lgp)*(1 - Y)*Y
     smix_id = get_smix_id_y(Y) / erg_to_kbbar
 
     return smix_hg23 - smix_id
 
 def get_s_pt(lgp, lgt, y, hc_corr = True):
-    s_h = 10 ** get_s_h.ev(lgt, lgp)
-    s_he = 10 ** get_s_he.ev(lgt, lgp)
-    smix = smix_interp.ev(lgt, lgp)*(1 - y)*y
+    s_h = 10 ** get_s_h(lgt, lgp)
+    s_he = 10 ** get_s_he(lgt, lgp)
+    smix = smix_interp(lgt, lgp)*(1 - y)*y
     if hc_corr==False:
         #smix = get_smix_id_y(y)/erg_to_kbbar
         smix -= get_smix_nd(y, lgp, lgt)
     return (1 - y) * s_h + y * s_he + smix #
 
 def get_rho_pt(lgp, lgt, y, hc_corr = True):
-    rho_h = 10 ** get_rho_h.ev(lgt, lgp)
-    rho_he = 10 ** get_rho_he.ev(lgt, lgp)
+    rho_h = 10 ** get_rho_h(lgt, lgp)
+    rho_he = 10 ** get_rho_he(lgt, lgp)
     if hc_corr:
-        vmix = vmix_interp.ev(lgt, lgp)
+        vmix = vmix_interp(lgt, lgp)
     elif not hc_corr:
         vmix = 0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
 def get_u_pt(lgp, lgt, y):
-    u_h = 10**get_logu_h.ev(lgt, lgp) # MJ/kg to erg/g
-    u_he = 10**get_logu_he.ev(lgt, lgp)
+    u_h = 10**get_logu_h(lgt, lgp) # MJ/kg to erg/g
+    u_he = 10**get_logu_he(lgt, lgp)
     return np.log10((1 - y)*u_h + y*u_he)
 
 ###### inverted tables ######
@@ -247,25 +242,6 @@ def get_c_v_s(s, rho, y, ds=0.1):
     T2 = get_t_srho(S2*erg_to_kbbar, rho, y)
     return S1*(np.log10(S2) - np.log10(S1))/(T2 - T1)
 
-## p, t (s, rho, y) ##
-
-# p_sry, t_sry = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
-
-# svals = np.arange(5.75, 9.1, 0.01)
-# logrhovals = np.arange(-4, 1, 0.05)
-# yvals = np.arange(0.1, 1, 0.01)
-
-# get_p_rgi = RGI((svals, logrhovals, yvals), p_sry, method='linear', \
-#             bounds_error=False, fill_value=None)
-# get_t_rgi = RGI((svals, logrhovals, yvals), t_sry, method='linear', \
-#             bounds_error=False, fill_value=None)
-
-# def get_p_srho(s, rho, y):
-#     return get_p_rgi(np.array([s, rho, y]).T)
-
-# def get_t_srho(s, rho, y):
-#     return get_t_rgi(np.array([s, rho, y]).T)
-
 ### error functions ###
 
 def err_p_srho(lgp, lgr, s_val, y):
@@ -286,7 +262,7 @@ def err_pt_su(pt_pair, sval, uval, y):
     s *= erg_to_kbbar
     return  s/sval - 1, logu/uval -1
 
-def err_t_prho(lgt, lgp, rhoval, y):
+def err_t_rhop(lgt, lgp, rhoval, y):
     #lgp, lgt = pt_pair
     logrho = get_rho_pt(lgp, lgt, y)
     #s *= erg_to_kbbar
@@ -325,6 +301,9 @@ def err_t_srho(lgt, lgr, sval, y):
 
 ### inversion functions ###
 
+TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when the top limit of the CMS table is logT<5
+PBOUNDS = [5, 15]
+
 def get_pt_su(s, u, y):
     if u > 12:
         guess = [10, 4]
@@ -334,19 +313,9 @@ def get_pt_su(s, u, y):
     return sol.x
 
 def get_pt_srho(s, rho, y, guess=[7, 2.7], alg='hybr'):
-    # if r > 0:
-    #     guess = [10, 3]
-    # else:
-    #guess = [7, 2.7]
     if np.isscalar(rho):
         sol = root(err_pt_srho, guess, tol=1e-8, method=alg, args=(s, rho, y))
         return sol.x
-    #else:
-    # p_res = []
-    # t_res
-    # for s_, r_, y_ in zip(s, rho, y):
-    #     sol = get_pt_srho(s_, r_, y_)
-    #     res.append(sol)
     p, t = np.array([get_pt_srho(s_, r_, y_) for s_, r_, y_ in zip(s, rho, y)]).T
     return p, t
     
@@ -354,7 +323,7 @@ def get_pt_srho(s, rho, y, guess=[7, 2.7], alg='hybr'):
 def get_p_srho(s, rho, y):
     if np.isscalar(rho):
             #guess = 2.5
-        sol = root_scalar(err_p_srho, bracket=[3, 14], method='brenth', args=(rho, s, y))
+        sol = root_scalar(err_p_srho, bracket=PBOUNDS, method='brenth', args=(rho, s, y))
         return sol.root
     else:
         res = []
@@ -370,7 +339,7 @@ def get_p_srho(s, rho, y):
 def get_t_sp(s, p, y):
     if np.isscalar(s):
         try:
-            sol = root_scalar(err_t_sp, bracket=[0, 5], method='brenth', args=(p, s, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+            sol = root_scalar(err_t_sp, bracket=TBOUNDS, method='brenth', args=(p, s, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
             return sol.root
         except:
             print(s, p, y)
@@ -388,7 +357,7 @@ def get_rhot_sp(s, p, y):
     return rho, t
 
 def get_p_su(s, u, y):
-    sol = root_scalar(err_p_su, bracket=[5, 14], method='brenth', args=(s, u, y))
+    sol = root_scalar(err_p_su, bracket=PBOUNDS, method='brenth', args=(s, u, y))
     return sol.root
  
 def get_rho_su(s, u, y):
@@ -397,24 +366,16 @@ def get_rho_su(s, u, y):
 
 def get_t_rhop(rho, p, y):
     if np.isscalar(rho):
-        sol = root_scalar(err_t_prho, bracket=[0, 7], method='brenth', args=(p, rho, y))
+        sol = root_scalar(err_t_rhop, bracket=TBOUNDS, method='brenth', #xtol=1e-6, 
+            args=(p, rho, y))
         return sol.root
-    else:
-        #guess = np.zeros(len(rho))+2.5
-        res = []
-        for p_, r_, y_ in zip(p, rho, y):
-            try:
-                sol = get_t_rhop(r_, p_, y_)#root_scalar(err_t_pr, bracket=[0, 7], method='brenth',args=(p_, r_, y_))
-                res.append(sol)
-            except:
-                #print('failed at:', r_, p_, y_)
-                res.append(-1)
-        return np.array(res)
+    sol = np.array([get_t_rhop(rho_, p_, y_) for rho_, p_, y_ in zip(rho, p, y)])
+    return sol
 
 def get_t_srho(s, rho, y):
     if np.isscalar(rho):
         #guess = 2.5
-        sol = root_scalar(err_t_srho, bracket=[0, 5], method='brenth', args=(rho, s, y))
+        sol = root_scalar(err_t_srho, bracket=TBOUNDS, method='brenth', args=(rho, s, y))
         return sol.root
     else:
         res = []
@@ -423,25 +384,12 @@ def get_t_srho(s, rho, y):
             res.append(sol)
         return np.array(res)
 
-# def get_t_ur(u, rho, y):
-#     #y = cms.n_to_Y(x)
-#     if np.isscalar(rho):
-#         #guess = 2.5
-#         sol = root_scalar(err_t_ur, bracket=[0, 5], method='brenth', args=(rho, u, y))
-#         return sol.root
-#     else:
-#         res = []
-#         for u_, r_, y_ in zip(u, rho, y):
-            
-#             sol = root_scalar(err_t_ur, bracket=[0, 5], method='brenth',args=(r_, u_, y_))
-#             res.append(sol)
-#         return np.array(res)
-
 def get_p_rhot(rho, t, y):
     #y = cms.n_to_Y(x)
     if np.isscalar(rho):
         #guess = 7
-        sol = root_scalar(err_p_rhot, bracket=[4, 17], method='brenth', args=(t, rho, y))
+        sol = root_scalar(err_p_rhot, bracket=PBOUNDS, method='brenth', #xtol=1e-6, 
+            args=(t, rho, y))
         return sol.root
     else:
         res = []
@@ -596,15 +544,16 @@ def get_dtdy_rp(rho, p, y, dy=0.01):
 
 
 ### Ledoux terms ###
-# def get_B1(s, rho, y, dy=0.1): # neesd to be multiplied by dY/dP
-#     p = get_p_srho(s, rho, y)
-#     c_p = get_c_p(s, p, y)
-#     dsdy_rhop = get_dsdy_rp(rho, p, y, dy=dy)
-#     return ((10**p)/c_p)*dsdy_rhop
+def get_B1(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
+    #p = get_p_srho(s, rho, y)
+    c_p = get_c_p(s, p, y)
+    rho, T = get_rhot_sp(s, p, y)
+    dsdy_rhop = get_dsdy_rhop(rho, p, y, dy=dy)
+    return ((10**p)/c_p)*dsdy_rhop
 
-# def get_B2(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
-#     t = get_rho_t(s, p, y)[-1]
-#     c_p = get_c_p(s, p, y)
-#     dsdy_pt = get_dsdy_pt(p, t, y, dy=dy)
-#     return -((10**p)/c_p)*dsdy_pt
+def get_B2(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
+    t = get_t_sp(s, p, y)
+    c_p = get_c_p(s, p, y)
+    dsdy_pt = get_dsdy_pt(p, t, y, dy=dy)
+    return -((10**p)/c_p)*dsdy_pt
 
