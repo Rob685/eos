@@ -25,7 +25,7 @@ mp = amu.to('g').value # grams
 kB = k_B.to('erg/K').value # ergs/K
 
 S_UNIT = 1/erg_to_kbbar
-U_UNIT = 1
+U_UNIT = 1/mp
 
 class IdealEOS(object):
     """
@@ -108,14 +108,14 @@ class IdealEOS(object):
 
     ## U getters
     def get_u_pt(self, logp, logt, _y):
-        return U_UNIT * 3/2 * kB * 10**logt / self.m
+        return np.log10(U_UNIT * 3/2 * kB * 10**logt / self.m)
 
     ## combined getters
     def get_sp_rhot(self, logrho, logt, _y):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, _y):
         return self.get_p_srho(s, logrho, _y), self.get_t_srho(s, logrho, _y)
@@ -148,8 +148,8 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (1, 8)
-PBOUNDS = (6, 14)
+TBOUNDS = (0, 8)
+PBOUNDS = (5, 14)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m
@@ -189,7 +189,7 @@ class IdealHHeMix(object):
                     for el in zip(s, logp, y)]
             return np.array(rets)
         def obj(logt):
-            return self.get_s_pt(logp, logt, y) / s - 1
+            return (self.get_s_pt(logp, logt, y) / (s*S_UNIT)) - 1
         opt_logt = brenth(obj, *TBOUNDS)
         return self.get_rho_pt(logp, opt_logt, y)
 
@@ -205,6 +205,9 @@ class IdealHHeMix(object):
 
     def get_p_srho(self, s, logrho, y):
         return self.get_pt_srho(s, logrho, y)[0]
+
+    # def get_p_st(self, s, t, y):
+    #     rho = self.get_rho_s
 
     ## T getters
     def get_t_rhop(self, logrho, logp, y):
@@ -222,7 +225,7 @@ class IdealHHeMix(object):
                     for el in zip(s, logp, y)]
             return np.array(rets)
         def obj(logt):
-            return self.get_s_pt(logp, logt, y) / logrho - 1
+            return (self.get_s_pt(logp, logt, y) / (s*S_UNIT)) - 1
         return brenth(obj, *TBOUNDS)
 
     def get_t_srho(self, s, logrho, y):
@@ -231,28 +234,36 @@ class IdealHHeMix(object):
     ## U getters
     def get_u_pt(self, logp, logt, y):
         return (
-            (1 - y) * self.eos_h.get_u_pt(logp, logt, y)
-            + y * self.eos_he.get_u_pt(logp, logt, y)
+            np.log10((1 - y) * (10**self.eos_h.get_u_pt(logp, logt, y))
+            + y * (10**self.eos_he.get_u_pt(logp, logt, y)))
         )
+
+    def get_u_srho(self, s, logrho, y):
+        logp, logt = self.get_pt_srho(s, logrho, y)
+        return self.get_u_pt(logp, logt, y)
+
 
     ## combined getters
     def get_sp_rhot(self, logrho, logt, _y):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, y):
         # 2D inversion...
-        if np.isarray(s):
+        if not np.isscalar(s):
+        #if hasattr(s, '__len__'):
             return np.array([self.get_pt_srho(*el)
                              for el in zip(s, logrho, y)])
-        def opt(y):
-            logp, logt = y
-            return (
-                (self.get_s_pt(logp, logt, y) / s - 1)**2
+        def opt(v):
+            logp, logt = v
+            ret = (
+                ((self.get_s_pt(logp, logt, y) / s*S_UNIT) - 1)**2
                 + (self.get_rho_pt(logp, logt, y) / logrho - 1)**2
             )
+            #print(y)
+            return ret
         sol = minimize(opt, [8, 3],
                        bounds=(PBOUNDS, TBOUNDS),
                        method='nelder-mead')

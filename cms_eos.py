@@ -32,8 +32,8 @@ def cms_reader(tab_name):
 
     tab = np.loadtxt('%s/cms/DirEOS2019/%s' % (CURR_DIR, tab_name), comments='#')
     tab_df = pd.DataFrame(tab, columns=cols)
-    data = tab_df[(tab_df['logt'] <= 5) & (tab_df['logt'] != 2.8)# ROB: increased to 6.0 to test wider range for brenth
-                 ]
+    data = tab_df[(tab_df['logt'] <= 5) & (tab_df['logt'] != 2.8)]# ROB: increased to 6.0 to test wider range for brenth
+    #data = tab_df
 
     data['logp'] += 10 # 1 GPa = 1e10 cgs
     data['logu'] += 10 # 1 MJ/kg = 1e13 erg/kg = 1e10 erg/g
@@ -274,10 +274,10 @@ def err_p_rhot(lgp, lgt, rhoval, y):
     #s *= erg_to_kbbar
     return  logrho/rhoval - 1
 
-def err_p_su(lgp, s, uval, y):
-    logt = get_rho_t(s, lgp, y)[-1]
-    logu = get_u_pt(lgp, logt, y)
-    return logu/uval - 1
+# def err_p_su(lgp, s, uval, y):
+#     logt = get_rho_t(s, lgp, y)[-1]
+#     logu = get_u_pt(lgp, logt, y)
+#     return logu/uval - 1
 
 def err_pt_srho(pt_pair, sval, rval, y):
     lgp, lgt = pt_pair
@@ -286,23 +286,26 @@ def err_pt_srho(pt_pair, sval, rval, y):
     #logrho = np.log10(rho)
     return  s/sval - 1, logrho/rval -1
 
-def err_rho_su(lgr, s, uval, y): #uval in log10
-    #logt = get_rho_t(s, lgp, y)[-1]
-    logu = np.log10(get_u_sr(s, lgr, y))
-    return logu/uval - 1
+# def err_rho_su(lgr, s, uval, y): #uval in log10
+#     #logt = get_rho_t(s, lgp, y)[-1]
+#     logu = np.log10(get_u_sr(s, lgr, y))
+#     return logu/uval - 1
 
-def err_t_urho(lgt, lgr, uval, y):
-    logu = get_u_rho(lgr, lgt, y)
-    return logu/uval - 1
+# def err_t_urho(lgt, lgr, uval, y):
+#     logu = get_u_rho(lgr, lgt, y)
+#     return logu/uval - 1
 
 def err_t_srho(lgt, lgr, sval, y):
-    s = get_s_rhot(lgr, lgt, y)*erg_to_kbbar
+    s = get_s_rhot(lgr, lgt, y)
+    sval /= erg_to_kbbar
     return s/sval - 1
 
 ### inversion functions ###
 
 TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when the top limit of the CMS table is logT<5
-PBOUNDS = [5, 15]
+PBOUNDS = [0, 15]
+
+XTOL = 1e-8
 
 def get_pt_su(s, u, y):
     if u > 12:
@@ -321,82 +324,63 @@ def get_pt_srho(s, rho, y, guess=[7, 2.7], alg='hybr'):
     
 
 def get_p_srho(s, rho, y):
-    if np.isscalar(rho):
+    if np.isscalar(s):
             #guess = 2.5
-        sol = root_scalar(err_p_srho, bracket=PBOUNDS, method='brenth', args=(rho, s, y))
+        sol = root_scalar(err_p_srho, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(rho, s, y))
         return sol.root
-    else:
-        res = []
-        for s_, r_, y_ in zip(s, rho, y):
-            try:
-                sol = get_p_srho(s_, r_, y_)#root_scalar(err_p_srho, bracket=[5, 14], method='brenth', args=(r_, s_, y_))
-                res.append(sol)
-            except:
-                print(s_, r_, y_)
-                raise
-        return np.array(res)
+
+    sol = np.array([get_p_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
+    return sol
 
 def get_t_sp(s, p, y):
     if np.isscalar(s):
         try:
-            sol = root_scalar(err_t_sp, bracket=TBOUNDS, method='brenth', args=(p, s, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+            sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
             return sol.root
         except:
-            print(s, p, y)
+            print('s={}, p={}, y={}'.format(s, p, y))
             raise
-    else:
-        res = []
-        for s_, p_, y_ in zip(s, p, y):
-            sol = get_t_sp(s_, p_, y_)#root_scalar(err_t_sp, bracket=[0, 5], method='brenth',args=(p_, s_, y_))
-            res.append(sol)
-        return np.array(res)
+    sol = np.array([get_t_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)])
+    return sol
 
 def get_rhot_sp(s, p, y):
-    t = get_t_sp(s, p, y)
-    rho = get_rho_pt(p, t, y)
+    # t = get_t_sp(s, p, y)
+    # rho = get_rho_pt(p, t, y)
+    rho, t = get_rho_t(s, p, y)
     return rho, t
-
-def get_p_su(s, u, y):
-    sol = root_scalar(err_p_su, bracket=PBOUNDS, method='brenth', args=(s, u, y))
-    return sol.root
- 
-def get_rho_su(s, u, y):
-    sol = root_scalar(err_rho_su, bracket=[-4, 1], method='brenth', args=(s, u, y))
-    return sol.root
 
 def get_t_rhop(rho, p, y):
     if np.isscalar(rho):
-        sol = root_scalar(err_t_rhop, bracket=TBOUNDS, method='brenth', #xtol=1e-6, 
-            args=(p, rho, y))
-        return sol.root
+        try:
+            sol = root_scalar(err_t_rhop, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, rho, y))
+            return sol.root
+        except:
+            print('rho={}, p={}, y={}'.format(rho, p, y))
+            raise
     sol = np.array([get_t_rhop(rho_, p_, y_) for rho_, p_, y_ in zip(rho, p, y)])
     return sol
 
 def get_t_srho(s, rho, y):
     if np.isscalar(rho):
         #guess = 2.5
-        sol = root_scalar(err_t_srho, bracket=TBOUNDS, method='brenth', args=(rho, s, y))
-        return sol.root
-    else:
-        res = []
-        for s_, r_, y_ in zip(s, rho, y):
-            sol = get_t_srho(s_, r_, y_)#root_scalar(err_t_sr, bracket=[0, 5], method='brenth',args=(r_, s_, y_))
-            res.append(sol)
-        return np.array(res)
+        try:
+            sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(rho, s, y))
+            return sol.root
+        except:
+            print('s={}, rho={}, y={}'.format(s, rho, y))
+            raise
+    sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
+    return sol
 
 def get_p_rhot(rho, t, y):
     #y = cms.n_to_Y(x)
     if np.isscalar(rho):
         #guess = 7
-        sol = root_scalar(err_p_rhot, bracket=PBOUNDS, method='brenth', #xtol=1e-6, 
+        sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', #xtol=1e-6, 
             args=(t, rho, y))
         return sol.root
-    else:
-        res = []
-        for r_, t_, y_ in zip(rho, t, y):
-            sol = get_p_rhot(r_, t_, y_)#root_scalar(err_p_rhot, bracket=[4, 17], method='brenth',args=(t_, r_, y_))
-            res.append(sol)
-        return np.array(res)
+    sol = np.array([get_p_rhot(rho_, t_, y_) for rho_, t_, y_ in zip(rho, t, y)])
+    return sol
 
 def get_s_rhot(rho, t, y):
     #y = cms.n_to_Y(x)
@@ -433,21 +417,11 @@ def get_s_rhop(rho, p, y):
 ### entropy gradients ###
 
 def get_dsdy_rhop(rho, p, y, dy=0.01):
-    # P0, T0 = get_pt_srho(s, rho, y)
-    # P1, T1 = get_pt_srho(s, rho, y*(1+dy))
-    #S1 = get_s_pt(P0, T0, y)
-    #S2 = get_s_pt(P1, T1, y*(1+dy))
     S0 = get_s_rhop(rho, p, y)
     S1 = get_s_rhop(rho, p, y*(1+dy))
 
     return (S1 - S0)/(y*dy)
 
-# def get_dsdy_rp(rho, p, y, dy=0.01):
-#     s0 = get_s_rhop(rho, p, y)
-#     s1 = get_s_rhop(rho, p, y*(1+dy))
-
-#     dsdy = (s1 - s0)/(y*dy)
-#     return dsdy
 
 def get_dsdy_rhot(rho, t, y, dy=0.01):
     s0 = get_s_rhot(rho, t, y)
@@ -461,13 +435,6 @@ def get_dsdy_pt(p, t, y, dy=0.01):
     S2 = get_s_pt(p, t, y*(1+dy))
 
     return (S2 - S1)/(y*dy)
-
-# def get_dsdu_ry(u, rho, y, du = 0.01):
-#     u1 = 10**u # cgs
-#     u2 = np.log10(u1*(1+du))
-#     s0 = get_s_ur(u, rho, y) # need to be logs
-#     s1 = get_s_ur(u2, rho, y)
-#     return (s1 - s0)/(u1*du)
 
 def get_dsdt_ry_rhot(rho, t, y, dt=0.1):
     s0 = get_s_rhot(rho, t, y)
@@ -516,8 +483,10 @@ def get_drhodt_py(p, t, y, dt=0.1):
 ### temperature gradients ###
 
 def get_dtdy_sp(s, p, y, dy=0.01):
-    t0 = get_t_sp(s, p, y)
-    t1 = get_t_sp(s, p, y*(1+dy))
+    # t0 = get_t_sp(s, p, y)
+    # t1 = get_t_sp(s, p, y*(1+dy))
+    _, t0 = get_rhot_sp(s, p, y)
+    _, t1 = get_rhot_sp(s, p, y*(1+dy))
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
@@ -528,9 +497,9 @@ def get_dtdy_srho(s, rho, y, dy=0.01):
 
     return (t1 - t0)/(y*dy)
 
-def get_dtdy_rp(rho, p, y, dy=0.01):
-    t0 = get_t_rhop(p, rho, y)
-    t1 = get_t_rhop(p, rho, y*(1+dy))
+def get_dtdy_rhop(rho, p, y, dy=0.01):
+    t0 = get_t_rhop(rho, p, y)
+    t1 = get_t_rhop(rho, p, y*(1+dy))
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
