@@ -2,7 +2,7 @@ import numpy as np
 #import scvh_nr
 from scipy.optimize import root, root_scalar
 from scipy.interpolate import RegularGridInterpolator as RGI
-from eos import aneos#, scvh_man
+from eos import aneos, scvh_man
 import os
 erg_to_kbbar = 1.202723550011625e-08
 mh = 1 
@@ -11,7 +11,7 @@ mhe = 4.0026
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 eos_aneos = aneos.eos(path_to_data='%s/aneos' % CURR_DIR, material='serpentine')
-#eos_scvh = scvh_man.eos(path_to_data='%s/scvh_mesa' % CURR_DIR)
+eos_scvh = scvh_man.eos(path_to_data='%s/scvh_mesa' % CURR_DIR)
 
 def scvh_reader(tab_name):
     tab = []
@@ -251,15 +251,21 @@ def get_t_srho(s, rho, y):
     sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
     return sol
 
-def get_p_srho(s, rho, y):
+def get_pt_srho(s, rho, y):
     t = get_t_srho(s, rho, y)
-    return get_p_rhot(rho, t, y)
+    return get_p_rhot(rho, t, y), t
+
+#def get_pt_srho(s, rho, y)
 
 def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
     #y = cms.n_to_Y(y)
     s = get_s_rhot(rho, t, y)
     return s # in cgs
+
+def get_u_pt(p, t, y): 
+    u = eos_scvh.get_logu(p, t, y) # volume law
+    return u
 
 ### derivatives ###
 

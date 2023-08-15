@@ -15,12 +15,17 @@ Ordering on quantities follows the ordering above
 '''
 import numpy as np
 from scipy.optimize import brenth, minimize
+from astropy.constants import k_B
+from astropy.constants import u as amu
+from astropy import units as u
 
-kB = 1.38e-16
-mp = 1.67e-24
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
-S_UNIT = kB / mp
-U_UNIT = kB / mp
+mp = amu.to('g').value # grams
+kB = k_B.to('erg/K').value # ergs/K
+
+S_UNIT = 1/erg_to_kbbar
+U_UNIT = 1/mp
 
 class IdealEOS(object):
     """
@@ -103,18 +108,14 @@ class IdealEOS(object):
 
     ## U getters
     def get_u_pt(self, logp, logt, _y):
-        return U_UNIT * 3/2 * 10**logt / self.m
-
-    def get_u_srho(self, s, logrho, _y):
-        logp, logt = self.get_pt_srho(s, logrho, _y)
-        return self.get_u_pt(logp, logt, _y)
+        return np.log10(U_UNIT * 3/2 * kB * 10**logt / self.m)
 
     ## combined getters
     def get_sp_rhot(self, logrho, logt, _y):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, _y):
         return self.get_p_srho(s, logrho, _y), self.get_t_srho(s, logrho, _y)
@@ -139,6 +140,7 @@ def get_number_fracs(y, m_h, m_he):
     f_he = y / m_he
     f_tot = f_h + f_he
     return f_h / f_tot, f_he / f_tot
+
 def get_smix(y, m_h, m_he):
     f_h, f_he = get_number_fracs(y, m_h, m_he)
     # entropy of mixing in units of kB / baryon
@@ -147,7 +149,7 @@ def get_smix(y, m_h, m_he):
     return smix
 
 TBOUNDS = (0, 8)
-PBOUNDS = (6, 14)
+PBOUNDS = (5, 14)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m
@@ -187,7 +189,7 @@ class IdealHHeMix(object):
                     for el in zip(s, logp, y)]
             return np.array(rets)
         def obj(logt):
-            return self.get_s_pt(logp, logt, y) / s - 1
+            return (self.get_s_pt(logp, logt, y) / (s*S_UNIT)) - 1
         opt_logt = brenth(obj, *TBOUNDS)
         return self.get_rho_pt(logp, opt_logt, y)
 
@@ -203,6 +205,9 @@ class IdealHHeMix(object):
 
     def get_p_srho(self, s, logrho, y):
         return self.get_pt_srho(s, logrho, y)[0]
+
+    # def get_p_st(self, s, t, y):
+    #     rho = self.get_rho_s
 
     ## T getters
     def get_t_rhop(self, logrho, logp, y):
@@ -220,7 +225,7 @@ class IdealHHeMix(object):
                     for el in zip(s, logp, y)]
             return np.array(rets)
         def obj(logt):
-            return self.get_s_pt(logp, logt, y) / s - 1
+            return (self.get_s_pt(logp, logt, y) / (s*S_UNIT)) - 1
         return brenth(obj, *TBOUNDS)
 
     def get_t_srho(self, s, logrho, y):
@@ -229,43 +234,39 @@ class IdealHHeMix(object):
     ## U getters
     def get_u_pt(self, logp, logt, y):
         return (
-            (1 - y) * self.eos_h.get_u_pt(logp, logt, y)
-            + y * self.eos_he.get_u_pt(logp, logt, y)
+            np.log10((1 - y) * (10**self.eos_h.get_u_pt(logp, logt, y))
+            + y * (10**self.eos_he.get_u_pt(logp, logt, y)))
         )
+
     def get_u_srho(self, s, logrho, y):
-        return (
-            (1 - y) * self.eos_h.get_u_srho(s, logrho, y)
-            + y * self.eos_he.get_u_srho(s, logrho, y)
-        )
+        logp, logt = self.get_pt_srho(s, logrho, y).T
+        return self.get_u_pt(logp, logt, y)
+
 
     ## combined getters
     def get_sp_rhot(self, logrho, logt, _y):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, y):
         # 2D inversion...
         if not np.isscalar(s):
+        #if hasattr(s, '__len__'):
             return np.array([self.get_pt_srho(*el)
                              for el in zip(s, logrho, y)])
         def opt(v):
             logp, logt = v
-            return (
-                (self.get_s_pt(logp, logt, y) / s - 1)**2
+            ret = (
+                ((self.get_s_pt(logp, logt, y) / s*S_UNIT) - 1)**2
                 + (self.get_rho_pt(logp, logt, y) / logrho - 1)**2
             )
-
-        def print_res(v):
-            logp, logt = v
-            print(
-                (self.get_s_pt(logp, logt, y) / s - 1)**2,
-                (self.get_rho_pt(logp, logt, y) / logrho - 1)**2)
+            #print(y)
+            return ret
         sol = minimize(opt, [8, 3],
                        bounds=(PBOUNDS, TBOUNDS),
                        method='nelder-mead')
-        # print_res(sol.x)
         return sol.x
 
     ## analytic derivatives
@@ -349,38 +350,26 @@ class EOSFiniteDs(object):
         _, logt2 = self.eos.get_pt_srho(s, logrho, y * (1 + self.d))
         return (logt2 - logt1) / (y * self.d)
 
-if __name__ == '__main__':
-    # quick test: made the dsdy plots from my previous script
-    import numpy as np
-    import matplotlib
-    #matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif', size=20)
-    plt.rc('lines', lw=2.5)
-    plt.rc('xtick', direction='in', top=True, bottom=True)
-    plt.rc('ytick', direction='in', left=True, right=True)
-    plt.rc('figure', figsize=(8.0, 8.0), dpi=300)
+# if __name__ == '__main__':
+#     # quick test: made the dsdy plots from my previous script
+#     import numpy as np
+#     import matplotlib
+#     #matplotlib.use('Agg')
+#     import matplotlib.pyplot as plt
+#     plt.rc('text', usetex=True)
+#     plt.rc('font', family='serif', size=20)
+#     plt.rc('lines', lw=2.5)
+#     plt.rc('xtick', direction='in', top=True, bottom=True)
+#     plt.rc('ytick', direction='in', left=True, right=True)
+#     plt.rc('figure', figsize=(8.0, 8.0), dpi=300)
 
-    hhe_eos = IdealHHeMix()
-    rho = -2
-    Y = 0.25
-    s_grid = np.linspace(6, 9, 301) * S_UNIT
-    ds = np.diff(s_grid)[0]
-
-    p0, t0 = hhe_eos.get_pt_srho(s_grid[0], rho, Y)
-    u0 = hhe_eos.get_u_pt(p0, t0, Y)
-    u_lst = [u0]
-    u_int = [u0]
-    u_prev = u0
-    for si in s_grid[1: ]:
-        pi, ti = hhe_eos.get_pt_srho(si, rho, Y)
-        u_lst.append(hhe_eos.get_u_pt(pi, ti, Y))
-        du = 10**ti * ds
-        u_int.append(u_prev + du)
-        u_prev += du
-    plt.semilogy(s_grid, u_lst)
-    plt.plot(s_grid, u_int)
-    plt.show()
-    #plt.savefig('/tmp/foo')
-    #plt.close()
+#     hhe_eos = IdealHHeMix()
+#     diffs = EOSFiniteDs(hhe_eos)
+#     y = np.linspace(0.01, 0.99, 101)
+#     logp = 0 * y + 6
+#     logrho = 0 * y - 4
+#     dsdy_rhop = diffs.get_dsdy_rhop(logrho, logp, y)
+#     plt.plot(y, dsdy_rhop)
+#     #plt.savefig('/tmp/testo')
+#     #plt.close()
+#     plt.show()
