@@ -251,9 +251,11 @@ def get_t_srho(s, rho, y):
     sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
     return sol
 
-def get_p_srho(s, rho, y):
+def get_pt_srho(s, rho, y):
     t = get_t_srho(s, rho, y)
-    return get_p_rhot(rho, t, y)
+    return get_p_rhot(rho, t, y), t
+
+#def get_pt_srho(s, rho, y)
 
 def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
@@ -261,9 +263,10 @@ def get_s_rhop(rho, p, y):
     s = get_s_rhot(rho, t, y)
     return s # in cgs
 
- def get_u_pt(p, t, y):
-    u = 10**eos_scvh.get_logu(p, t, y)
+def get_u_pt(p, t, y): 
+    u = eos_scvh.get_logu(p, t, y) # volume law
     return u
+
 ### derivatives ###
 
 def get_dpdy_srho(s, rho, y, dy=0.1):

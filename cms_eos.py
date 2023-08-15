@@ -284,7 +284,7 @@ def err_pt_srho(pt_pair, sval, rval, y):
     s, logrho = get_s_pt(lgp, lgt, y), get_rho_pt(lgp, lgt, y)
     sval /= erg_to_kbbar
     #logrho = np.log10(rho)
-    return  s/sval - 1, logrho/rval -1
+    return  float(s/sval - 1), float(logrho/rval -1)
 
 # def err_rho_su(lgr, s, uval, y): #uval in log10
 #     #logt = get_rho_t(s, lgp, y)[-1]
@@ -315,7 +315,7 @@ def get_pt_su(s, u, y):
     sol = root(err_pt_su, guess, args=(s, u, y))
     return sol.x
 
-def get_pt_srho(s, rho, y, guess=[7, 2.7], alg='hybr'):
+def get_pt_srho(s, rho, y, guess=[8, 3], alg='hybr'):
     if np.isscalar(rho):
         sol = root(err_pt_srho, guess, tol=1e-8, method=alg, args=(s, rho, y))
         return sol.x
@@ -388,16 +388,16 @@ def get_s_rhot(rho, t, y):
     s = get_s_pt(p, t, y)
     return s # in cgs
 
-def get_u_rho(rho, t, y):
+def get_u_rhot(rho, t, y):
     #y = cms.n_to_Y(x)
     p = get_p_rhot(rho, t, y) 
     logu = get_u_pt(p, t, y)
     return 10**logu
 
-def get_u_sr(s, rho, y):
+def get_u_srho(s, rho, y):
     #y = cms.n_to_Y(x)
     #t = get_t_srho(s, rho, y)
-    p, t = get_p_srho(s, rho, y), get_t_srho(s, rho, y)
+    p, t = get_pt_srho(s, rho, y)#, get_t_srho(s, rho, y)
     #return 10**get_logu_r(rho, t, y)
     return 10**get_u_pt(p, t, y)
 
@@ -456,6 +456,9 @@ def get_dudy_srho(s, rho, y, dy=0.01):
     U0 = get_u_pt(P0, T0, y)
     U1 = get_u_pt(P1, T1, y*(1+dy))
     return (U1 - U0)/(y*dy)
+
+def get_duds_rhoy_srho(s, rho, y):
+    U0 = get_u_srho()
 
 ### density gradients ###
 
