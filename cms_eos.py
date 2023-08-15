@@ -457,8 +457,21 @@ def get_dudy_srho(s, rho, y, dy=0.01):
     U1 = get_u_pt(P1, T1, y*(1+dy))
     return (U1 - U0)/(y*dy)
 
-def get_duds_rhoy_srho(s, rho, y):
-    U0 = get_u_srho()
+# du/ds_(rho, Y) = T test
+def get_duds_rhoy_srho(s, rho, y, ds=0.1):
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+    U0 = get_u_srho(S1*erg_to_kbbar, rho, y)
+    U1 = get_u_srho(S2*erg_to_kbbar, rho, y)
+    return (U1 - U0)/(S1*ds)
+
+def get_dudrho_sy_srho(s, rho, y, drho=0.1):
+    R1 = 10**rho
+    R2 = R1*(1+drho)
+    #rho1 = np.log10((10**rho)*(1+drho))
+    U0 = get_u_srho(s, np.log10(R1), y)
+    U1 = get_u_srho(s, np.log10(R2), y)
+    return (U1 - U0)/(R1*drho)
 
 ### density gradients ###
 
