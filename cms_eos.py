@@ -6,7 +6,7 @@ from astropy import units as u
 from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
-
+from numba import jit
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
@@ -278,7 +278,7 @@ def err_p_rhot(lgp, lgt, rhoval, y):
 #     logt = get_rho_t(s, lgp, y)[-1]
 #     logu = get_u_pt(lgp, logt, y)
 #     return logu/uval - 1
-
+#@jit
 def err_pt_srho(pt_pair, sval, rval, y):
     lgp, lgt = pt_pair
     s, logrho = get_s_pt(lgp, lgt, y), get_rho_pt(lgp, lgt, y)
@@ -315,9 +315,10 @@ def get_pt_su(s, u, y):
     sol = root(err_pt_su, guess, args=(s, u, y))
     return sol.x
 
+#@jit
 def get_pt_srho(s, rho, y, guess=[8, 3], alg='hybr'):
     if np.isscalar(rho):
-        sol = root(err_pt_srho, guess, tol=1e-8, method=alg, args=(s, rho, y))
+        sol = root(err_pt_srho, guess, tol=1e-10, method=alg, args=(s, rho, y))
         return sol.x
     p, t = np.array([get_pt_srho(s_, r_, y_) for s_, r_, y_ in zip(s, rho, y)]).T
     return p, t
@@ -399,7 +400,7 @@ def get_u_srho(s, rho, y):
     #t = get_t_srho(s, rho, y)
     p, t = get_pt_srho(s, rho, y)#, get_t_srho(s, rho, y)
     #return 10**get_logu_r(rho, t, y)
-    return 10**get_u_pt(p, t, y)
+    return get_u_pt(p, t, y)
 
 # def get_s_ur(u, rho, y):
 #     t = get_t_ur(u, rho, y)
@@ -453,12 +454,26 @@ def get_dudy_srho(s, rho, y, dy=0.01):
     # u1 = np.log10(get_u_sr(s, rho, y*(1+dy)))
     P0, T0 = get_pt_srho(s, rho, y)
     P1, T1 = get_pt_srho(s, rho, y*(1+dy))
-    U0 = get_u_pt(P0, T0, y)
-    U1 = get_u_pt(P1, T1, y*(1+dy))
+    U0 = 10**get_u_pt(P0, T0, y)
+    U1 = 10**get_u_pt(P1, T1, y*(1+dy))
     return (U1 - U0)/(y*dy)
 
-def get_duds_rhoy_srho(s, rho, y):
-    U0 = get_u_srho()
+# du/ds_(rho, Y) = T test
+def get_duds_rhoy_srho(s, rho, y, ds=0.1):
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
+    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
+    return (U1 - U0)/(S1*ds)
+
+def get_dudrho_sy_srho(s, rho, y, drho=0.1):
+    R1 = 10**rho
+    R2 = R1*(1+drho)
+    #rho1 = np.log10((10**rho)*(1+drho))
+    U0 = 10**get_u_srho(s, np.log10(R1), y)
+    U1 = 10**get_u_srho(s, np.log10(R2), y)
+    #return (U1 - U0)/(R1*drho)
+    return (U1 - U0)/((1/R1) - (1/R2))
 
 ### density gradients ###
 
@@ -507,6 +522,13 @@ def get_dtdy_rhop(rho, p, y, dy=0.01):
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
 
+def get_dtdrho_sy(s, rho, y, drho = 0.001): # dlogT/dlogrho_{s, Y}
+    #R0 = 10**rho
+    #R1 = np.log10((10**rho)*(1+drho))
+    T0 = get_t_srho(s, rho, y)
+    T1 = get_t_srho(s, rho*(1+drho), y)
+    return (T1 - T0)/(rho*drho)
+
 # def get_dtdy_rp(rho, p, y, dy=0.01):
 #     t0 = get_t_pr(p, rho, y)
 #     t1 = get_t_pr(p, rho, y*(1+dy))
@@ -529,3 +551,15 @@ def get_B2(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
     dsdy_pt = get_dsdy_pt(p, t, y, dy=dy)
     return -((10**p)/c_p)*dsdy_pt
 
+### speed tests ###
+
+
+#def test():
+# import time
+# sgrid = np.linspace(5.5, 9, 100)
+# rhogrid = np.linspace(-4, 0.65, 100)
+# ygrid = 0 * sgrid + 0.25
+# start = time.time()
+# p, t = get_pt_srho(sgrid, rhogrid, ygrid)
+# end = time.time()
+# print('get_pt_srho test:', end - start)

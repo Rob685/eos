@@ -92,7 +92,7 @@ get_chit = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chit_arr, method
 get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, method='linear', bounds_error=False, fill_value=None)
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
-def get_rho_t(s, p, y):
+def get_rhot_sp(s, p, y):
     # cp_res = get_cp(np.array([y, s, p]).T)
     # cv_res = get_cv(np.array([y, s, p]).T)
     return get_rho(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
@@ -212,13 +212,13 @@ def get_s_pt(p, t, y):
     #rho, T = get_rhot_sp()
     return get_s_rhot(rho, t, y)
 
-def get_rhot_sp(s, p, y, guess=[-2, 2.1], alg='hybr'): # in-situ inversion
-    if np.isscalar(s):
-        sol = root(err_rhot, guess, tol=1e-8, method=alg, args=(s, p, y))
-        return sol.x
+# def get_rhot_sp(s, p, y, guess=[-2, 2.1], alg='hybr'): # in-situ inversion
+#     if np.isscalar(s):
+#         sol = root(err_rhot, guess, tol=1e-8, method=alg, args=(s, p, y))
+#         return sol.x
 
-    rho, t = np.array([get_rhot_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)]).T
-    return rho, t
+#     rho, t = np.array([get_rhot_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)]).T
+#     return rho, t
 
 def get_t_rhop(rho, p, y):
     TBOUNDS2 = [0, 4.1]
@@ -267,19 +267,23 @@ def get_u_pt(p, t, y):
     u = eos_scvh.get_logu(p, t, y) # volume law
     return u
 
+def get_u_srho(s, rho, y):
+    p, t = get_pt_srho(s, rho, y)
+    return get_u_pt(p, t, y)
+
 ### derivatives ###
 
 def get_dpdy_srho(s, rho, y, dy=0.1):
-    P0 = get_p_srho(s, rho, y)
-    P1 = get_p_srho(s, rho, y*(1+dy))
+    P0 = get_pt_srho(s, rho, y)[0]
+    P1 = get_pt_srho(s, rho, y*(1+dy))[0]
 
     return (P1 - P0)/(y*dy) #dlogP/dY
 
 def get_dpds_srho(s, rho, y, ds=0.1):
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
-    P0 = get_p_srho(S0*erg_to_kbbar, rho, y)
-    P1 = get_p_srho(S1*erg_to_kbbar, rho, y)
+    P0 = get_pt_srho(S0*erg_to_kbbar, rho, y)[0]
+    P1 = get_pt_srho(S1*erg_to_kbbar, rho, y)[0]
 
     return (P1 - P0)/(S1 - S0)
 
@@ -295,3 +299,33 @@ def get_dsdy_rhop(s, rho, y, dy=0.01, ds=0.1):
     dpds = get_dpds_srho(s, rho, y, ds=ds)
 
     return -dpdy/dpds
+
+### energy gradients ###
+
+# def get_dudy_srho(s, rho, y, dy=0.01):
+#     # u0 = get_u_s(s, rho, y)
+#     # u1 = get_u_s(s, rho, y*(1+dy))
+#     # u0 = np.log10(get_u_sr(s, rho, y))
+#     # u1 = np.log10(get_u_sr(s, rho, y*(1+dy)))
+#     P0, T0 = get_pt_srho(s, rho, y)
+#     P1, T1 = get_pt_srho(s, rho, y*(1+dy))
+#     U0 = 10**get_u_pt(P0, T0, y)
+#     U1 = get_u_pt(P1, T1, y*(1+dy))
+#     return (U1 - U0)/(y*dy)
+
+# du/ds_(rho, Y) = T test
+def get_duds_rhoy_srho(s, rho, y, ds=0.1):
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
+    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
+    return (U1 - U0)/(S1*ds)
+
+def get_dudrho_sy_srho(s, rho, y, drho=0.1):
+    R1 = 10**rho
+    R2 = R1*(1+drho)
+    #rho1 = np.log10((10**rho)*(1+drho))
+    U0 = 10**get_u_srho(s, np.log10(R1), y)
+    U1 = 10**get_u_srho(s, np.log10(R2), y)
+    #return (U1 - U0)/(R1*drho)
+    return (U1 - U0)/((1/R1) - (1/R2))
