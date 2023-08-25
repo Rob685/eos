@@ -18,8 +18,9 @@ from scipy.optimize import brenth, minimize
 
 kB = 1.38e-16
 mp = 1.67e-24
+erg_to_kbbar = 1.202723550011625e-08
 
-S_UNIT = kB / mp
+S_UNIT = 1 #kB / mp
 U_UNIT = kB / mp
 
 class IdealEOS(object):
@@ -103,7 +104,7 @@ class IdealEOS(object):
 
     ## U getters
     def get_u_pt(self, logp, logt, _y):
-        return U_UNIT * 3/2 * 10**logt / self.m
+        return np.log10(U_UNIT * 3/2 * 10**logt / self.m)
 
     def get_u_srho(self, s, logrho, _y):
         logp, logt = self.get_pt_srho(s, logrho, _y)
@@ -114,7 +115,7 @@ class IdealEOS(object):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, _y):
         return self.get_p_srho(s, logrho, _y), self.get_t_srho(s, logrho, _y)
@@ -146,8 +147,8 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (0, 8)
-PBOUNDS = (6, 14)
+TBOUNDS = (0, 12)
+PBOUNDS = (0, 20)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m
@@ -233,17 +234,20 @@ class IdealHHeMix(object):
             + y * self.eos_he.get_u_pt(logp, logt, y)
         )
     def get_u_srho(self, s, logrho, y):
-        return (
-            (1 - y) * self.eos_h.get_u_srho(s, logrho, y)
-            + y * self.eos_he.get_u_srho(s, logrho, y)
-        )
+
+        logp, logt = self.get_pt_srho(s, logrho, y)
+        return self.get_u_pt(logp, logt, y)
+        # return (
+        #     (1 - y) * self.eos_h.get_u_srho(s, logrho, y)
+        #     + y * self.eos_he.get_u_srho(s, logrho, y)
+        # )
 
     ## combined getters
     def get_sp_rhot(self, logrho, logt, _y):
         return self.get_s_rhot(logrho, logt), self.get_p_rhot(logrho, logt)
 
     def get_rhot_sp(self, s, logp, _y):
-        return self.get_rho_sp(s, logp), self.get_t_sp(s, logp)
+        return self.get_rho_sp(s, logp, _y), self.get_t_sp(s, logp, _y)
 
     def get_pt_srho(self, s, logrho, y):
         # 2D inversion...
@@ -300,7 +304,7 @@ class EOSFiniteDs(object):
         return getattr(self.eos, attr)
 
 
-    def get_chirho_sp(s, logp, y):
+    def get_chirho_sp(self, s, logp, y):
         logrho = self.eos.get_rho_sp(s, logp, y)
         logt = self.eos.get_t_sp(s, logp, y)
         return (
@@ -344,6 +348,23 @@ class EOSFiniteDs(object):
         u1 = self.eos.get_u_pt(logp1, logt1, y)
         u2 = self.eos.get_u_pt(logp2, logt2, y * (1 + self.d))
         return (u2 - u1) / (y * self.d)
+
+    def get_duds_rhoy_srho(self, s, rho, y, ds=0.001):
+        S1 = s/erg_to_kbbar
+        S2 = S1*(1+ds)
+        U0 = 10**self.get_u_srho(S1*erg_to_kbbar, rho, y)
+        U1 = 10**self.get_u_srho(S2*erg_to_kbbar, rho, y)
+        return (U1 - U0)/(S1*ds)
+
+    def get_dudrho_sy_srho(self, s, rho, y, drho=0.1):
+        R1 = 10**rho
+        R2 = R1*(1+drho)
+        #rho1 = np.log10((10**rho)*(1+drho))
+        U0 = 10**self.get_u_srho(s, np.log10(R1), y)
+        U1 = 10**self.get_u_srho(s, np.log10(R2), y)
+        #return (U1 - U0)/(R1*drho)
+        return (U1 - U0)/((1/R1) - (1/R2))
+
     def get_dtdy_srho(self, s, logrho, y):
         _, logt1 = self.eos.get_pt_srho(s, logrho, y)
         _, logt2 = self.eos.get_pt_srho(s, logrho, y * (1 + self.d))

@@ -5,6 +5,12 @@ from scipy.interpolate import RectBivariateSpline as rbs
 from scipy.optimize import brentq
 import os
 import pickle
+from astropy.constants import k_B
+from astropy import units as u
+from astropy.constants import u as amu
+
+kb = k_B.to('erg/K').value
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
 class eos:
     def __init__(self, path_to_data=None, fac_for_numerical_partials=1e-10):
@@ -24,8 +30,8 @@ class eos:
         # not using these at present, just making them available for reference
         self.logtmin, self.logtmax = 2.10, 7.06
 
-        self.path_to_h_data = '{}/h_tab.dat'.format(path_to_data)
-        self.path_to_he_data = '{}/he_tab.dat'.format(path_to_data)
+        self.path_to_h_data = '{}/scvh_h_tab.dat'.format(path_to_data)
+        self.path_to_he_data = '{}/scvh_he_tab.dat'.format(path_to_data)
 
         if os.path.exists('{}/scvh_h.dat.pkl'.format(path_to_data)) and os.path.exists('{}/scvh_he.dat.pkl'.format(path_to_data)):
             with open('{}/scvh_h.dat.pkl'.format(path_to_data), 'rb') as f:
@@ -299,7 +305,7 @@ class eos:
             '''eq. 54 of SCvH95.
             y is the helium mass fraction.'''
             try:
-                return const.mh / const.mhe * y / (1. - y)
+                return (const.mh / const.mhe) * (y / (1. - y))
             except ZeroDivisionError:
                 print('tried divide by zero in beta')
                 return np.nan
@@ -311,7 +317,7 @@ class eos:
             xhe is that of neutral helium
             xhep is that of singly ionized helium
             '''
-            return 3. / 2 * (1. + xh + 3 * xh2) / (1. + 2 * xhe + xhep)
+            return 1.5 * (1. + xh + 3 * xh2) / (1. + 2 * xhe + xhep)
 
         def get_delta(y, xh, xh2, xhe, xhep):
             '''eq. 56 of SCvH95.
@@ -340,7 +346,7 @@ class eos:
             else:
                 raise TypeError('input type %s not recognized in get_delta' % str(type(xh)))
 
-            return 2. / 3 * species_num / species_den * get_beta(y) * get_gamma(xh, xh2, xhe, xhep)
+            return 1.5 * (species_num / species_den) * get_beta(y) * get_gamma(xh, xh2, xhe, xhep)
 
         def get_smix(y, xh, xh2, xhe, xhep):
             '''ideal entropy of mixing for H/He, same units as H and He tables -- erg K^-1 g^-1.
@@ -356,13 +362,13 @@ class eos:
             # assert not np.any(np.isnan(delta)), 'delta nan'
 
             # print d
-            xeh = 1. / 2 * (1. - xh2 - xh) # number fraction of e-, for pure H -- eq. 34.
-            xehe = 1. / 3 * (2. - 2. * xhe - xhep) # number fraction of e- for pure He -- eq. 35.
-            return const.kb * (1. - y) / const.mh * 2. / (1. + xh + 3. * xh2) * \
+            xeh = (1. / 2) * (1. - xh2 - xh) # number fraction of e-, for pure H -- eq. 34.
+            xehe = (1. / 3) * (2. - 2. * xhe - xhep) # number fraction of e- for pure He -- eq. 35.
+            return ((1. - y) / const.mh * 2. / (1. + xh + 3. * xh2) * \
                 (np.log(1. + beta * gamma) \
                 - xeh * np.log(1. + delta) \
                 + beta * gamma * (np.log(1. + 1. / beta / gamma) \
-                - xehe * np.log(1. + 1. / delta)))
+                - xehe * np.log(1. + 1. / delta))))*kb
 
         def species_partials(pair, y, f):
             # f is a dimensionless factor by which we perturb logp, logt to compute centered differences for numerical partials.
@@ -446,8 +452,8 @@ class eos:
         res = {}
         rho_h = res['rho_h'] = 10 ** res_h['logrho']
         rho_he = res['rho_he'] = 10 ** res_he['logrho']
-        rhoinv = (1. - y) / rho_h + y / rho_he # additive volume rule -- eq. 39.
-        rho = rhoinv ** -1.
+        rho =  1 / (((1. - y) / rho_h) + (y / rho_he)) # additive volume rule -- eq. 39.
+        #rho = rhoinv ** -1.
         res['logrho'] = np.log10(rho)
 
         u = (1. - y) * 10 ** res_h['logu'] + y * 10 ** res_he['logu'] # also additive volume -- eq. 40.
@@ -467,7 +473,7 @@ class eos:
         xhe = res_he['xhe']
         xhep = res_he['xhep']
         smix = get_smix(y, xh, xh2, xhe, xhep)
-        s = (1. - y) * s_h + y * s_he #+ smix # entropy for an ideal (noninteracting) mixture -- eq. 41. ROB: commented out smix
+        s = (1. - y) * s_h + y * s_he + smix # entropy for an ideal (noninteracting) mixture -- eq. 41. ROB: commented out smix
 
         res['logs'] = np.log10(s)
         res['logsmix'] = np.log10(smix)
@@ -485,7 +491,7 @@ class eos:
         dxh2_dlogt, dxh_dlogt, dxhe_dlogt, dxhep_dlogt = dxi_dlogt
 
         # prefactor defined such that smix = smix_prefactor * s_tilde, where s_tilde is the dimensionless entropy I work with in the handwritten notes. (in code below i'll refer to s_tilde as ss)
-        smix_prefactor = 2. * const.kb * (1. - y) / const.mh
+        smix_prefactor = 2. * kb * (1. - y) / const.mh
 
         beta = get_beta(y)
         gamma = get_gamma(xh, xh2, xhe, xhep)
