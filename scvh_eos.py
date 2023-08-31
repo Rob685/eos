@@ -4,7 +4,7 @@ from scipy.optimize import root, root_scalar
 from scipy.interpolate import RegularGridInterpolator as RGI
 from eos import aneos, scvh_man
 import os
-erg_to_kbbar = 1.202723550011625e-08
+erg_to_kbbar = 1.2114751277768644e-08
 mh = 1 
 mhe = 4.0026
 

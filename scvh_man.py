@@ -8,9 +8,10 @@ import pickle
 from astropy.constants import k_B
 from astropy import units as u
 from astropy.constants import u as amu
+from eos.cms_eos import get_smix_id_y
 
-kb = k_B.to('erg/K').value
-erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
+# kb = k_B.to('erg/K').value
+erg_to_kbbar = 1.2114751277768644e-08
 
 class eos:
     def __init__(self, path_to_data=None, fac_for_numerical_partials=1e-10):
@@ -364,11 +365,11 @@ class eos:
             # print d
             xeh = (1. / 2) * (1. - xh2 - xh) # number fraction of e-, for pure H -- eq. 34.
             xehe = (1. / 3) * (2. - 2. * xhe - xhep) # number fraction of e- for pure He -- eq. 35.
-            return ((1. - y) / const.mh * 2. / (1. + xh + 3. * xh2) * \
+            return const.kb * (1. - y) / const.mh * 2. / (1. + xh + 3. * xh2) * \
                 (np.log(1. + beta * gamma) \
                 - xeh * np.log(1. + delta) \
                 + beta * gamma * (np.log(1. + 1. / beta / gamma) \
-                - xehe * np.log(1. + 1. / delta))))*kb
+                - xehe * np.log(1. + 1. / delta)))
 
         def species_partials(pair, y, f):
             # f is a dimensionless factor by which we perturb logp, logt to compute centered differences for numerical partials.
@@ -472,9 +473,10 @@ class eos:
         xh2 = res_h['xh2']
         xhe = res_he['xhe']
         xhep = res_he['xhep']
-        smix = get_smix(y, xh, xh2, xhe, xhep)
-        s = (1. - y) * s_h + y * s_he + smix # entropy for an ideal (noninteracting) mixture -- eq. 41. ROB: commented out smix
-
+        #smix = get_smix(y, xh, xh2, xhe, xhep)
+        smix = get_smix_id_y(y)/erg_to_kbbar
+        s = (1. - y) * s_h + y * s_he - smix # entropy for an ideal (noninteracting) mixture -- eq. 41. ROB: commented out smix
+        #print(s)
         res['logs'] = np.log10(s)
         res['logsmix'] = np.log10(smix)
         res['xh'] = xh
@@ -491,7 +493,7 @@ class eos:
         dxh2_dlogt, dxh_dlogt, dxhe_dlogt, dxhep_dlogt = dxi_dlogt
 
         # prefactor defined such that smix = smix_prefactor * s_tilde, where s_tilde is the dimensionless entropy I work with in the handwritten notes. (in code below i'll refer to s_tilde as ss)
-        smix_prefactor = 2. * kb * (1. - y) / const.mh
+        smix_prefactor = 2. * const.kb * (1. - y) / const.mh
 
         beta = get_beta(y)
         gamma = get_gamma(xh, xh2, xhe, xhep)

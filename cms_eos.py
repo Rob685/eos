@@ -6,12 +6,13 @@ from astropy import units as u
 from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
+from astropy.constants import m_p
 from numba import jit
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
 
-erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/m_p)
 MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
 dyn_to_bar = (u.dyne/(u.cm)**2).to('bar')
 erg_to_MJ = (u.erg/u.Kelvin/u.gram).to(u.MJ/u.Kelvin/u.kg)
@@ -153,21 +154,22 @@ def get_smix_nd(Y, lgp, lgt):
 
     return smix_hg23 - smix_id
 
-def get_s_pt(lgp, lgt, y, hc_corr = True):
+def get_s_pt(lgp, lgt, y, hg = True):
     s_h = 10 ** get_s_h(lgt, lgp)
     s_he = 10 ** get_s_he(lgt, lgp)
     smix = smix_interp(lgt, lgp)*(1 - y)*y
-    if hc_corr==False:
+    if not hg:
         #smix = get_smix_id_y(y)/erg_to_kbbar
         smix -= get_smix_nd(y, lgp, lgt)
     return (1 - y) * s_h + y * s_he + smix #
 
-def get_rho_pt(lgp, lgt, y, hc_corr = True):
+def get_rho_pt(lgp, lgt, y, hg = True):
     rho_h = 10 ** get_rho_h(lgt, lgp)
     rho_he = 10 ** get_rho_he(lgt, lgp)
-    if hc_corr:
-        vmix = vmix_interp(lgt, lgp)
-    elif not hc_corr:
+    vmix = vmix_interp(lgt, lgp)
+    #if hc_corr:
+        #vmix = vmix_interp(lgt, lgp)
+    if not hg:
         vmix = 0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
@@ -315,8 +317,8 @@ def err_p_srho(lgp, lgr, s_val, y):
     s_val /= erg_to_kbbar
     return (s_/s_val) - 1
 
-def err_t_sp(logt, logp, s_val, y):
-    s_ = get_s_pt(logp, logt, y)
+def err_t_sp(logt, logp, s_val, y, hg):
+    s_ = get_s_pt(logp, logt, y, hg)
     s_val /= erg_to_kbbar # in cgs
 
     return (s_/s_val) - 1
@@ -399,22 +401,22 @@ def get_p_srho(s, rho, y):
     sol = np.array([get_p_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
     return sol
 
-def get_t_sp(s, p, y):
+def get_t_sp(s, p, y, hg=True):
     if np.isscalar(s):
         try:
-            sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+            sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, hg)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
             return sol.root
         except:
             print('s={}, p={}, y={}'.format(s, p, y))
             raise
-    sol = np.array([get_t_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)])
+    sol = np.array([get_t_sp(s_, p_, y_, hg) for s_, p_, y_ in zip(s, p, y)])
     return sol
 
-def get_rhot_sp(s, p, y, tab=True):
+def get_rhot_sp(s, p, y, tab=True, hg=True):
     if not tab:
-        t = get_t_sp(s, p, y)
-        rho = get_rho_pt(p, t, y)
-    else:
+        t = get_t_sp(s, p, y, hg)
+        rho = get_rho_pt(p, t, y, hg)
+    else: # tables have hg...
         rho, t = get_rho_t(s, p, y)
     return rho, t
 
@@ -495,6 +497,23 @@ def get_dsdy_rhop(rho, p, y, dy=0.1):
 
     return (S1 - S0)/(y*dy)
 
+def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    if not tab:
+        P0 = 10**get_p_srho(S0*erg_to_kbbar, rho, y)
+        P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
+        P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
+    else:
+        P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
+        P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y) 
+        P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))   
+    
+    dpds_rhoy = (P1 - P0)/(S1 - S0)
+    dpdy_srho = (P2 - P0)/(y*dy)
+
+    return -dpdy_srho/dpds_rhoy
+
 
 def get_dsdy_rhot(rho, t, y, dy=0.01):
     s0 = get_s_rhot_tab(rho, t, y)
@@ -520,24 +539,24 @@ def get_dsdt_ry_rhot(rho, t, y, dt=0.1):
 
 # to get chemical potential:
 def get_dudy_srho(s, rho, y, dy=0.1, tab=True):
-    U0 = get_u_srho(s, rho, y, tab)
-    U1 = get_u_srho(s, rho, y*(1+dy), tab)
+    U0 = 10**get_u_srho(s, rho, y, tab)
+    U1 = 10**get_u_srho(s, rho, y*(1+dy), tab)
     return (U1 - U0)/(y*dy)
 
 # du/ds_(rho, Y) = T test
-def get_duds_rhoy_srho(s, rho, y, ds=0.1):
+def get_duds_rhoy_srho(s, rho, y, ds=0.1, tab=False):
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
-    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
-    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
+    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y, tab)
+    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y, tab)
     return (U1 - U0)/(S1*ds)
 
 def get_dudrho_sy_srho(s, rho, y, drho=0.1):
     R1 = 10**rho
     R2 = R1*(1+drho)
     #rho1 = np.log10((10**rho)*(1+drho))
-    U0 = 10**get_u_srho(s, np.log10(R1), y)
-    U1 = 10**get_u_srho(s, np.log10(R2), y)
+    U0 = 10**get_u_srho(s, np.log10(R1), y, tab=False)
+    U1 = 10**get_u_srho(s, np.log10(R2), y, tab=False)
     #return (U1 - U0)/(R1*drho)
     return (U1 - U0)/((1/R1) - (1/R2))
 
@@ -577,17 +596,17 @@ def get_dtdy_sp(s, p, y, dy=0.01):
 
 def get_dtdy_srho(s, rho, y, dy=0.1, tab=True):
     if not tab:
-        T0 = get_t_srho(s, rho, y)
-        T1 = get_t_srho(s, rho, y*(1+dy))
+        T0 = 10**get_t_srho(s, rho, y)
+        T1 = 10**get_t_srho(s, rho, y*(1+dy))
     else:
-        T0 = get_t_srho_tab(s, rho, y)
-        T1 = get_t_srho_tab(s, rho, y*(1+dy)) 
+        T0 = 10**get_t_srho_tab(s, rho, y)
+        T1 = 10**get_t_srho_tab(s, rho, y*(1+dy)) 
 
     return (T1 - T0)/(y*dy)
 
 def get_dtdy_rhop(rho, p, y, dy=0.01):
-    t0 = get_t_rhop(rho, p, y)
-    t1 = get_t_rhop(rho, p, y*(1+dy))
+    t0 = 10**get_t_rhop(rho, p, y)
+    t1 = 10**get_t_rhop(rho, p, y*(1+dy))
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
