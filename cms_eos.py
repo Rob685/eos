@@ -221,15 +221,15 @@ def get_grad_ad(s, p, y):
     grada = get_grada(np.array([y, s, p]).T)
     return grada
 
-def get_c_p_s(s, p, y, ds=0.1, tab=True):
+def get_c_p_s(s, rho, y, ds=0.1, tab=True):
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
     if not tab:
-        T1 = get_t_sp(S1*erg_to_kbbar, p, y)
-        T2 = get_t_sp(S2*erg_to_kbbar, p, y)
+        T1 = get_t_srho(S1*erg_to_kbbar, rho, y)
+        T2 = get_t_srho(S2*erg_to_kbbar, rho, y)
     else:
-        T1 = get_rho_t(S1*erg_to_kbbar, p, y)[-1]
-        T2 = get_rho_t(S2*erg_to_kbbar, p, y)[-1]
+        T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y) # used to be get_rho_t[-1]
+        T2 = get_t_srho_tab(S2*erg_to_kbbar, rho, y)
 
     return (S2 - S1)/(T2 - T1)
 
