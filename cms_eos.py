@@ -274,19 +274,6 @@ def get_p_srho_tab(s, r, y):
 def get_t_srho_tab(s, r, y):
     return get_t_rgi(np.array([s, r, y]).T)
 
-# def get_c_v_s(s, rho, y, ds=0.1, tab=False):
-#     S1 = s/erg_to_kbbar
-#     S2 = S1*(1+ds)
-#     if tab:
-#         T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y)
-#         T2 = get_t_srho_tab(S2*erg_to_kbbar, rho, y)
-#     else:
-#         T1 = get_t_srho(S1*erg_to_kbbar, rho, y)
-#         T2 = get_t_srho(S2*erg_to_kbbar, rho, y)
-#     return S1*(np.log10(S2) - np.log10(S1))/(T2 - T1)
-
-### P(rho, T, Y), S(rho, T, Y), u(rho, T, Y) ###
-
 logrhovals_rhot = np.arange(-4, 1.2, 0.1)
 logtvals_rhot = np.arange(2, 5.1, 0.1)
 yvals_rhot = np.arange(0.1, 1.05, 0.05)
@@ -514,6 +501,19 @@ def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
 
     return -dpdy_srho/dpds_rhoy
 
+def get_dAdy_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
+    # second derivative of dsdy_rhop
+    A0 = get_dsdy_rhop_srho(s, rho, y, ds, dy, tab)
+    A1 = get_dsdy_rhop_srho(s, rho, y*(1+dy), ds, dy, tab)
+    return (A1 - A0)/(y*dy)
+def get_dAds_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
+    # second derivative of dsdy_rhop
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    A0 = get_dsdy_rhop_srho(S0*erg_to_kbbar, rho, y, ds, dy, tab)
+    A1 = get_dsdy_rhop_srho(S1*erg_to_kbbar, rho, y, ds, dy, tab)
+    return (A1 - A0)/(S1 - S0)
+
 
 def get_dsdy_rhot(rho, t, y, dy=0.01):
     s0 = get_s_rhot_tab(rho, t, y)
@@ -551,12 +551,12 @@ def get_duds_rhoy_srho(s, rho, y, ds=0.1, tab=False):
     U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y, tab)
     return (U1 - U0)/(S1*ds)
 
-def get_dudrho_sy_srho(s, rho, y, drho=0.1):
+def get_dudrho_sy_srho(s, rho, y, drho=0.1, tab=False):
     R1 = 10**rho
     R2 = R1*(1+drho)
     #rho1 = np.log10((10**rho)*(1+drho))
-    U0 = 10**get_u_srho(s, np.log10(R1), y, tab=False)
-    U1 = 10**get_u_srho(s, np.log10(R2), y, tab=False)
+    U0 = 10**get_u_srho(s, np.log10(R1), y, tab)
+    U1 = 10**get_u_srho(s, np.log10(R2), y, tab)
     #return (U1 - U0)/(R1*drho)
     return (U1 - U0)/((1/R1) - (1/R2))
 
