@@ -33,14 +33,14 @@ def scvh_reader(tab_name):
 
     return [float(val) for val in header], tab_
 
-bounds_s, stab = scvh_reader('stabnew_adam.dat')
-_, INDEX, R1, R2, T1, T2, T11, T12 = bounds_s # same bounds
+# bounds_s, stab = scvh_reader('stabnew_adam.dat')
+# _, INDEX, R1, R2, T1, T2, T11, T12 = bounds_s # same bounds
 
-stab_names = ['s22scz.dat', 'stabnew_adam.dat', 's28scz.dat', 's30.dat']
-ptab_names = ['p22scz.dat', 'ptabnew_adam.dat', 'p28scz.dat', 'p30.dat']
+# stab_names = ['s22scz.dat', 'stabnew_adam.dat', 's28scz.dat', 's30.dat']
+# ptab_names = ['p22scz.dat', 'ptabnew_adam.dat', 'p28scz.dat', 'p30.dat']
 
-stabs = np.array([scvh_reader(name)[-1] for name in stab_names])
-ptabs = np.array([scvh_reader(name)[-1] for name in ptab_names])
+# stabs = np.array([scvh_reader(name)[-1] for name in stab_names])
+# ptabs = np.array([scvh_reader(name)[-1] for name in ptab_names])
 
 bounds_s, stab = scvh_reader('stabnew_adam.dat')
 R1, R2, T1, T2, T11, T12 = bounds_s[2:8] # same bounds
@@ -70,7 +70,8 @@ def y(R, T):
 
 yhe_arr = np.array([0.22, 0.25, 0.28, 0.30])
 
-x_arr = np.arange(0, 300, 1)
+#x_arr = np.arange(0, 300, 1)
+x_arr = x(logrho_arr)
 y_arr = np.arange(0, 100, 1)
 interp_s = RGI((yhe_arr, x_arr, y_arr), stabs, method='linear', bounds_error=False, fill_value=None)
 interp_p = RGI((yhe_arr, x_arr, y_arr), ptabs, method='linear', bounds_error=False, fill_value=None)
