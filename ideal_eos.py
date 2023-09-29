@@ -18,10 +18,11 @@ from scipy.optimize import brenth, minimize
 
 kB = 1.38e-16
 mp = 1.67e-24
-erg_to_kbbar = 1.202723550011625e-08
+erg_to_kbbar = 1.2114751277768644e-08
 
 S_UNIT = 1 #kB / mp
 U_UNIT = kB / mp
+Rideal = 8.314e7
 
 class IdealEOS(object):
     """
@@ -130,9 +131,9 @@ class IdealEOS(object):
 
     ## misc
     def get_c_p(self, s, _logp, _y):
-        return 0 * s + 5/2
+        return 0 * s + 5/2 * Rideal
     def get_c_v(self, s, _logp, _y):
-        return 0 * s + 3/2
+        return 0 * s + 3/2 * Rideal
 
 def get_number_fracs(y, m_h, m_he):
     # vector-compatible expressions
@@ -225,7 +226,10 @@ class IdealHHeMix(object):
         return brenth(obj, *TBOUNDS)
 
     def get_t_srho(self, s, logrho, y):
-        return self.get_pt_srho(s, logrho, y)[1]
+        if not np.isscalar(s):
+            return self.get_pt_srho(s, logrho, y)[:,1]
+        else:
+            return self.get_pt_srho(s, logrho, y)[1]
 
     ## U getters
     def get_u_pt(self, logp, logt, y):
