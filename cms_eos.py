@@ -9,22 +9,22 @@ from astropy.constants import u as amu
 from astropy.constants import m_p
 #from numba import jit
 import os
-from eos import ideal_eos
+from eos import ideal_eos, aqua_eos
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
 ideal_z = ideal_eos.IdealEOS(m=18)
 ideal_xy = ideal_eos.IdealHHeMix()
 ideal_x = ideal_eos.IdealEOS(m=2)
 mz = 18
-
-erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/m_p)
+mp = amu.to('g') # grams
+kb = k_B.to('erg/K') # ergs/K
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
 dyn_to_bar = (u.dyne/(u.cm)**2).to('bar')
 erg_to_MJ = (u.erg/u.Kelvin/u.gram).to(u.MJ/u.Kelvin/u.kg)
 MJ_to_erg = (u.MJ/u.kg).to('erg/g')
 
-mp = amu.to('g') # grams
-kb = k_B.to('erg/K') # ergs/K
+
 
 mh = 1 #* amu.value
 mhe = 4.0026
@@ -178,15 +178,24 @@ def get_s_pt(lgp, lgt, y, hg = True):
         smix -= get_smix_nd(y, lgp, lgt)
     return (1 - y) * s_h + y * s_he + smix #
 
-def get_s_ptz(lgp, lgt, y, z, mz=18):
+def get_s_ptz(lgp, lgt, y, z, z_eos, mz=18.015):
     s_nid_mix = get_smix_nd(y, lgp, lgt) # in cgs
     s_h = 10 ** get_s_h(lgt, lgp) # in cgs
     s_he = 10 ** get_s_he(lgt, lgp)
-    s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
-    x_He = 1 - x_H(y, z, mz) - x_Z(y, z, mz)
     xz = x_Z(y, z, mz)
     xh = x_H(y, z, mz)
-    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(x_He)) / erg_to_kbbar
+    if (z_eos is None): # let's not calculate stuff when z = 0
+        xz = 0.0
+        s_z = 0.0
+    elif z_eos == 'ideal':
+        s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
+    elif z_eos == 'aqua':
+        s_z = aqua_eos.get_s_pt(lgp, lgt)
+    else:
+        raise Exception('z_eos must be either None, ideal, or aqua')
+
+    x_he = 1 - xh - xz
+    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(x_he)) / erg_to_kbbar
 
     return (1 - y)* (1 - z) * s_h + y * (1 - z) * s_he + s_z * z + s_nid_mix*(1 - z) - s_id_zmix
 
@@ -352,9 +361,9 @@ def err_p_srho(lgp, lgr, s_val, y):
     s_val /= erg_to_kbbar
     return (s_/s_val) - 1
 
-def err_t_sp(logt, logp, s_val, y, z, hg):
+def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
     if z > 0:
-        s_ = get_s_ptz(logp, logt, y, z)
+        s_ = get_s_ptz(logp, logt, y, z, z_eos=z_eos)
         s_val /= erg_to_kbbar # in cgs
         return (s_/s_val) - 1
     else:
@@ -376,6 +385,15 @@ def err_t_rhop(lgt, lgp, rhoval, y):
     return  logrho/rhoval - 1
 
 def err_p_rhot(lgp, lgt, rhoval, y, alg):
+    #lgp, lgt = pt_pair
+    logrho = get_rho_pt(lgp, lgt, y)
+    #s *= erg_to_kbbar
+    if alg == 'root':
+        return  logrho/rhoval - 1
+    elif alg == 'brenth':
+        return float(logrho/rhoval) - 1
+
+def err_p_rhots(lgp, lgt, rhoval, y, z, alg):
     #lgp, lgt = pt_pair
     logrho = get_rho_pt(lgp, lgt, y)
     #s *= erg_to_kbbar
@@ -421,17 +439,17 @@ def get_p_srho(s, rho, y):
     return sol
 
 
-def get_t_sp(s, p, y, hg=True, alg='brenth'):
+def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
         guess = ideal_xy.get_t_sp(s, p, y)
-        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, 0, hg))
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, 0, hg, z_eos))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(s):
             try:
-                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, 0, hg)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, 0, hg, z_eos)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
                 return sol.root
             except:
                 print('s={}, p={}, y={}'.format(s, p, y))
@@ -439,22 +457,22 @@ def get_t_sp(s, p, y, hg=True, alg='brenth'):
         sol = np.array([get_t_sp(s_, p_, y_, hg) for s_, p_, y_ in zip(s, p, y)])
         return sol
 
-def get_t_spz(s, p, y, z, hg=True, alg='brenth'):
+def get_t_spz(s, p, y, z, hg=True, alg='brenth', z_eos=None):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y, z = np.array([s]), np.array([p]), np.array([y]), np.array([z])
         guess = ideal_xy.get_t_sp(s, p, y)
-        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, z, hg))
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, z, hg, z_eos))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(s):
             try:
-                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, z, hg)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, z, hg, z_eos)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
                 return sol.root
             except:
                 print('s={}, p={}, y={}'.format(s, p, y, z))
                 raise
-        sol = np.array([get_t_spz(s_, p_, y_, z_, hg) for s_, p_, y_, z_ in zip(s, p, y, z)])
+        sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
         return sol
 
 def get_rhot_sp(s, p, y, tab=True, hg=True):
@@ -465,16 +483,23 @@ def get_rhot_sp(s, p, y, tab=True, hg=True):
         rho, t = get_rho_t(s, p, y)
     return rho, t
 
-def get_rhot_spz(s, p, y, z):
+def get_rhot_spz(s, p, y, z, z_eos=None):
     #if not tab:
     '''This function does not have a table option yet'''
     # mixture temperature
-    t = get_t_spz(s, p, y, z)
+    t = get_t_spz(s, p, y, z, z_eos=z_eos)
     # density components
     rho_hhe = 10**get_rho_pt(p, t, y)
-    rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+    if z > 0:
+        if z_eos == 'ideal':
+            rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+        elif z_eos == 'aqua':
+            rho_z = 10**aqua_eos.get_rho_pt(p, t)
+        return np.log10(1/((1 - z)/rho_hhe + z/rho_z)), t
+    elif z == 0: # no need to calculate rho_z, although if I did, the above would return the right answer
+        return get_rhot_sp(s, p, y, tab=False)
     # return volume law
-    return np.log10(1/((1 - z)/rho_hhe + z/rho_z)), t
+    
 
 def get_t_rhop(rho, p, y, alg='brenth'):
     if alg == 'root':
@@ -637,6 +662,15 @@ def get_dsdt_ry_rhot(rho, t, y, dt=0.1):
 
     dsdt = (s1 - s0)/(t*dt)
     return dsdt
+
+def get_c_s(s, p, y, dp=0.1):
+    P0 = 10**p
+    P1 = P0*(1+dp)
+    R0, _ = get_rhot_sp(s, np.log10(P0), y)
+    R1, _ = get_rhot_sp(s, np.log10(P1), y)
+
+    return np.sqrt((P1 - P0)/(10**R1 - 10**R0))
+
 
 ### energy gradients ###
 

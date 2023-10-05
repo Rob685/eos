@@ -15,13 +15,19 @@ Ordering on quantities follows the ordering above
 '''
 import numpy as np
 from scipy.optimize import brenth, minimize
+from astropy import units as u
+from astropy.constants import k_B, m_p
+from astropy.constants import u as amu
+from scipy.interpolate import RegularGridInterpolator as RGI
+
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
 kB = 1.38e-16
 mp = 1.67e-24
-erg_to_kbbar = 1.2114751277768644e-08
+#erg_to_kbbar = 1.2114751277768644e-08
 
 S_UNIT = 1 #kB / mp
-U_UNIT = kB / mp
+U_UNIT = kB / amu
 Rideal = 8.314e7
 
 class IdealEOS(object):
