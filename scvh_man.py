@@ -9,9 +9,10 @@ from astropy.constants import k_B
 from astropy import units as u
 from astropy.constants import u as amu
 from eos.cms_eos import get_smix_id_y
+import pdb
 
 # kb = k_B.to('erg/K').value
-erg_to_kbbar = 1.2114751277768644e-08
+erg_to_kbbar = 1.202723550011625e-08
 
 class eos:
     def __init__(self, path_to_data=None, fac_for_numerical_partials=1e-10):
@@ -473,8 +474,13 @@ class eos:
         xh2 = res_h['xh2']
         xhe = res_he['xhe']
         xhep = res_he['xhep']
-        #smix = get_smix(y, xh, xh2, xhe, xhep)
-        smix = get_smix_id_y(y)/erg_to_kbbar
+        smix_old = get_smix(y, xh, xh2, xhe, xhep)
+        try:
+            smix = get_smix_id_y(y)/erg_to_kbbar #+ smix_old
+            #pdb.set_trace()
+        except:
+            pdb.set_trace()
+            raise
         s = (1. - y) * s_h + y * s_he - smix # entropy for an ideal (noninteracting) mixture -- eq. 41. ROB: commented out smix
         #print(s)
         res['logs'] = np.log10(s)
