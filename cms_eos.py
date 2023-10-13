@@ -209,6 +209,18 @@ def get_rho_pt(lgp, lgt, y, hg = True):
         vmix = 0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
+def get_rho_ptz(lgp, lgt, y, z, z_eos):
+    if z > 0:
+        rho_hhe = 10**get_rho_pt(lgp, lgt, y)
+        if z_eos == 'ideal':
+            rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
+        elif z_eos == 'aqua':
+            rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
+
+        return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z)))
+    elif z == 0:
+        return get_rho_pt(lgp, lgt, y)
+
 def get_u_pt(lgp, lgt, y):
     u_h = 10**get_logu_h(lgt, lgp) # MJ/kg to erg/g
     u_he = 10**get_logu_he(lgt, lgp)
@@ -384,19 +396,20 @@ def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
 #     elif alg == 'brenth':
 #         return float(logrho/rhoval) - 1
 
-def err_p_rhot(lgp, lgt, rhoval, y, z, z_eos, alg):
-    if z > 0.0:
-        s = float(get_s_ptz(lgp, lgt, y, z, z_eos = z_eos))*erg_to_kbbar
-        logrho, t = get_rhot_spz(s, lgp, y, z, alg = alg, z_eos = z_eos)
+def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos, alg):
+    if zval > 0.0:
+        #sval = float(get_s_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos))*erg_to_kbbar
+        logrho = get_rho_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos)
+        #pdb.set_trace()
         return float(logrho/rhoval) - 1
 
-    elif z == 0:
-        logrho = get_rho_pt(lgp, lgt, y)
+    elif zval == 0:
+        logrho = get_rho_pt(float(lgp), lgtval, yval)
         #s *= erg_to_kbbar
         if alg == 'root':
             return  logrho/rhoval - 1
         elif alg == 'brenth':
-            return float(logrho/rhoval) - 1
+            return logrho/rhoval - 1
 
 # def err_p_rhot(lgp, lgt, rhoval, y, z, alg):
 #     #lgp, lgt = pt_pair
@@ -540,7 +553,7 @@ def get_p_rhot(rho, t, y, alg='brenth'):
         if np.isscalar(rho):
             rho, t, y = np.array([rho]), np.array([t]), np.array([y])
         guess = ideal_x.get_p_rhot(rho, t, y)
-        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(t, rho, y, alg))
+        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, alg))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(rho):
@@ -557,15 +570,16 @@ def get_p_rhotz(rho, t, y, z=0.0, z_eos=None, alg='brenth'):
     if z > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
     if alg == 'root':
-        if np.isscalar(rho):
-            rho, t, y, z = np.array([rho]), np.array([t]), np.array([y]), np.array([z])
+        # if np.isscalar(rho):
+        #     rho, t, y, z = np.array([rho]), np.array([t]), np.array([y]), np.array([z])
         guess = ideal_xy.get_p_rhot(rho, t, y)
-        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(t, rho, y, z, z_eos, alg))
+        #pdb.set_trace()
+        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, z, z_eos, alg))
         return sol.x
     elif alg == 'brenth':
         #if np.isscalar(rho):
         try:
-            sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(t, rho, y, z, z_eos, alg))
+            sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(rho, t, y, z, z_eos, alg))
             return sol.root
         except:
             #print('rho={}, t={}, y={}'.format(rho, t, y))
