@@ -150,11 +150,18 @@ def x_Z(Y, Z, mz):
     return (Z/mz)/Ntot
 
 def guarded_log(x):
-    if x == 0:
-        return 0
-    elif x  < 0:
-        raise ValueError('a')
-    return x * np.log(x)
+    if np.isscalar(x):
+        if x == 0:
+            return 0
+        elif x  < 0:
+            raise ValueError('a')
+        return x * np.log(x)
+    else:
+        if np.any(x) == 0:
+            return 0
+        elif np.any(x)  < 0:
+            raise ValueError('a')
+        return x * np.log(x)
 
 ### isolating the ideal and interacting entropy of mixing terms from HG23 ###
 
@@ -213,16 +220,16 @@ def get_rho_pt(lgp, lgt, y, hg = True):
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
 def get_rho_ptz(lgp, lgt, y, z, z_eos):
-    if z > 0:
-        rho_hhe = 10**get_rho_pt(lgp, lgt, y)
-        if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
-        elif z_eos == 'aqua':
-            rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
+    #if z > 0:
+    rho_hhe = 10**get_rho_pt(lgp, lgt, y)
+    if z_eos == 'ideal':
+        rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
+    elif z_eos == 'aqua':
+        rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
 
-        return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z)))
-    elif z == 0:
-        return get_rho_pt(lgp, lgt, y)
+    return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
+    #elif z == 0:
+        #return get_rho_pt(lgp, lgt, y)
 
 def get_u_pt(lgp, lgt, y):
     u_h = 10**get_logu_h(lgt, lgp) # MJ/kg to erg/g
@@ -430,7 +437,7 @@ def err_p_srho(lgp, lgr, s_val, y):
 
 def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
     #print(logt, logp, s_val, y, z)
-    if z > 0:
+    if np.any(z) > 0:
         s_ = get_s_ptz(logp, logt, y, z, z_eos=z_eos)*erg_to_kbbar
         #s_val /= erg_to_kbbar # in cgs
         return (s_/s_val) - 1
@@ -441,14 +448,14 @@ def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
         return (s_/s_val) - 1
 
 def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos, alg):
-    if zval > 0.0:
+    if np.any(zval) > 0.0:
         #sval = float(get_s_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos))*erg_to_kbbar
-        logrho = get_rho_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos)
+        logrho = get_rho_ptz(lgp, lgtval, yval, zval, z_eos = z_eos)
         #pdb.set_trace()
-        return float(logrho/rhoval) - 1
+        return (logrho/rhoval) - 1
 
     elif zval == 0:
-        logrho = get_rho_pt(float(lgp), lgtval, yval)
+        logrho = get_rho_pt(lgp, lgtval, yval)
         #s *= erg_to_kbbar
         if alg == 'root':
             return  logrho/rhoval - 1
@@ -458,11 +465,11 @@ def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos, alg):
 def err_t_srho(lgt, sval, rhoval, yval, zval, z_eos, alg):
     #sval = sval /erg_to_kbbar
     #lgp = get_p_rhot(rval, lgt, y)
-    if zval > 0:
+    if np.any(zval) > 0:
         lgp = get_p_rhotz(rhoval, lgt, yval, zval, z_eos, alg)
         s_ = get_s_ptz(lgp, lgt, yval, zval, z_eos)*erg_to_kbbar
-        return float(s_/sval) - 1
-    elif zval == 0:
+        return (s_/sval) - 1
+    else:
         # the original err_t_srho was this below, did it in cgs instead of kbbar
         if alg == 'root':
             lgp = get_p_rhot_tab(rhoval, lgt, yval)
@@ -501,7 +508,7 @@ def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
 
 def get_t_spz(s, p, y, z, hg=True, alg='brenth', z_eos=None):
     #print(s, p, y, z)
-    if z > 0.0 and z_eos is None:
+    if np.any(z) > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
 
     if alg == 'root':
@@ -546,7 +553,7 @@ def get_t_srho(s, rho, y, alg='brenth'):
 
 def get_t_srhoz(s, rho, y, z=0.0, z_eos=None, alg='brenth'):
 
-    if z > 0.0 and z_eos is None:
+    if np.any(z) > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
 
     if alg == 'root':
@@ -579,9 +586,9 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     #if not tab:
     '''This function does not have a table option yet'''
     # mixture temperature
-    t = float(get_t_spz(s, p, y, z, alg=alg, z_eos=z_eos))
+    t = get_t_spz(s, p, y, z, alg=alg, z_eos=z_eos)
     # density components
-    rho_hhe = 10**get_rho_sp_tab(p, t, y)
+    rho_hhe = 10**get_rho_sp_tab(s, p, y)
     if z > 0:
         if z_eos == 'ideal':
             rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
@@ -612,7 +619,7 @@ def get_p_rhot(rho, t, y, alg='brenth'):
         return sol
 
 def get_p_rhotz(rho, t, y, z=0.0, z_eos=None, alg='brenth'):
-    if z > 0.0 and z_eos is None:
+    if np.any(z) > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
     if alg == 'root':
         # if np.isscalar(rho):
