@@ -73,13 +73,13 @@ get_rho_rgi_sp = RGI((svals_sp, logpvals_sp), logrho_res_sp, method='linear', \
 get_t_rgi_sp = RGI((svals_sp, logpvals_sp), logt_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(s, p, y):
+def get_rho_sp_tab(s, p):
     if np.isscalar(s):
         return float(get_rho_rgi_sp(np.array([s, p]).T))
     else:
         return get_rho_rgi_sp(np.array([s, p]).T)
 
-def get_t_sp_tab(s, p, y):
+def get_t_sp_tab(s, p):
     if np.isscalar(s):
         return float(get_t_rgi_sp(np.array([s, p]).T))
     else:
@@ -113,27 +113,27 @@ def get_s_rhot_tab(rho, t):
 
 ### p(s, rho), T(s, rho) ###
 
-# logp_res_srho, logt_res_srho = np.load('%s/aqua/srho_base.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/aqua/srho_base.npy' % CURR_DIR)
 
-# svals_srho = np.arange(0.1, 10.05, 0.05)
-# logrhovals_srho= np.arange(-4, 4.55, 0.05)
+svals_srho = np.arange(1.2, 2.2, 0.01)
+logrhovals_srho= np.arange(0.1, 2.11, 0.01)
 
-# get_p_rgi_srho = RGI((svals_srho, logrhovals_srho), logp_res_srho, method='linear', \
-#             bounds_error=False, fill_value=None)
-# get_t_rgi_srho = RGI((svals_srho, logrhovals_srho), logt_res_srho, method='linear', \
-#             bounds_error=False, fill_value=None)
+get_p_rgi_srho = RGI((svals_srho, logrhovals_srho), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((svals_srho, logrhovals_srho), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
 
-# def get_p_srho_tab(s, r):
-#     if np.isscalar(s):
-#         return float(get_p_rgi_srho(np.array([s, r]).T))
-#     else:
-#         return get_p_rgi_srho(np.array([s, r]).T)
+def get_p_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_p_rgi_srho(np.array([s, r]).T)
 
-# def get_t_srho_tab(s, r):
-#     if np.isscalar(s):
-#         return float(get_t_rgi_srho(np.array([s, r]).T))
-#     else:
-#         return get_t_rgi_srho(np.array([s, r]).T)
+def get_t_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, r]).T)
 
 ####### inversion functions #######
 
@@ -195,39 +195,59 @@ def get_t_sp(s, p, alg='brenth'):
         sol = np.array([get_t_sp(s_, p_) for s_, p_ in zip(s, p)])
         return sol
 
-# def get_t_srho(s, rho, alg='brenth'):
-#     if alg == 'root':
-#         if np.isscalar(s):
-#             s, rho = np.array([s]), np.array([rho])
-#         guess = ideal_z.get_t_srho(s, rho, 0)
-#         sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
-#         return sol.x
-#     elif alg == 'brenth':
-#         if np.isscalar(s):
-#             try:
-#                 sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, rho))
-#                 return sol.root
-#             except:
-#                 #print('s={}, rho={}, y={}'.format(s, rho, y))
-#                 raise
-#         sol = np.array([get_t_srho(s_, rho_) for s_, rho_ in zip(s, rho)])
-#         return sol
+def get_t_srho(s, rho, alg='brenth'):
+    if alg == 'root':
+        if np.isscalar(s):
+            s, rho = np.array([s]), np.array([rho])
+        guess = ideal_z.get_t_srho(s, rho, 0)
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
+        return sol.x
+    elif alg == 'brenth':
+        if np.isscalar(s):
+            try:
+                sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, rho))
+                return sol.root
+            except:
+                #print('s={}, rho={}, y={}'.format(s, rho, y))
+                raise
+        sol = np.array([get_t_srho(s_, rho_) for s_, rho_ in zip(s, rho)])
+        return sol
 
 
 ############## derivatives ##############
 
-# def get_dtdrho_srho(s, rho, drho=0.01):
-#     R0 = 10**rho
-#     R1 = R0*(1+drho)
-#     T0 = 10**get_t_srho_tab(s, np.log10(R0))
-#     T1 = 10**get_t_srho_tab(s, np.log10(R1))
+def get_dtdrho_srho(s, rho, drho=0.01):
+    R0 = 10**rho
+    R1 = R0*(1+drho)
+    T0 = 10**get_t_srho_tab(s, np.log10(R0))
+    T1 = 10**get_t_srho_tab(s, np.log10(R1))
 
-#     return (T1 - T0)/(R1 - R0)
+    return (T1 - T0)/(R1 - R0)
 
-# def get_dtds_srho(s, rho, ds=0.01):
-#     S0 = s/erg_to_kbbar
-#     S1 = S0*(1+ds)
-#     T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, rho)
-#     T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho)
+def get_dtds_srho(s, rho, ds=0.01):
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, rho)
+    T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho)
 
-#     return (T1 - T0)/(S1 - S0)
+    return (T1 - T0)/(S1 - S0)
+
+def get_c_v(s, rho, y, ds=0.1):
+    # ds/dlogT_{rho, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho, y)
+    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y)
+ 
+    return (S1 - S0)/(T1 - T0)
+
+def get_c_p(s, p, y, ds=0.1):
+    # ds/dlogT_{P, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, y)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, y)
+
+    return (S1 - S0)/(T1 - T0)

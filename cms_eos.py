@@ -351,7 +351,7 @@ logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
 svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
 logrhovals_srho = np.arange(-5, 1.5, 0.05)
 yvals_srho = np.arange(0.05, 1.05, 0.05)
-zvals_srho = np.arange(0, 0.98, 0.02)
+#zvals_srho = np.arange(0, 0.98, 0.02)
 
 get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
@@ -373,9 +373,14 @@ def get_t_srho_tab(s, r, y):
 ### aqua mixture tables ###
 logp_res_srhoz, logt_res_srhoz = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
 
-get_p_rgi_srhoz = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srhoz, method='linear', \
+svals_srhoz = np.arange(5.5, 10.05, 0.05)
+logrhovals_srhoz = np.arange(-4, 2.5, 0.05)
+yvals_srhoz = np.arange(0.05, 1.0, 0.05)
+zvals_srhoz = np.arange(0, 1.0, 0.1)
+
+get_p_rgi_srhoz = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_srhoz = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srhoz, method='linear', \
+get_t_rgi_srhoz = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_p_srhoz_tab(s, r, y, z):
@@ -481,7 +486,8 @@ def err_t_srho(lgt, sval, rhoval, yval, zval, z_eos, alg):
     #sval = sval /erg_to_kbbar
     #lgp = get_p_rhot(rval, lgt, y)
     #if np.any(zval) > 0:
-    lgp = get_p_rhotz(rhoval, lgt, yval, zval, z_eos, alg)
+    #lgp = get_p_rhotz(rhoval, lgt, yval, zval, z_eos, alg)
+    lgp = get_p_rhotz_tab(rhoval, lgt, yval, zval)
     s_ = get_s_ptz(lgp, lgt, yval, zval, z_eos)*erg_to_kbbar
     return (s_/sval) - 1
     # else:
