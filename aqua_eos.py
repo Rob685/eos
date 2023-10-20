@@ -39,13 +39,13 @@ def grid_data(df):
         twoD[i] = np.reshape(np.array(df[i]), shape)
     return twoD
 
-aqua_data = grid_data(aqua_reader('pt'))
+aqua_data_pt = grid_data(aqua_reader('pt'))
 
-logpvals = aqua_data['logp'][:,0]
-logtvals = aqua_data['logt'][0]
+logpvals = aqua_data_pt['logp'][:,0]
+logtvals = aqua_data_pt['logt'][0]
 
-svals = aqua_data['s']
-logrhovals = aqua_data['logrho']
+svals = aqua_data_pt['s']
+logrhovals = aqua_data_pt['logrho']
 
 s_rgi = RGI((logpvals, logtvals), svals, method='linear', \
             bounds_error=False, fill_value=None)
