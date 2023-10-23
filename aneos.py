@@ -120,51 +120,51 @@ class eos:
     # def get_dlogrho_dlogp_const_t(self, logp, logt):
     #     return 1. / self.get_chirho(logp, logt)
 
-    def regularize_to_ps(self):
-        from scipy.optimize import brentq
-        import time
+    # def regularize_to_ps(self):
+    #     from scipy.optimize import brentq
+    #     import time
 
-        print('regularizing %s tables to rectangular in P, s' % self.material)
+    #     print('regularizing %s tables to rectangular in P, s' % self.material)
 
-        logpvals = np.linspace(6, 15, self.npts)
-        logsvals = np.linspace(min(self.data['logs']), max(self.data['logs']), self.npts)
+    #     logpvals = np.linspace(6, 15, self.npts)
+    #     logsvals = np.linspace(min(self.data['logs']), max(self.data['logs']), self.npts)
 
-        logt_on_ps = np.zeros((self.npts, self.npts))
-        logrho_on_ps = np.zeros((self.npts, self.npts))
-        logu_on_ps = np.zeros((self.npts, self.npts))
+    #     logt_on_ps = np.zeros((self.npts, self.npts))
+    #     logrho_on_ps = np.zeros((self.npts, self.npts))
+    #     logu_on_ps = np.zeros((self.npts, self.npts))
 
-        t0 = time.time()
-        for i, logpval in enumerate(logpvals):
-            for j, logsval in enumerate(logsvals):
-                try:
-                    zero_me = lambda logt: self._get_logs((logpval, logt)) - logsval
-                    logt_on_ps[i, j] = brentq(zero_me, min(self.data['logt']), max(self.data['logt']))
-                    logrho_on_ps[i, j] = self._get_logrho((logpval, logt_on_ps[i, j]))
-                    logu_on_ps[i, j] = self._get_logu((logpval, logt_on_ps[i, j]))
-                except ValueError:
-                    logt_on_ps[i, j] = np.nan
-                    logrho_on_ps[i, j] = np.nan
-                    logu_on_ps[i, j] = np.nan
-            print('row %i/%i, %f s' % (i+1, self.npts, time.time() - t0))
+    #     t0 = time.time()
+    #     for i, logpval in enumerate(logpvals):
+    #         for j, logsval in enumerate(logsvals):
+    #             try:
+    #                 zero_me = lambda logt: self._get_logs((logpval, logt)) - logsval
+    #                 logt_on_ps[i, j] = brentq(zero_me, min(self.data['logt']), max(self.data['logt']))
+    #                 logrho_on_ps[i, j] = self._get_logrho((logpval, logt_on_ps[i, j]))
+    #                 logu_on_ps[i, j] = self._get_logu((logpval, logt_on_ps[i, j]))
+    #             except ValueError:
+    #                 logt_on_ps[i, j] = np.nan
+    #                 logrho_on_ps[i, j] = np.nan
+    #                 logu_on_ps[i, j] = np.nan
+    #         print('row %i/%i, %f s' % (i+1, self.npts, time.time() - t0))
 
-        fmt = '%21.16f\t' * 5
-        with open('../aneos/aneos_%s_ps.dat' % self.material, 'w') as fw:
-            for i, logpval in enumerate(logpvals):
-                for j, logsval in enumerate(logsvals):
-                    line = fmt % (logrho_on_ps[i, j], logt_on_ps[i, j], logpval, logu_on_ps[i, j], logsval)
-                    fw.write(line + '\n')
+    #     fmt = '%21.16f\t' * 5
+    #     with open('../aneos/aneos_%s_ps.dat' % self.material, 'w') as fw:
+    #         for i, logpval in enumerate(logpvals):
+    #             for j, logsval in enumerate(logsvals):
+    #                 line = fmt % (logrho_on_ps[i, j], logt_on_ps[i, j], logpval, logu_on_ps[i, j], logsval)
+    #                 fw.write(line + '\n')
 
-        print('wrote aneos/aneos_%s_ps.dat' % self.material)
+    #     print('wrote aneos/aneos_%s_ps.dat' % self.material)
 
 
-    def plot_rhot_coverage(self, ax=None):
-        if ax == None: ax = plt.gca()
-        ax.plot(self.data['logrho'], self.data['logt'], 'k,')
-        ax.set_xlabel(r'$\log\rho$')
-        ax.set_ylabel(r'$\log T$')
+    # def plot_rhot_coverage(self, ax=None):
+    #     if ax == None: ax = plt.gca()
+    #     ax.plot(self.data['logrho'], self.data['logt'], 'k,')
+    #     ax.set_xlabel(r'$\log\rho$')
+    #     ax.set_ylabel(r'$\log T$')
 
-    def plot_pt_coverage(self, ax=None):
-        if ax == None: ax = plt.gca()
-        ax.plot(self.data['logp'], self.data['logt'], 'k,')
-        ax.set_xlabel(r'$\log P$')
-        ax.set_ylabel(r'$\log T$')
+    # def plot_pt_coverage(self, ax=None):
+    #     if ax == None: ax = plt.gca()
+    #     ax.plot(self.data['logp'], self.data['logt'], 'k,')
+    #     ax.set_xlabel(r'$\log P$')
+    #     ax.set_ylabel(r'$\log T$')
