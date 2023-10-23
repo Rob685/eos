@@ -724,7 +724,6 @@ def get_u_sp(s, p, y):
     return get_u_pt(p, t, y)
 
 def get_u_rhot(rho, t, y):
-    #y = cms.n_to_Y(x)
     p = get_p_rhot_tab(rho, t, y) 
     return get_u_pt(p, t, y)
 
