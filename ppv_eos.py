@@ -1,0 +1,154 @@
+import numpy as np
+from astropy import units as u
+#from scipy.optimize import root, root_scalar
+from astropy.constants import k_B
+from astropy.constants import u as amu
+from tqdm import tqdm
+from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.optimize import root
+import os
+
+from eos import ideal_eos
+
+mg = 24.305
+si = 28.085
+o3 = 48.000
+
+mgsio3 = mg+si+o3 # molecular weight of post-perovskite
+
+# for guesses
+ideal_z = ideal_eos.IdealEOS(m=mgsio3)
+
+mp = amu.to('g') # grams
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
+J_to_erg = (u.J / (u.kg * u.K)).to('erg/(K*g)')
+J_to_kbbar = (u.J / (u.kg * u.K)).to(k_B/mp)
+
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+
+### S, P ###
+s_grid = np.loadtxt('eos/zhang_eos/ppv_s.txt')*J_to_kbbar
+logpgrid = np.loadtxt('eos/zhang_eos/ppv_P_ascend.txt')*10 #Pascals to dyn/cm^2
+logrhovals = np.log10(np.loadtxt('eos/zhang_eos/ppv_rho.txt')*1e-3) # kg/m3 to g/cm3
+logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv_T.txt'))
+
+rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
+t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
+
+def get_rho_sp(s, p):
+    return rho_rgi(np.array([s, p]).T)
+def get_t_sp(s, p):
+    return t_rgi(np.array([s, p]).T)
+
+
+### P, T ###
+logtgrid = np.arange(1.7, 5.05, 0.05)
+
+s_res_pt, logrho_res_pt = np.load('%s/zhang_eos/pt_base.npy' % CURR_DIR)
+
+get_s_rgi_pt = RGI((logpgrid, logtgrid), s_res_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+get_rho_rgi_pt = RGI((logpgrid, logtgrid), logrho_res_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_s_pt(p, t):
+    if np.isscalar(p):
+        return float(get_s_rgi_pt(np.array([p, t]).T))
+    else:
+        return get_s_rgi_pt(np.array([p, t]).T)
+
+def get_rho_pt(p, t):
+    if np.isscalar(p):
+        return float(get_rho_rgi_pt(np.array([p, t]).T))
+    else:
+        return get_rho_rgi_pt(np.array([p, t]).T)
+
+
+### rho, T ###
+
+logp_res_rhot, s_res_rhot = np.load('%s/zhang_eos/rhot_base.npy' % CURR_DIR)
+
+logrhogrid = np.arange(0.05, 2.5, 0.05)
+
+get_p_rgi_rhot = RGI((logrhogrid, logtgrid), logp_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhot = RGI((logrhogrid, logtgrid), s_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_rhot_tab(rho, t):
+    if np.isscalar(rho):
+        return float(get_p_rgi_rhot(np.array([rho, t]).T))
+    else:
+        return get_p_rgi_rhot(np.array([rho, t]).T)
+
+def get_s_rhot_tab(rho, t):
+    if np.isscalar(rho):
+        return float(get_s_rgi_rhot(np.array([rho, t]).T))
+    else:
+        return get_s_rgi_rhot(np.array([rho, t]).T)
+
+### S, rho ###
+
+logp_res_srho, logt_res_srho = np.load('%s/zhang_eos/srho_base.npy' % CURR_DIR)
+
+svals_srho = np.arange(0.01, 0.85, 0.01)
+
+get_p_rgi_srho = RGI((svals_srho, logrhogrid), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((svals_srho, logrhogrid), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_p_rgi_srho(np.array([s, r]).T)
+
+def get_t_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, r]).T)
+
+##### Inversion Functions #####
+
+def err_s_pt(s, pval, tval):
+    logt = get_t_sp(s, pval)
+    return (logt/tval) - 1
+
+def err_p_rhot(lgp, rhoval, tval):
+    s = get_s_pt(lgp, tval)*erg_to_kbbar
+    logrho = get_rho_sp(s, lgp)
+    return (logrho/rhoval) - 1
+
+def err_t_srho(lgt, sval, rhoval):
+    logp = get_p_rhot(rhoval, lgt)
+    s = get_s_pt(logp, lgt)*erg_to_kbbar
+    return (s/sval) - 1
+
+def get_s_pt(p, t):
+    # returns in kb/bar
+    if np.isscalar(p):
+        p, t = np.array([p]), np.array([t])
+    guess = ideal_z.get_s_pt(p, t, 0)
+    sol = root(err_s_pt, guess, tol=1e-8, method='hybr', args=(p, t))
+    return sol.x/erg_to_kbbar
+
+def get_rho_pt(p, t):
+    s = get_s_pt(p, t)
+    return get_rho_sp(s, p)
+
+def get_p_rhot(rho, t):
+    if np.isscalar(rho):
+        rho, t = np.array([rho]), np.array([t])
+    guess = ideal_z.get_p_rhot(rho, t, 0)
+    sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t))
+    return sol.x
+
+def get_t_srho(s, rho):
+    if np.isscalar(s):
+        s, rho = np.array([s]), np.array([rho])
+    guess = ideal_z.get_t_srho(s, rho, 0)
+    sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
+    return sol.x
