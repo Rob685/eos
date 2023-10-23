@@ -10,6 +10,8 @@ from eos import ideal_eos
 
 mp = amu.to('g')
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
+Pa_to_dyn = u.Pa.to('dyn/cm^2')
+SI_to_cgs = (u.kg/u.meter**3).to('g/cm^3')
 J_to_erg = (u.J / (u.kg * u.K)).to('erg/(K*g)')
 J_to_cgs = (u.J/u.kg).to('erg/g')
 
@@ -18,46 +20,103 @@ ideal_z = ideal_eos.IdealEOS(m=18)
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def aqua_reader(basis):
-    cols = ['press', 'temp', 'rho', 'grada', 's', 'u', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+    if basis == 'pt':
+        cols = ['press', 'temp', 'rho', 'grada', 's', 'u', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+    elif basis == 'rhot':
+        cols = ['rho', 'temp', 'press', 'grada', 's', 'u', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+
     tab = np.loadtxt('%s/aqua/aqua_eos_%s_v1_0.dat' % (CURR_DIR, basis))
     tab_df = pd.DataFrame(tab, columns=cols)
 
-    tab_df['logp'] = np.log10(tab_df['press']*10)
-    tab_df['logrho'] = np.log10(tab_df['rho']*1e-3)
+    tab_df['logp'] = np.log10(tab_df['press']*Pa_to_dyn) # in dyn/cm2
+    tab_df['logrho'] = np.log10(tab_df['rho']*SI_to_cgs) # in g/cm3
     tab_df['logt'] = np.log10(tab_df['temp'])
-    tab_df['s'] = tab_df['s']*J_to_erg
-    #tab_df['u_cgs'] = tab_df['u']*J_to_cgs
+    tab_df['s'] = tab_df['s']*J_to_erg # in erg/g/K
+    tab_df['logu'] = np.log10(tab_df['u']*J_to_cgs)
 
     return tab_df
 
 
-def grid_data(df):
+def grid_data(df, basis):
     # grids data for interpolation
     twoD = {}
-    shape = df['logp'].nunique(), -1
+    if basis == 'pt':
+        shape = df['logp'].nunique(), -1
+    elif basis == 'rhot':
+        shape = df['logrho'].nunique(), -1
+
     for i in df.keys():
         twoD[i] = np.reshape(np.array(df[i]), shape)
     return twoD
 
-aqua_data_pt = grid_data(aqua_reader('pt'))
 
-logpvals = aqua_data_pt['logp'][:,0]
+### P, T ####
+aqua_data_pt = grid_data(aqua_reader('pt'), 'pt')
+
+logpvals_pt = aqua_data_pt['logp'][:,0]
 logtvals = aqua_data_pt['logt'][0]
 
-svals = aqua_data_pt['s']
-logrhovals = aqua_data_pt['logrho']
+svals_pt = aqua_data_pt['s']
+logrhovals_pt = aqua_data_pt['logrho']
+loguvals_pt = aqua_data_pt['logu']
 
-s_rgi = RGI((logpvals, logtvals), svals, method='linear', \
+s_rgi_pt = RGI((logpvals_pt, logtvals), svals_pt, method='linear', \
             bounds_error=False, fill_value=None)
 
-rho_rgi = RGI((logpvals, logtvals), logrhovals, method='linear', \
+rho_rgi = RGI((logpvals_pt, logtvals), logrhovals_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+
+u_rgi_pt = RGI((logpvals_pt, logtvals), loguvals_pt, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_s_pt(lgp, lgt):
-    return s_rgi(np.array([lgp, lgt]).T)
+    if np.isscalar(lgp):
+        return float(s_rgi_pt(np.array([lgp, lgt]).T))
+    return s_rgi_pt(np.array([lgp, lgt]).T)
 
 def get_rho_pt(lgp, lgt):
+    if np.isscalar(lgp):
+        return float(rho_rgi(np.array([lgp, lgt]).T))
     return rho_rgi(np.array([lgp, lgt]).T)
+
+def get_u_pt(lgp, lgt):
+    if np.isscalar(lgp):
+        return float(u_rgi_pt(np.array([lgp, lgt]).T))
+    return u_rgi_pt(np.array([lgp, lgt]).T)
+
+### rho, T ###
+
+aqua_data_rhot = grid_data(aqua_reader('rhot'), basis='rhot')
+logrhovals_rhot = aqua_data_rhot['logrho'][:,0]
+logtvals_rhot = aqua_data_rhot['logt'][0]
+
+svals_rhot = aqua_data_rhot['s']
+logpvals_rhot = aqua_data_rhot['logp']
+loguvals_rhot = aqua_data_rhot['logu']
+
+s_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot), svals_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot), logpvals_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+u_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot), loguvals_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_s_rhot_tab(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(s_rgi_rhot(np.array([lgrho, lgt]).T))
+    return s_rgi_rhot(np.array([lgrho, lgt]).T)
+
+def get_p_rhot_tab(lgrho, lgt):
+    if np.isscalar(lgrho):
+        float(p_rgi_rhot(np.array([lgrho, lgt]).T))
+    return p_rgi_rhot(np.array([lgrho, lgt]).T)
+
+def get_u_rhot_tab(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(u_rgi_rhot(np.array([lgrho, lgt]).T))
+    return u_rgi_rhot(np.array([lgrho, lgt]).T)
 
 ####### Inverted Functions #######
 
@@ -90,26 +149,26 @@ def get_rhot_sp_tab(s, p):
 
 ### p(rho, t), s(rho, t) ###
 
-logp_res_rhot, s_res_rhot = np.load('%s/aqua/rhot_base.npy' % CURR_DIR)
+# logp_res_rhot, s_res_rhot = np.load('%s/aqua/rhot_base.npy' % CURR_DIR)
 
-logrhovals_rhot = np.arange(-4, 2.05, 0.05)
+# logrhovals_rhot = np.arange(-12, 2.05, 0.1)
 
-get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals), logp_res_rhot, method='linear', \
-            bounds_error=False, fill_value=None)
-get_s_rgi_rhot = RGI((logrhovals_rhot, logtvals), s_res_rhot, method='linear', \
-            bounds_error=False, fill_value=None)
+# get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals), logp_res_rhot, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_s_rgi_rhot = RGI((logrhovals_rhot, logtvals), s_res_rhot, method='linear', \
+#             bounds_error=False, fill_value=None)
 
-def get_p_rhot_tab(rho, t):
-    if np.isscalar(rho):
-        return float(get_p_rgi_rhot(np.array([rho, t]).T))
-    else:
-        return get_p_rgi_rhot(np.array([rho, t]).T)
+# def get_p_rhot_tab(rho, t):
+#     if np.isscalar(rho):
+#         return float(get_p_rgi_rhot(np.array([rho, t]).T))
+#     else:
+#         return get_p_rgi_rhot(np.array([rho, t]).T)
 
-def get_s_rhot_tab(rho, t):
-    if np.isscalar(rho):
-        return float(get_s_rgi_rhot(np.array([rho, t]).T))
-    else:
-        return get_s_rgi_rhot(np.array([rho, t]).T)
+# def get_s_rhot_tab(rho, t):
+#     if np.isscalar(rho):
+#         return float(get_s_rgi_rhot(np.array([rho, t]).T))
+#     else:
+#         return get_s_rgi_rhot(np.array([rho, t]).T)
 
 ### p(s, rho), T(s, rho) ###
 
@@ -152,10 +211,10 @@ def err_p_rhot(lgp, rhoval, lgtval):
     #if zval > 0.0:
     logrho = get_rho_pt(lgp, lgtval)
     #pdb.set_trace()
-    return float(logrho/rhoval) - 1
+    return logrho/rhoval - 1
 
 def err_t_srho(lgt, sval, rhoval):
-    lgp = get_p_rhot(rhoval, lgt)
+    lgp = get_p_rhot_tab(rhoval, lgt)
     s_ = get_s_pt(lgp, lgt)*erg_to_kbbar
     return  s_/sval - 1
 
