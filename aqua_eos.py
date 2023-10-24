@@ -291,22 +291,22 @@ def get_dtds_srho(s, rho, ds=0.01):
 
     return (T1 - T0)/(S1 - S0)
 
-def get_c_v(s, rho, y, ds=0.1):
+def get_c_v(s, rho, ds=0.1):
     # ds/dlogT_{rho, Y}
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
 
-    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho, y)
-    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y)
+    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho)
+    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho)
  
     return (S1 - S0)/(T1 - T0)
 
-def get_c_p(s, p, y, ds=0.1):
+def get_c_p(s, p, ds=0.1):
     # ds/dlogT_{P, Y}
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
 
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, y)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, y)
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, p)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, p)
 
     return (S1 - S0)/(T1 - T0)

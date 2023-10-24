@@ -36,10 +36,13 @@ logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv_T.txt'))
 rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
 t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
 
-def get_rho_sp(s, p):
+def get_rho_sp_tab(s, p):
     return rho_rgi(np.array([s, p]).T)
-def get_t_sp(s, p):
+def get_t_sp_tab(s, p):
     return t_rgi(np.array([s, p]).T)
+
+def get_rhot_sp_tab(s, p):
+    return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
 
 
 ### P, T ###
@@ -114,12 +117,12 @@ def get_t_srho_tab(s, r):
 ##### Inversion Functions #####
 
 def err_s_pt(s, pval, tval):
-    logt = get_t_sp(s, pval)
+    logt = get_t_sp_tab(s, pval)
     return (logt/tval) - 1
 
 def err_p_rhot(lgp, rhoval, tval):
     s = get_s_pt(lgp, tval)*erg_to_kbbar
-    logrho = get_rho_sp(s, lgp)
+    logrho = get_rho_sp_tab(s, lgp)
     return (logrho/rhoval) - 1
 
 def err_t_srho(lgt, sval, rhoval):
@@ -137,7 +140,7 @@ def get_s_pt(p, t):
 
 def get_rho_pt(p, t):
     s = get_s_pt(p, t)
-    return get_rho_sp(s, p)
+    return get_rho_sp_tab(s, p)
 
 def get_p_rhot(rho, t):
     if np.isscalar(rho):
@@ -152,3 +155,41 @@ def get_t_srho(s, rho):
     guess = ideal_z.get_t_srho(s, rho, 0)
     sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
     return sol.x
+
+############## derivatives ##############
+
+def get_dtdrho_srho(s, rho, drho=0.01):
+    R0 = 10**rho
+    R1 = R0*(1+drho)
+    T0 = 10**get_t_srho_tab(s, np.log10(R0))
+    T1 = 10**get_t_srho_tab(s, np.log10(R1))
+
+    return (T1 - T0)/(R1 - R0)
+
+def get_dtds_srho(s, rho, ds=0.01):
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, rho)
+    T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho)
+
+    return (T1 - T0)/(S1 - S0)
+
+def get_c_v(s, rho, ds=0.1):
+    # ds/dlogT_{rho, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho)
+    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho)
+ 
+    return (S1 - S0)/(T1 - T0)
+
+def get_c_p(s, p, ds=0.1):
+    # ds/dlogT_{P, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, p)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, p)
+
+    return (S1 - S0)/(T1 - T0)
