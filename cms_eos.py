@@ -400,34 +400,6 @@ def get_rhot_spz_tab(s, p, y, z, z_eos='aqua'):
     return get_rho_spz_tab(s, p, y, z, z_eos), get_t_spz_tab(s, p, y, z, z_eos)
 
 
-
-### P(s, rho, Y), T(s, rho, Y) tables ###
-#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
-logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
-
-svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
-logrhovals_srho = np.arange(-5, 1.5, 0.05)
-yvals_srho = np.arange(0.05, 1.05, 0.05)
-#zvals_srho = np.arange(0, 0.98, 0.02)
-
-get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
-            bounds_error=False, fill_value=None)
-
-def get_p_srho_tab(s, r, y):
-    if np.isscalar(s):
-        return float(get_p_rgi_srho(np.array([s, r, y]).T))
-    else:
-        return get_p_rgi_srho(np.array([s, r, y]).T)
-
-def get_t_srho_tab(s, r, y):
-    if np.isscalar(s):
-        return float(get_t_rgi_srho(np.array([s, r, y]).T))
-    else:
-        return get_t_rgi_srho(np.array([s, r, y]).T)
-
-
 ### P(rho, T, Y), s(rho, T, Y) tables ###
 
 logp_res_rhot, s_res_rhot = np.load('%s/cms/rhot_base_comb.npy' % CURR_DIR)
@@ -503,6 +475,79 @@ def get_s_rhotz_tab(rho, t, y, z, z_eos='aqua'):
             return float(get_s_rgi_rhotz_ppv(np.array([rho, t, y, z]).T))
         else:
             return get_s_rgi_rhotz_ppv(np.array([rho, t, y, z]).T)
+
+
+### P(s, rho, Y), T(s, rho, Y) tables ###
+#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
+
+svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
+logrhovals_srho = np.arange(-5, 1.5, 0.05)
+yvals_srho = np.arange(0.05, 1.05, 0.05)
+#zvals_srho = np.arange(0, 0.98, 0.02)
+
+get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, r, y):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, r, y]).T))
+    else:
+        return get_p_rgi_srho(np.array([s, r, y]).T)
+
+def get_t_srho_tab(s, r, y):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, r, y]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, r, y]).T)
+
+
+### aqua mixture tables ###
+
+svals_srhoz = np.arange(5.5, 9.05, 0.05)
+logrhovals_srhoz = np.arange(-4.5, 2.0, 0.1)
+yvals_srhoz = np.arange(0.05, 0.55, 0.1)
+zvals_srhoz = np.arange(0, 0.7, 0.1) # make sure the grids are 0.05 later
+
+logp_res_srhoz_aqua, logt_res_srhoz_aqua = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
+
+logp_res_srhoz_ppv, logt_res_srhoz_ppv = np.load('%s/cms/srho_base_z_ppv.npy' % CURR_DIR)
+
+get_p_rgi_srhoz_aqua = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srhoz_aqua = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_srhoz_ppv = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srhoz_ppv = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srhoz_tab(s, r, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_p_rgi_srhoz_aqua(np.array([s, r, y, z]).T))
+        else:
+            return get_p_rgi_srhoz_aqua(np.array([s, r, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_p_rgi_srhoz_ppv(np.array([s, r, y, z]).T))
+        else:
+            return get_p_rgi_srhoz_ppv(np.array([s, r, y, z]).T)
+
+def get_t_srhoz_tab(s, r, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_t_rgi_srhoz_aqua(np.array([s, r, y, z]).T))
+        else:
+            return get_t_rgi_srhoz_aqua(np.array([s, r, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_t_rgi_srhoz_ppv(np.array([s, r, y, z]).T))
+        else:
+            return get_t_rgi_srhoz_ppv(np.array([s, r, y, z]).T)
 
 ### error functions ###
 
@@ -635,7 +680,6 @@ def get_t_srhoz(s, rho, y, z=0.0, z_eos=None, alg='brenth'):
 
     # if np.any(z) > 0.0 and z_eos is None:
     #     raise Exception('You gotta chose a z_eos if you want metallicities!')
-
     if alg == 'root':
         if np.isscalar(s):
             s, rho, y, z = np.array([s]), np.array([rho]), np.array([y]), np.array([z])
@@ -651,7 +695,6 @@ def get_t_srhoz(s, rho, y, z=0.0, z_eos=None, alg='brenth'):
             except:
                 #print('s={}, rho={}, y={}'.format(s, rho, y))
                 raise
-
 
 ###### Density ######
 def get_rhot_sp(s, p, y, tab=True, hg=True):
@@ -670,10 +713,12 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     # density components
     rho_hhe = 10**get_rho_sp_tab(s, p, y)
     if z > 0:
-        if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
-        elif z_eos == 'aqua':
+        # if z_eos == 'ideal':
+        #     rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+        if z_eos == 'aqua':
             rho_z = 10**aqua_eos.get_rho_pt(p, t)
+        elif z_eos == 'ppv':
+            rho_z = 10**ppv_eos.get_rho_pt_tab(p, t)
         return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z))), t
     elif z == 0: # no need to calculate rho_z, although if I did, the above would return the right answer
         return get_rhot_sp_tab(s, p, y)
