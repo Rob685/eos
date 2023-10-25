@@ -55,13 +55,13 @@ get_s_rgi_pt = RGI((logpgrid, logtgrid), s_res_pt, method='linear', \
 get_rho_rgi_pt = RGI((logpgrid, logtgrid), logrho_res_pt, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_s_pt(p, t):
+def get_s_pt_tab(p, t):
     if np.isscalar(p):
-        return float(get_s_rgi_pt(np.array([p, t]).T))
+        return float(get_s_rgi_pt(np.array([p, t]).T))/erg_to_kbbar
     else:
-        return get_s_rgi_pt(np.array([p, t]).T)
+        return get_s_rgi_pt(np.array([p, t]).T)/erg_to_kbbar
 
-def get_rho_pt(p, t):
+def get_rho_pt_tab(p, t):
     if np.isscalar(p):
         return float(get_rho_rgi_pt(np.array([p, t]).T))
     else:
@@ -140,7 +140,10 @@ def get_s_pt(p, t):
 
 def get_rho_pt(p, t):
     s = get_s_pt(p, t)
-    return get_rho_sp_tab(s, p)
+    if np.isscalar(p):
+        return get_rho_sp_tab(float(s*erg_to_kbbar), float(p))
+        
+    return get_rho_sp_tab(s*erg_to_kbbar, p)
 
 def get_p_rhot(rho, t):
     if np.isscalar(rho):
