@@ -887,9 +887,9 @@ def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1):
     # P1 = 10**get_p_srhoz_tab(S1*erg_to_kbbar, rho, y, z, z_eos)
     # P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)
 
-    P0 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y, z, z_eos)
-    P1 = 10**get_p_srhoz_tab(S1*erg_to_kbbar, rho, y, z, z_eos)
-    P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)      
+    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
+    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
+    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
     
     dpds_rhoy = (P1 - P0)/(S1 - S0)
     dpdy_srho = (P2 - P0)/(y*dy)
