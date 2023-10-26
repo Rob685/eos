@@ -875,7 +875,7 @@ def get_dsdy_rhop(rho, p, y, dy=0.1):
 
     return (S1 - S0)/(y*dy)
 
-def get_dsdy_rhop_srho(s, rho, y, z, ds=0.1, dy=0.1, z_eos='aqua'):
+def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1):
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
     # if not tab:
@@ -883,9 +883,13 @@ def get_dsdy_rhop_srho(s, rho, y, z, ds=0.1, dy=0.1, z_eos='aqua'):
     #     P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
     #     P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
     #else:
+    # P0 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y, z, z_eos)
+    # P1 = 10**get_p_srhoz_tab(S1*erg_to_kbbar, rho, y, z, z_eos)
+    # P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)
+
     P0 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y, z, z_eos)
     P1 = 10**get_p_srhoz_tab(S1*erg_to_kbbar, rho, y, z, z_eos)
-    P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)   
+    P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)      
     
     dpds_rhoy = (P1 - P0)/(S1 - S0)
     dpdy_srho = (P2 - P0)/(y*dy)
@@ -900,9 +904,9 @@ def get_dsdy_rhot(rho, t, y, dy=0.01):
     dsdy = (S1 - S0)/(y*dy)
     return dsdy
 
-def get_dsdy_pt(p, t, y, z, dy=0.01, z_eos='aqua'):
-    S0 = get_s_ptz(p, t, y, z, z_eos)
-    S1 = get_s_ptz(p, t, y*(1+dy), z, z_eos)
+def get_dsdy_pt(p, t, y, dy=0.01):
+    S0 = get_s_pt(p, t, y)
+    S1 = get_s_pt(p, t, y*(1+dy))
 
     return (S1 - S0)/(y*dy)
 
