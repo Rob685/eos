@@ -9,15 +9,15 @@ from astropy.constants import u as amu
 from astropy.constants import m_p
 #from numba import jit
 import os
-from eos import ideal_eos, aqua_eos
+from eos import ideal_eos, aqua_eos, ppv_eos
 import pdb
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 pd.options.mode.chained_assignment = None
-ideal_z = ideal_eos.IdealEOS(m=18)
+
 ideal_xy = ideal_eos.IdealHHeMix()
 ideal_x = ideal_eos.IdealEOS(m=2)
-mz = 18
+
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
@@ -190,21 +190,47 @@ def get_s_pt(lgp, lgt, y, hg = True):
         smix -= get_smix_nd(y, lgp, lgt)
     return (1 - y) * s_h + y * s_he + smix #
 
-def get_s_ptz(lgp, lgt, y, z, z_eos, mz=18.015):
+def get_s_ptz(lgp, lgt, y, z, z_eos=None):
     s_nid_mix = get_smix_nd(y, lgp, lgt) # in cgs
     s_h = 10 ** get_s_h(lgt, lgp) # in cgs
     s_he = 10 ** get_s_he(lgt, lgp)
-    xz = x_Z(y, z, mz)
-    xh = x_H(y, z, mz)
-    if (z_eos is None): # let's not calculate stuff when z = 0
+
+    if z_eos == 'aqua':
+        mz = 18.015
+        s_z = aqua_eos.get_s_pt(lgp, lgt)
+        xz = x_Z(y, z, mz)
+        xh = x_H(y, z, mz)
+    elif z_eos == 'ppv':
+        mg = 24.305
+        si = 28.085
+        o3 = 48.000
+        mz = mg+si+o3 
+        s_z = ppv_eos.get_s_pt_tab(lgp, lgt)
+        xz = x_Z(y, z, mz)
+        xh = x_H(y, z, mz)
+    # elif z_eos == 'ideal':
+    #     mz = 18.015
+    #     #mz = 18
+    #     ideal_z = ideal_eos.IdealEOS(m=mz)
+    #     s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
+    #     xz = x_Z(y, z, mz)
+    #     xh = x_H(y, z, mz)
+    elif z_eos is None:
+        mz = 2.0
         xz = 0.0
         s_z = 0.0
-    elif z_eos == 'ideal':
-        s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
-    elif z_eos == 'aqua':
-        s_z = aqua_eos.get_s_pt(lgp, lgt)
+        xh = x_H(y, z, mz)
+    # if (z_eos is None): # let's not calculate stuff when z = 0
+    #     xz = 0.0
+    #     s_z = 0.0
+    # elif z_eos == 'ideal':
+    #     s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
+    # elif z_eos == 'aqua':
+    #     s_z = aqua_eos.get_s_pt(lgp, lgt)
+    # elif z_eos == 'ppv':
+    #     s_z = ppv_eos.get_s_pt(lgp, lgt)
     else:
-        raise Exception('z_eos must be either None, ideal, or aqua')
+        raise Exception('z_eos must be either None, ideal, aqua, or ppv')
 
     xhe = 1 - xh - xz
     #xhe = Y_to_n(y)
@@ -223,14 +249,19 @@ def get_rho_pt(lgp, lgt, y, hg = True):
         vmix = 0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
-def get_rho_ptz(lgp, lgt, y, z, z_eos):
+def get_rho_ptz(lgp, lgt, y, z, z_eos=None):
     #if z > 0:
     rho_hhe = 10**get_rho_pt(lgp, lgt, y)
-    if z_eos == 'ideal':
-        rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
-    elif z_eos == 'aqua':
+    # if z_eos == 'ideal':
+    #     mz = 18.015
+    #     ideal_z = ideal_eos.IdealEOS(m=mz)
+    #     rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
+    if z_eos == 'aqua':
         rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
-
+    elif z_eos == 'ppv':
+        rho_z = 10**ppv_eos.get_rho_pt_tab(lgp, lgt)
+    elif z_eos == None:
+        rho_z = 1.0
     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
     #elif z == 0:
         #return get_rho_pt(lgp, lgt, y)
@@ -315,90 +346,66 @@ def get_rhot_sp_tab(s, p, y):
 
 ### aqua mixture tables ###
 
-# svals_spz = np.arange(5.0, 10.1, 0.05)
-# logpvals_spz = np.arange(5.0, 14, 0.05)
-# yvals_spz = np.arange(0.05, 1.0, 0.05)
-# zvals_spz = np.arange(0, 0.98, 0.02)
-
 svals_spz = np.arange(5.5, 9.05, 0.05)
 logpvals_spz = np.arange(5.5, 14, 0.05)
 yvals_spz = np.arange(0.05, 0.55, 0.05)
 zvals_spz = np.arange(0, 0.7, 0.1)
 
-logrho_res_spz, logt_res_spz = np.load('%s/cms/sp_base_z_aqua.npy' % CURR_DIR)
+logrho_res_spz_aqua, logt_res_spz_aqua = np.load('%s/cms/sp_base_z_aqua.npy' % CURR_DIR)
 
-get_rho_rgi_spz = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logrho_res_spz, method='linear', \
+get_rho_rgi_spz_aqua = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logrho_res_spz_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_spz = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logt_res_spz, method='linear', \
-            bounds_error=False, fill_value=None)
-
-def get_rho_spz_tab(s, p, y, z):
-    if np.isscalar(s):
-        return float(get_rho_rgi_spz(np.array([s, p, y, z]).T))
-    else:
-        return get_rho_rgi_spz(np.array([s, p, y, z]).T)
-
-def get_t_spz_tab(s, p, y, z):
-    if np.isscalar(s):
-        return float(get_t_rgi_spz(np.array([s, p, y, z]).T))
-    else:
-        return get_t_rgi_spz(np.array([s, p, y, z]).T)
-
-def get_rhot_spz_tab(s, p, y, z):
-    return get_rho_spz_tab(s, p, y, z), get_t_spz_tab(s, p, y, z)
-
-
-
-### P(s, rho, Y), T(s, rho, Y) tables ###
-#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
-logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
-
-svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
-logrhovals_srho = np.arange(-5, 1.5, 0.05)
-yvals_srho = np.arange(0.05, 1.05, 0.05)
-#zvals_srho = np.arange(0, 0.98, 0.02)
-
-get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
+get_t_rgi_spz_aqua = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logt_res_spz_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_srho_tab(s, r, y):
-    if np.isscalar(s):
-        return float(get_p_rgi_srho(np.array([s, r, y]).T))
-    else:
-        return get_p_rgi_srho(np.array([s, r, y]).T)
+### PPV mixture tables ###
 
-def get_t_srho_tab(s, r, y):
-    if np.isscalar(s):
-        return float(get_t_rgi_srho(np.array([s, r, y]).T))
-    else:
-        return get_t_rgi_srho(np.array([s, r, y]).T)
+svals_spz = np.arange(5.5, 9.05, 0.05)
+logpvals_spz = np.arange(5.5, 14, 0.05)
+yvals_spz = np.arange(0.05, 0.75, 0.05)
+zvals_spz = np.arange(0, 1.0, 0.1)
 
-### aqua mixture tables ###
-# logp_res_srhoz, logt_res_srhoz = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
+logrho_res_spz_ppv, logt_res_spz_ppv = np.load('%s/cms/sp_base_z_ppv.npy' % CURR_DIR)
 
-# svals_srhoz = np.arange(5.5, 10.05, 0.05)
-# logrhovals_srhoz = np.arange(-4, 2.5, 0.05)
-# yvals_srhoz = np.arange(0.05, 1.0, 0.05)
-# zvals_srhoz = np.arange(0, 1.0, 0.1)
+get_rho_rgi_spz_ppv = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logrho_res_spz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_spz_ppv = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logt_res_spz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
 
-# get_p_rgi_srhoz = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz, method='linear', \
-#             bounds_error=False, fill_value=None)
-# get_t_rgi_srhoz = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz, method='linear', \
-#             bounds_error=False, fill_value=None)
+def get_rho_spz_tab(s, p, y, z, z_eos='aqua'): # default is hhe
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_rho_rgi_spz_aqua(np.array([s, p, y, z]).T))
+        else:
+            return get_rho_rgi_spz_aqua(np.array([s, p, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_rho_rgi_spz_ppv(np.array([s, p, y, z]).T))
+        else:
+            return get_rho_rgi_spz_ppv(np.array([s, p, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_rho_sp_tab(s, p, y)
 
-# def get_p_srhoz_tab(s, r, y, z):
-#     if np.isscalar(s):
-#         return float(get_p_rgi_srhoz(np.array([s, r, y, z]).T))
-#     else:
-#         return get_p_rgi_srhoz(np.array([s, r, y, z]).T)
+def get_t_spz_tab(s, p, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_t_rgi_spz_aqua(np.array([s, p, y, z]).T))
+        else:
+            return get_t_rgi_spz_aqua(np.array([s, p, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_t_rgi_spz_ppv(np.array([s, p, y, z]).T))
+        else:
+            return get_t_rgi_spz_ppv(np.array([s, p, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_t_sp_tab(s, p, y)
 
-# def get_t_srhoz_tab(s, r, y, z):
-#     if np.isscalar(s):
-#         return float(get_t_rgi_srhoz(np.array([s, r, y, z]).T))
-#     else:
-#         return get_t_rgi_srhoz(np.array([s, r, y, z]).T)
+def get_rhot_spz_tab(s, p, y, z, z_eos='aqua'):
+    return get_rho_spz_tab(s, p, y, z, z_eos), get_t_spz_tab(s, p, y, z, z_eos)
 
 
 ### P(rho, T, Y), s(rho, T, Y) tables ###
@@ -428,34 +435,143 @@ def get_s_rhot_tab(rho, t, y):
         return get_s_rgi_rhot(np.array([rho, t, y]).T)
 
 ### aqua mixture tables ###
-# logrhovals_rhotz = np.arange(-5, 2.5, 0.05)
-# logtvals_rhotz = np.arange(2.1, 5.1, 0.05)
-# yvals_rhotz = np.arange(0.05, 1.0, 0.05)
-# zvals_rhotz = np.arange(0, 0.98, 0.02)
-
 logrhovals_rhotz = np.arange(-4.5, 2.0, 0.05)
 logtvals_rhotz = np.arange(2.1, 5.1, 0.05)
 yvals_rhotz = np.arange(0.05, 0.55, 0.05)
 zvals_rhotz = np.arange(0, 0.7, 0.1)
 
-logp_res_rhotz, s_res_rhotz = np.load('%s/cms/rhot_base_z_aqua.npy' % CURR_DIR)
+logp_res_rhotz_aqua, s_res_rhotz_aqua = np.load('%s/cms/rhot_base_z_aqua.npy' % CURR_DIR)
 
-get_p_rgi_rhotz = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), logp_res_rhotz, method='linear', \
+get_p_rgi_rhotz_aqua = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), logp_res_rhotz_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_s_rgi_rhotz = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), s_res_rhotz, method='linear', \
+get_s_rgi_rhotz_aqua = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), s_res_rhotz_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_rhotz_tab(rho, t, y, z):
-    if np.isscalar(rho):
-        return float(get_p_rgi_rhotz(np.array([rho, t, y, z]).T))
-    else:
-        return get_p_rgi_rhotz(np.array([rho, t, y, z]).T)
+### PPV mixture tables ###
+logrhovals_rhotz = np.linspace(-4.5, 2.0, 100) # avoiding values around zero...
+logtvals_rhotz = np.arange(2.1, 5.1, 0.05)
+yvals_rhotz = np.arange(0.05, 0.85, 0.05)
+zvals_rhotz = np.arange(0, 1.0, 0.1)
 
-def get_s_rhotz_tab(rho, t, y, z):
-    if np.isscalar(rho):
-        return float(get_s_rgi_rhotz(np.array([rho, t, y, z]).T))
+logp_res_rhotz_ppv, s_res_rhotz_ppv = np.load('%s/cms/rhot_base_z_ppv.npy' % CURR_DIR)
+
+get_p_rgi_rhotz_ppv = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), logp_res_rhotz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhotz_ppv = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), s_res_rhotz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_rhotz_tab(rho, t, y, z, z_eos='aqua'): 
+    if z_eos == 'aqua':
+        if np.isscalar(rho):
+            return float(get_p_rgi_rhotz_aqua(np.array([rho, t, y, z]).T))
+        else:
+            return get_p_rgi_rhotz_aqua(np.array([rho, t, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(rho):
+            return float(get_p_rgi_rhotz_ppv(np.array([rho, t, y, z]).T))
+        else:
+            return get_p_rgi_rhotz_ppv(np.array([rho, t, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_p_rhot_tab(rho, t, y)
+
+def get_s_rhotz_tab(rho, t, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(rho):
+            return float(get_s_rgi_rhotz_aqua(np.array([rho, t, y, z]).T))
+        else:
+            return get_s_rgi_rhotz_aqua(np.array([rho, t, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(rho):
+            return float(get_s_rgi_rhotz_ppv(np.array([rho, t, y, z]).T))
+        else:
+            return get_s_rgi_rhotz_ppv(np.array([rho, t, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_s_rhot_tab(rho, t, y)
+
+
+### P(s, rho, Y), T(s, rho, Y) tables ###
+#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
+
+svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
+logrhovals_srho = np.arange(-5, 1.5, 0.05)
+yvals_srho = np.arange(0.05, 1.05, 0.05)
+#zvals_srho = np.arange(0, 0.98, 0.02)
+
+get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, rho, y):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, rho, y]).T))
     else:
-        return get_s_rgi_rhotz(np.array([rho, t, y, z]).T)
+        return get_p_rgi_srho(np.array([s, rho, y]).T)
+
+def get_t_srho_tab(s, rho, y):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, rho, y]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, rho, y]).T)
+
+
+### aqua mixture tables ###
+
+svals_srhoz = np.arange(5.5, 9.05, 0.05)
+logrhovals_srhoz = np.arange(-4.5, 2.0, 0.1)
+yvals_srhoz = np.arange(0.05, 0.55, 0.1)
+zvals_srhoz = np.arange(0, 0.7, 0.1) # make sure the grids are 0.05 later
+
+logp_res_srhoz_aqua, logt_res_srhoz_aqua = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
+
+logp_res_srhoz_ppv, logt_res_srhoz_ppv = np.load('%s/cms/srho_base_z_ppv.npy' % CURR_DIR)
+
+get_p_rgi_srhoz_aqua = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srhoz_aqua = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_srhoz_ppv = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logp_res_srhoz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srhoz_ppv = RGI((svals_srhoz, logrhovals_srhoz, yvals_srhoz, zvals_srhoz), logt_res_srhoz_ppv, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srhoz_tab(s, rho, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_p_rgi_srhoz_aqua(np.array([s, rho, y, z]).T))
+        else:
+            return get_p_rgi_srhoz_aqua(np.array([s, rho, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_p_rgi_srhoz_ppv(np.array([s, rho, y, z]).T))
+        else:
+            return get_p_rgi_srhoz_ppv(np.array([s, rho, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_p_srho_tab(s, rho, y)
+
+def get_t_srhoz_tab(s, rho, y, z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(s):
+            return float(get_t_rgi_srhoz_aqua(np.array([s, rho, y, z]).T))
+        else:
+            return get_t_rgi_srhoz_aqua(np.array([s, rho, y, z]).T)
+    elif z_eos == 'ppv':
+        if np.isscalar(s):
+            return float(get_t_rgi_srhoz_ppv(np.array([s, rho, y, z]).T))
+        else:
+            return get_t_rgi_srhoz_ppv(np.array([s, rho, y, z]).T)
+    # elif z_eos is None:
+    #     if z > 0:
+    #         raise Exception('Please select an equation of state for metals.')
+    #     return get_t_srho_tab(s, rho, y)
 
 ### error functions ###
 
@@ -492,16 +608,23 @@ def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos):
     #     elif alg == 'brenth':
     #         return float(logrho/rhoval) - 1
 
-def err_t_srho(lgt, sval, rhoval, yval, zval):
+def err_p_srho(lgp, sval, rhoval, yval, zval, z_eos):
+    logrho = get_rho_spz_tab(sval, lgp, yval, zval, z_eos) # circumvents temperature
+    return (logrho/rhoval) - 1
+
+def err_t_srho(lgt, sval, rhoval, yval, zval, z_eos):
     #sval = sval /erg_to_kbbar
     #lgp = get_p_rhot(rval, lgt, y)
     #if np.any(zval) > 0:
-    lgp = get_p_rhotz_tab(rhoval, lgt, yval, zval)
+    lgp = get_p_rhotz_tab(rhoval, lgt, yval, zval, z_eos)
     #lgp = get_p_rhotz_tab(rhoval, lgt, yval, zval)
     #s_ = get_s_ptz(lgp, lgt, yval, zval, z_eos)*erg_to_kbbar
-    logrho = get_rho_spz_tab(sval, lgp, yval, zval)
+    logrho = get_rho_spz_tab(sval, lgp, yval, zval, z_eos)
 
     return (logrho/rhoval) - 1
+
+
+
     # else:
     #     # the original err_t_srho was this below, did it in cgs instead of kbbar
     #     if alg == 'root':
@@ -562,7 +685,7 @@ def get_t_spz(s, p, y, z, hg=True, alg='brenth', z_eos=None):
                 sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, z, hg, z_eos)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
                 return sol.root
             except:
-                print('s={}, p={}, y={}, z={}'.format(s, p, y, z))
+                #print('s={}, p={}, y={}, z={}'.format(s, p, y, z))
                 raise
         #sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
         #return sol
@@ -588,12 +711,11 @@ def get_t_srhoz(s, rho, y, z=0.0, z_eos=None, alg='brenth'):
 
     # if np.any(z) > 0.0 and z_eos is None:
     #     raise Exception('You gotta chose a z_eos if you want metallicities!')
-
     if alg == 'root':
         if np.isscalar(s):
             s, rho, y, z = np.array([s]), np.array([rho]), np.array([y]), np.array([z])
         guess = ideal_xy.get_t_srho(s, rho, y)
-        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y, z))
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y, z, z_eos))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(s):
@@ -604,7 +726,6 @@ def get_t_srhoz(s, rho, y, z=0.0, z_eos=None, alg='brenth'):
             except:
                 #print('s={}, rho={}, y={}'.format(s, rho, y))
                 raise
-
 
 ###### Density ######
 def get_rhot_sp(s, p, y, tab=True, hg=True):
@@ -623,10 +744,12 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     # density components
     rho_hhe = 10**get_rho_sp_tab(s, p, y)
     if z > 0:
-        if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
-        elif z_eos == 'aqua':
+        # if z_eos == 'ideal':
+        #     rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+        if z_eos == 'aqua':
             rho_z = 10**aqua_eos.get_rho_pt(p, t)
+        elif z_eos == 'ppv':
+            rho_z = 10**ppv_eos.get_rho_pt_tab(p, t)
         return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z))), t
     elif z == 0: # no need to calculate rho_z, although if I did, the above would return the right answer
         return get_rhot_sp_tab(s, p, y)
@@ -659,7 +782,7 @@ def get_p_rhotz(rho, t, y, z=0.0, z_eos=None, alg='brenth'):
         #     rho, t, y, z = np.array([rho]), np.array([t]), np.array([y]), np.array([z])
         guess = ideal_xy.get_p_rhot(rho, t, y)
         #pdb.set_trace()
-        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, z, z_eos, alg))
+        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, z, z_eos))
         return sol.x
     elif alg == 'brenth':
         #if np.isscalar(rho):
@@ -752,17 +875,21 @@ def get_dsdy_rhop(rho, p, y, dy=0.1):
 
     return (S1 - S0)/(y*dy)
 
-def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
+def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1):
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
-    if not tab:
-        P0 = 10**get_p_srho(S0*erg_to_kbbar, rho, y)
-        P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
-        P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
-    else:
-        P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
-        P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y) 
-        P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))   
+    # if not tab:
+    #     P0 = 10**get_p_srho(S0*erg_to_kbbar, rho, y)
+    #     P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
+    #     P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
+    #else:
+    # P0 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y, z, z_eos)
+    # P1 = 10**get_p_srhoz_tab(S1*erg_to_kbbar, rho, y, z, z_eos)
+    # P2 = 10**get_p_srhoz_tab(S0*erg_to_kbbar, rho, y*(1+dy), z, z_eos)
+
+    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
+    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
+    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
     
     dpds_rhoy = (P1 - P0)/(S1 - S0)
     dpdy_srho = (P2 - P0)/(y*dy)
@@ -827,6 +954,11 @@ def get_dpdt_rhot(rho, t, y, dT=0.01):
     P0 = get_p_rhot_tab(rho, np.log10(T0), y)
     P1 = get_p_rhot_tab(rho, np.log10(T1), y)
     return (P1 - P0)/(T1 - T0)
+
+def get_gamma1(s, p, y, z, z_eos=None, dp = 0.01):
+    R0 = get_rho_spz_tab(s, p, y, z, z_eos)
+    R1 = get_rho_spz_tab(s, p*(1+dp), y, z, z_eos)
+    return (p*dp)/(R1 - R0)
 
 
 ### energy gradients ###
@@ -935,18 +1067,15 @@ def get_dtds_rhoy_srho(s, rho, y, ds=0.01, tab=True):
         T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho, y)
     return (T1 - T0)/(S1 - S0)
 
-def get_nabla_ad(s, p, y, dp=0.1):
-    t0 = get_t_sp_tab(s, p, y)
-    t1 = get_t_sp_tab(s, p*(1+dp), y)
-    return (t1 - t0)/(p*dp)
+def get_nabla_ad(s, p, y, z, z_eos=None, dp=0.01):
+    T0 = get_t_spz_tab(s, p, y, z, z_eos)
+    T1 = get_t_spz_tab(s, p*(1+dp), y, z, z_eos)
+    return (T1 - T0)/(p*dp)
 
-
-# def get_dtdy_rp(rho, p, y, dy=0.01):
-#     t0 = get_t_pr(p, rho, y)
-#     t1 = get_t_pr(p, rho, y*(1+dy))
-
-#     dtdy = (t1 - t0)/(y*dy)
-#     return dtdy
+def get_gruneisen(s, rho, y, z, z_eos=None, drho = 0.01):
+    T0 = get_t_srhoz_tab(s, rho, y, z, z_eos)
+    T1 = get_t_srhoz_tab(s, rho*(1+drho), y, z, z_eos)
+    return (T1 - T0)/(rho*drho)
 
 
 ### Ledoux terms ###

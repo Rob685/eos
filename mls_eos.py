@@ -151,12 +151,28 @@ def x_Z(Y, Z, mz):
     Ntot = (1-Y)*(1-Z)/mh + (Y*(1-Z)/mhe) + Z/mz
     return (Z/mz)/Ntot
 
+# def guarded_log(x):
+#     if x == 0:
+#         return 0
+#     elif x  < 0:
+#         raise ValueError('a')
+#     return x * np.log(x)
+
 def guarded_log(x):
-    if x == 0:
-        return 0
-    elif x  < 0:
-        raise ValueError('a')
-    return x * np.log(x)
+    if np.isscalar(x):
+        if x == 0:
+            return 0
+        elif x  < 0:
+            raise ValueError('a')
+        return x * np.log(x)
+    # else:
+    #     if np.any(x) == 0:
+    #         return 0
+    #     elif np.any(x)  < 0:
+    #         raise ValueError('a')
+    #     return x * np.log(x)
+
+    return np.array([guarded_log(x_) for x_ in x])
 
 ### isolating the ideal and interacting entropy of mixing terms from HG23 ###
 
@@ -373,15 +389,15 @@ def err_p_srho(lgp, lgr, s_val, y):
 
 def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
     #print(logt, logp, s_val, y, z)
-    if z > 0:
-        s_ = get_s_ptz(logp, logt, y, z, z_eos=z_eos)*erg_to_kbbar
-        #s_val /= erg_to_kbbar # in cgs
-        return (s_/s_val) - 1
-    else:
-        s_ = get_s_pt(logp, logt, y, hg)*erg_to_kbbar
-        #s_val /= erg_to_kbbar # in cgs
+    #if np.any(z) > 0:
+    s_ = get_s_ptz(logp, logt, y, z, z_eos=z_eos)*erg_to_kbbar
+    #s_val /= erg_to_kbbar # in cgs
+    return (s_/s_val) - 1
+    #else:
+        # s_ = get_s_pt(logp, logt, y, hg)*erg_to_kbbar
+        # #s_val /= erg_to_kbbar # in cgs
 
-        return (s_/s_val) - 1
+        # return (s_/s_val) - 1
 
 def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos, alg):
     if zval > 0.0:
@@ -445,8 +461,8 @@ def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
 
 def get_t_spz(s, p, y, z=0.0, hg=True, alg='brenth', z_eos=None):
     #print(s, p, y, z)
-    if z > 0.0 and z_eos is None:
-        raise Exception('You gotta chose a z_eos if you want metallicities!')
+    # if z > 0.0 and z_eos is None:
+    #     raise Exception('You gotta chose a z_eos if you want metallicities!')
 
     if alg == 'root':
         if np.isscalar(s):
@@ -468,8 +484,8 @@ def get_t_spz(s, p, y, z=0.0, hg=True, alg='brenth', z_eos=None):
             except:
                 #print('s={}, p={}, y={}, z={}'.format(s, p, y, z))
                 raise
-        #sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
-        #return sol
+        sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
+        return sol
 
 def get_t_srho(s, rho, y, alg='brenth'):
     if alg == 'root':
@@ -535,8 +551,8 @@ def get_p_rhot(rho, t, y, alg='brenth'):
         return sol
 
 def get_p_rhotz(rho, t, y, z=0.0, z_eos=None, alg='brenth'):
-    if z > 0.0 and z_eos is None:
-        raise Exception('You gotta chose a z_eos if you want metallicities!')
+    # if z > 0.0 and z_eos is None:
+    #     raise Exception('You gotta chose a z_eos if you want metallicities!')
     if alg == 'root':
         # if np.isscalar(rho):
         #     rho, t, y, z = np.array([rho]), np.array([t]), np.array([y]), np.array([z])
@@ -704,17 +720,17 @@ def get_c_p(s, p, y, ds=0.1):
 ### energy gradients ###
 
 # to get chemical potential:
-def get_dudy_srho(s, rho, y, dy=0.1, tab=True):
-    U0 = 10**get_u_srho(s, rho, y, tab)
-    U1 = 10**get_u_srho(s, rho, y*(1+dy), tab)
+def get_dudy_srho(s, rho, y, dy=0.1):
+    U0 = 10**get_u_srho(s, rho, y)
+    U1 = 10**get_u_srho(s, rho, y*(1+dy))
     return (U1 - U0)/(y*dy)
 
 # du/ds_(rho, Y) = T test
 def get_duds_rhoy_srho(s, rho, y, ds=0.1, tab=False):
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
-    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y, tab)
-    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y, tab)
+    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
+    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
     return (U1 - U0)/(S1*ds)
 
 def get_dudrho_sy_srho(s, rho, y, drho=0.1, tab=False):
