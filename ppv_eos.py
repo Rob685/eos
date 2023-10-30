@@ -29,7 +29,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 ### S, P ###
 s_grid = np.loadtxt('eos/zhang_eos/ppv_s.txt')*J_to_kbbar
-logpgrid = np.loadtxt('eos/zhang_eos/ppv_P_ascend.txt')*10 #Pascals to dyn/cm^2
+logpgrid = np.log10(np.loadtxt('eos/zhang_eos/ppv_P_ascend.txt')*10) #Pascals to dyn/cm^2
 logrhovals = np.log10(np.loadtxt('eos/zhang_eos/ppv_rho.txt')*1e-3) # kg/m3 to g/cm3
 logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv_T.txt'))
 
@@ -57,9 +57,9 @@ get_rho_rgi_pt = RGI((logpgrid, logtgrid), logrho_res_pt, method='linear', \
 
 def get_s_pt_tab(p, t):
     if np.isscalar(p):
-        return float(get_s_rgi_pt(np.array([p, t]).T))/erg_to_kbbar
+        return float(get_s_rgi_pt(np.array([p, t]).T))
     else:
-        return get_s_rgi_pt(np.array([p, t]).T)/erg_to_kbbar
+        return get_s_rgi_pt(np.array([p, t]).T)
 
 def get_rho_pt_tab(p, t):
     if np.isscalar(p):
@@ -142,7 +142,7 @@ def get_rho_pt(p, t):
     s = get_s_pt(p, t)
     if np.isscalar(p):
         return get_rho_sp_tab(float(s*erg_to_kbbar), float(p))
-        
+
     return get_rho_sp_tab(s*erg_to_kbbar, p)
 
 def get_p_rhot(rho, t):
