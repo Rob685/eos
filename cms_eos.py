@@ -362,8 +362,8 @@ get_t_rgi_spz_aqua = RGI((svals_spz, logpvals_spz, yvals_spz, zvals_spz), logt_r
 
 svals_spz = np.arange(5.5, 9.05, 0.05)
 logpvals_spz = np.arange(5.5, 14, 0.05)
-yvals_spz = np.arange(0.05, 0.75, 0.05)
-zvals_spz = np.arange(0, 1.0, 0.1)
+yvals_spz = np.arange(0.05, 0.45, 0.05)
+zvals_spz = np.arange(0, 0.45, 0.05)
 
 logrho_res_spz_ppv, logt_res_spz_ppv = np.load('%s/cms/sp_base_z_ppv.npy' % CURR_DIR)
 
