@@ -27,12 +27,12 @@ rgi_test_p = RGI((logtvals, logrhovals), logpvals, method='linear', bounds_error
 
 rgi_test_s = RGI((logtvals, logrhovals), svals, method='linear', bounds_error=False, fill_value=None)
 
-def get_p_rhot(rho, t):
+def get_p_rhot_tab(rho, t):
     if np.isscalar(rho):
         return float(rgi_test_p(np.array([t, rho]).T)) # in log GPa for now
     return rgi_test_p(np.array([t, rho]).T)
 
-def get_s_rhot(rho, t):
+def get_s_rhot_tab(rho, t):
     if np.isscalar(rho):
         return float(rgi_test_s(np.array([t, rho]).T))
     return rgi_test_s(np.array([t, rho]).T)
@@ -85,7 +85,7 @@ def get_rhot_sp_tab(s, p):
 #### error functions ####
 
 def err_rho_pt(lgrho, p_val, t_val):
-    logp_ = get_p_rhot(lgrho, t_val)
+    logp_ = get_p_rhot_tab(lgrho, t_val)
     return (logp_/p_val) - 1
 
 def err_t_sp(logt, s_val, logp, alg):
@@ -120,7 +120,7 @@ def get_rho_pt(p, t, alg='brenth'):
 def get_s_pt(p, t, alg):
     rho = get_rho_pt(p, t, alg)
     #rho, T = get_rhot_sp()
-    return get_s_rhot(rho, t)
+    return get_s_rhot_tab(rho, t)
 
 def get_t_sp(s, p, alg='brenth'):
     if alg == 'root':
