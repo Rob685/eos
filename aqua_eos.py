@@ -69,17 +69,17 @@ rho_rgi = RGI((logpvals_pt, logtvals), logrhovals_pt, method='linear', \
 u_rgi_pt = RGI((logpvals_pt, logtvals), loguvals_pt, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_s_pt(lgp, lgt):
+def get_s_pt_tab(lgp, lgt):
     if np.isscalar(lgp):
         return float(s_rgi_pt(np.array([lgp, lgt]).T))
     return s_rgi_pt(np.array([lgp, lgt]).T)
 
-def get_rho_pt(lgp, lgt):
+def get_rho_pt_tab(lgp, lgt):
     if np.isscalar(lgp):
         return float(rho_rgi(np.array([lgp, lgt]).T))
     return rho_rgi(np.array([lgp, lgt]).T)
 
-def get_u_pt(lgp, lgt):
+def get_u_pt_tab(lgp, lgt):
     if np.isscalar(lgp):
         return float(u_rgi_pt(np.array([lgp, lgt]).T))
     return u_rgi_pt(np.array([lgp, lgt]).T)
