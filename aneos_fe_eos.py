@@ -82,6 +82,27 @@ def get_rho_sp_tab(s, p):
 def get_rhot_sp_tab(s, p):
     return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
 
+#### S, rho ####
+
+logp_res_srho, logt_res_srho = np.load('%s/aneos/aneos_fe_srho_base.npy' % CURR_DIR)
+
+get_p_rgi_srho = RGI((sgrid, logrhovals), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((sgrid, logrhovals), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_p_rgi_srho(np.array([s, r]).T)
+
+def get_t_srho_tab(s, r):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, r]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, r]).T)
+
 #### error functions ####
 
 def err_rho_pt(lgrho, p_val, t_val):
@@ -92,6 +113,10 @@ def err_t_sp(logt, s_val, logp, alg):
     s_ = get_s_pt(logp, logt, alg)*erg_to_kbbar
    # s_val /= erg_to_kbbar # in cgs
     return (s_/s_val) - 1
+
+def err_t_srho(lgt, sval, lgr):
+    s_ = get_s_rhot(lgr, lgt)*erg_to_kbbar
+    return (s_/sval) - 1
 
 #### inversions ####
 
@@ -141,4 +166,26 @@ def get_t_sp(s, p, alg='brenth'):
             #except:
             #    raise
         sol = np.array([get_t_sp(s_, p_) for s_, p_ in zip(s, p)])
+        return sol
+
+def get_t_srho(s, rho, alg='brenth'):
+    if alg == 'root':
+        if np.isscalar(s):
+            s, rho = np.array([s]), np.array([rho])
+            guess = ideal_fe.get_t_srho(s, rho, 0)
+            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
+            return float(sol.x)
+        guess = ideal_fe.get_t_srho(s, rho, 0)
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho))
+        return sol.x
+    elif alg == 'brenth':
+        if np.isscalar(s):
+        #guess = 2.5
+            try:
+                sol = root_scalar(err_t_srho, bracket=[0, 8], xtol=1e-8, method='brenth', args=(s, rho))
+                return sol.root
+            except:
+                #print('s={}, rho={}, y={}'.format(s, rho, y))
+                raise
+        sol = np.array([get_t_srho(s_, rho_) for s_, rho_ in zip(s, rho)])
         return sol
