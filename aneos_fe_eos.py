@@ -27,6 +27,8 @@ rgi_test_p = RGI((logtvals, logrhovals), logpvals, method='linear', bounds_error
 
 rgi_test_s = RGI((logtvals, logrhovals), svals, method='linear', bounds_error=False, fill_value=None)
 
+rgi_test_u = RGI((logtvals, logrhovals), loguvals, method='linear', bounds_error=False, fill_value=None)
+
 def get_p_rhot_tab(rho, t):
     if np.isscalar(rho):
         return float(rgi_test_p(np.array([t, rho]).T)) # in log GPa for now
@@ -37,26 +39,39 @@ def get_s_rhot_tab(rho, t):
         return float(rgi_test_s(np.array([t, rho]).T))
     return rgi_test_s(np.array([t, rho]).T)
 
+def get_u_rhot_tab(rho, t):
+    if np.isscalar(rho):
+        return float(rgi_test_u(np.array([t, rho]).T))
+    return rgi_test_u(np.array([t, rho]).T)
+
 #### P, T ####
 
 logpgrid = np.arange(6, 15, 0.1)
 
-logrho_res_pt, s_res_pt = np.load('%s/aneos/aneos_fe_pt_base.npy' % CURR_DIR)
+logrho_res_pt, s_res_pt, logu_res_pt = np.load('%s/aneos/aneos_fe_pt_base.npy' % CURR_DIR)
 
 get_rho_pt_rgi = RGI((logpgrid, logtvals), logrho_res_pt, \
                     method='linear', bounds_error=False, fill_value=None)
 get_s_pt_rgi = RGI((logpgrid, logtvals), s_res_pt, \
                     method='linear', bounds_error=False, fill_value=None)
 
+get_u_pt_rgi = RGI((logpgrid, logtvals), logu_res_pt, \
+                    method='linear', bounds_error=False, fill_value=None)
+
 def get_rho_pt_tab(p, t):
     if np.isscalar(p):
-        return float(get_rho_pt_rgi(np.array([p, t]).T)) # in log GPa for now
+        return float(get_rho_pt_rgi(np.array([p, t]).T)) 
     return get_rho_pt_rgi(np.array([p, t]).T)
 
 def get_s_pt_tab(p, t):
     if np.isscalar(p):
-        return float(get_s_pt_rgi(np.array([p, t]).T)) # in log GPa for now
+        return float(get_s_pt_rgi(np.array([p, t]).T))
     return get_s_pt_rgi(np.array([p, t]).T)
+
+def get_u_pt_tab(p, t):
+    if np.isscalar(p):
+        return float(get_u_pt_rgi(np.array([p, t]).T)) 
+    return get_u_pt_rgi(np.array([p, t]).T)
 
 #### S, P ####
 
@@ -71,12 +86,12 @@ get_rho_sp_rgi = RGI((sgrid, logpgrid), logrho_res_sp, \
 
 def get_t_sp_tab(s, p):
     if np.isscalar(p):
-        return float(get_t_sp_rgi(np.array([s, p]).T)) # in log GPa for now
+        return float(get_t_sp_rgi(np.array([s, p]).T)) 
     return get_t_sp_rgi(np.array([s, p]).T)
 
 def get_rho_sp_tab(s, p):
     if np.isscalar(p):
-        return float(get_rho_sp_rgi(np.array([s, p]).T)) # in log GPa for now
+        return float(get_rho_sp_rgi(np.array([s, p]).T)) 
     return get_rho_sp_rgi(np.array([s, p]).T)
 
 def get_rhot_sp_tab(s, p):
@@ -115,7 +130,7 @@ def err_t_sp(logt, s_val, logp, alg):
     return (s_/s_val) - 1
 
 def err_t_srho(lgt, sval, lgr):
-    s_ = get_s_rhot(lgr, lgt)*erg_to_kbbar
+    s_ = get_s_rhot_tab(lgr, lgt)*erg_to_kbbar
     return (s_/sval) - 1
 
 #### inversions ####
