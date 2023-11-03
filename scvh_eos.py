@@ -488,3 +488,27 @@ def get_dtdy_srho(s, rho, y, dy=0.01, tab=True):
 
 #     dtdy = (t1 - t0)/(y*dy)
 #     return dtdy
+
+### density gradients ###
+
+def get_drhods_py(s, p, y, ds=0.01):
+    
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+
+    rho0 = 10**get_rhot_sp_tab(S1*erg_to_kbbar, p, y)[0]
+    rho1 = 10**get_rhot_sp_tab(S2*erg_to_kbbar, p, y)[0]
+
+    drhods = (rho1 - rho0)/(S2 - S1)
+
+    return drhods
+
+
+def get_drhodt_py(p, t, y, dt=0.1):
+    #y = cms.n_to_Y(x)
+    rho0 = get_rho_pt_tab(p, t, y)
+    rho1 = get_rho_pt_tab(p, t*(1+dt), y)
+
+    drhodt = (rho1 - rho0)/(t*dt)
+
+    return drhodt

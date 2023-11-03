@@ -46,6 +46,16 @@ def get_s_pt_tab(p, t, eos):
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
+def get_u_pt_tab(p, t, eos):
+    if eos == 'aqua':
+        return aqua_eos.get_u_pt_tab(p, t)
+    elif eos == 'serpentine':
+        return serpentine_eos.get_u_pt_tab(p, t)
+    elif eos == 'iron':
+        return aneos_fe_eos.get_u_pt_tab(p, t)
+    else:
+        raise Exception('Internal energy only available for aqua, serpentine, and iron.')
+
 #### rho, T ####
 
 def get_p_rhot_tab(rho, t, eos):

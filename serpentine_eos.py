@@ -28,6 +28,11 @@ def get_rho_pt_tab(p, t):
         return float(aneos_serp.get_logrho(p, t))
     return aneos_serp.get_logrho(p, t)
 
+def get_u_pt_tab(p, t):
+    if np.isscalar(p):
+        return float(aneos_serp.get_logu(p, t))
+    return aneos_serp.get_logu(p, t)
+
 #### S, P ####
 
 sgrid = np.arange(0.0006, 1.1, 0.003)

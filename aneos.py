@@ -62,6 +62,8 @@ class eos:
 
     def get_logs(self, logp, logt):
         return self._get_logs((logp, logt))
+    def get_logu(self, logp, logt):
+        return self._get_logu((logp, logt))
 
     def get(self, logp, logt):
         res = {}
