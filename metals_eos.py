@@ -151,6 +151,24 @@ def get_p_srho_tab(s, rho, eos):
 
 ############## derivatives ##############
 
+# def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1):
+#     S0 = s/erg_to_kbbar
+#     S1 = S0*(1+ds)
+#     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
+#     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
+#     P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
+    
+#     dpds_rhoy = (P1 - P0)/(S1 - S0)
+#     dpdy_srho = (P2 - P0)/(y*dy)
+
+#     return -dpdy_srho/dpds_rhoy
+
+# def get_dsdy_pt(p, t, y, dy=0.01):
+#     S0 = get_s_pt_tab(p, t, y)
+#     S1 = get_s_pt_tab(p, t, y*(1+dy))
+
+#     return (S1 - S0)/(y*dy)
+
 def get_dtdrho_srho(s, rho, eos, drho=0.01):
     R0 = 10**rho
     R1 = R0*(1+drho)
