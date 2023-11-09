@@ -321,6 +321,10 @@ def get_t_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
         else:
             return get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
 
+def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua'):
+    rho, t = get_rho_sp_tab(_s, _lgp, _y, _z), get_t_sp_tab(_s, _lgp , _y, _z)
+    return rho, t
+
 ###### Rho, T ######
 
 # logrhovals_rhot = np.linspace(-4.5, 2.0, 100)
@@ -384,7 +388,7 @@ def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua'):
 
 ############################### Derivatives ###############################
 
-def get_dudy_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
+def get_dudy_srho(_s, _lgrho, _y, _z, dy=0.01):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z)
     U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
     #U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
@@ -393,7 +397,7 @@ def get_dudy_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
     #dudz_srhoy = (U2 - U0)/(_z*dz)
     return dudy_srhoz# + dudz_srhoy
 
-def get_dudz_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
+def get_dudz_srho(_s, _lgrho, _y, _z, dz=0.01):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z)
     #U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
     U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
@@ -402,7 +406,7 @@ def get_dudz_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
     dudz_srhoy = (U2 - U0)/(_z*dz)
     return dudz_srhoy
 
-def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
+def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01):
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
 
@@ -420,7 +424,7 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
 
     return dsdy_rhopz #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
 
-def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
+def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dz=0.01):
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
 
