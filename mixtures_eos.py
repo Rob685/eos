@@ -387,11 +387,20 @@ def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua'):
 def get_dudy_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z)
     U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
-    U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
+    #U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
 
     dudy_srhoz = (U1 - U0)/(_y*dy)
+    #dudz_srhoy = (U2 - U0)/(_z*dz)
+    return dudy_srhoz# + dudz_srhoy
+
+def get_dudz_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
+    U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z)
+    #U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
+    U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
+
+    #dudy_srhoz = (U1 - U0)/(_y*dy)
     dudz_srhoy = (U2 - U0)/(_z*dz)
-    return dudy_srhoz + dudz_srhoy
+    return dudz_srhoy
 
 def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
     S0 = _s/erg_to_kbbar
@@ -400,26 +409,54 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z)
     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z)
     P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z)
-    P3 =  10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))     
+    #P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))     
     
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
     dpdy_srhoz = (P2 - P0)/(_y*dy)
-    dpdz_srhoy = (P3 - P0)/(_z*dz)
+    #dpdz_srhoy = (P3 - P0)/(_z*dz)
 
     dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
-    dsdy_rhopy = -dpdz_srhoy/dpds_rhoyz
+    #dsdy_rhopy = -dpdz_srhoy/dpds_rhoyz
 
-    return dsdy_rhopz + dsdy_rhopy # should be able to add arbitrary components, this is temporary
+    return dsdy_rhopz #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
 
-def get_dsdy_pt(_lgp, _lgt, _y, _z, dy=0.01, dz=0.01):
+def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
+    S0 = _s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z)
+    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z)
+    #P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z)
+    P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))     
+    
+    dpds_rhoyz = (P1 - P0)/(S1 - S0)
+    #dpdy_srhoz = (P2 - P0)/(_y*dy)
+    dpdz_srhoy = (P3 - P0)/(_z*dz)
+
+    #dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
+    dsdz_rhopy = -dpdz_srhoy/dpds_rhoyz # triple product rule
+
+    return dsdz_rhopy #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
+
+def get_dsdy_pt(_lgp, _lgt, _y, _z, dy=0.01):
     S0 = get_s_pt(_lgp, _lgt, _y, _z)
     S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
-    S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz))
+    #S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz))
 
     dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
-    dsdy_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
+    #dsdz_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
 
-    return dsdy_ptz + dsdy_pty
+    return dsdy_ptz# + dsdz_pty
+
+def get_dsdz_pt(_lgp, _lgt, _y, _z, dz=0.01):
+    S0 = get_s_pt(_lgp, _lgt, _y, _z)
+    #S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
+    S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz))
+
+    #dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
+    dsdz_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
+
+    return dsdz_pty
 
 def get_c_s(_s, _lgp, _y, _z, dp=0.1):
     P0 = 10**_lgp
@@ -445,14 +482,32 @@ def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.01):
 
     return (T1 - T0)/(S1 - S0)
 
-def get_dtdy_srho(_s, _lgrho, _y, _z, dy=0.1, dz=0.1):
+def get_dtdy_srho(_s, _lgrho, _y, _z, dy=0.01):
     T0 = 10**get_t_srho(_s, _lgrho, _y, _z)
     T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
-    T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
+    #T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
 
     dtdy_srhoz = (T1 - T0)/(_y*dy)
+    #dtdz_srhoy = (T2 - T0)/(_z*dz)
+    return dtdy_srhoz
+
+def get_dtdz_srho(_s, _lgrho, _y, _z, dz=0.01):
+    T0 = 10**get_t_srho(_s, _lgrho, _y, _z)
+    #T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
+    T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
+
+    #dtdy_srhoz = (T1 - T0)/(_y*dy)
     dtdz_srhoy = (T2 - T0)/(_z*dz)
-    return dtdy_srhoz + dtdz_srhoy
+    return dtdz_srhoy
+
+def get_drhodt_pyz(p, t, y, z, hhe_eos='cms', z_eos='aqua', dt=0.1):
+    #y = cms.n_to_Y(x)
+    rho0 = get_rho_pt(p, t, y, z, hhe_eos='cms', z_eos='aqua')
+    rho1 = get_rho_pt(p, t*(1+dt), y, z, hhe_eos='cms', z_eos='aqua')
+
+    drhodt = (rho1 - rho0)/(t*dt)
+
+    return drhodt
 
 def get_c_v(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.1):
     # ds/dlogT_{_lgrho, Y}
