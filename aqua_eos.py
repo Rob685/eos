@@ -202,20 +202,20 @@ XTOL = 1e-8
 
 def err_t_sp(logt, s_val, logp):
     #print(logt, logp, s_val, y, z)
-    s_ = get_s_pt(logp, logt)*erg_to_kbbar
+    s_ = get_s_pt_tab(logp, logt)*erg_to_kbbar
     #s_val /= erg_to_kbbar # in cgs
 
     return (s_/s_val) - 1
 
 def err_p_rhot(lgp, rhoval, lgtval):
     #if zval > 0.0:
-    logrho = get_rho_pt(lgp, lgtval)
+    logrho = get_rho_pt_tab(lgp, lgtval)
     #pdb.set_trace()
     return logrho/rhoval - 1
 
 def err_t_srho(lgt, sval, rhoval):
     lgp = get_p_rhot_tab(rhoval, lgt)
-    s_ = get_s_pt(lgp, lgt)*erg_to_kbbar
+    s_ = get_s_pt_tab(lgp, lgt)*erg_to_kbbar
     return  s_/sval - 1
 
 def get_p_rhot(rho, t ,alg='brenth'):
