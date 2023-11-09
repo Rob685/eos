@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
-from eos import ideal_eos, ppv_eos, aqua_eos, serpentine_eos, aneos_fe_eos
+from eos import ideal_eos, ppv_eos, aqua_eos, serpentine_eos, aneos_fe_eos, zmix_eos
 import os
 
 from astropy import units as u
@@ -29,6 +29,8 @@ def get_rho_pt_tab(p, t, eos):
         return aneos_fe_eos.get_rho_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_rho_pt(p, t, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_rho_pt_tab(p, t)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -43,6 +45,8 @@ def get_s_pt_tab(p, t, eos):
         return aneos_fe_eos.get_s_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_s_pt(p, t, 0)/erg_to_kbbar
+    elif eos == 'mixture':
+        return zmix_eos.get_s_pt_tab(p, t)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -69,6 +73,8 @@ def get_p_rhot_tab(rho, t, eos):
         return aneos_fe_eos.get_p_rhot_tab(rho, t)
     elif eos == 'ideal':
         return ideal_water.get_p_rhot(rho, t, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_p_rhot_tab(rho, t)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -83,6 +89,8 @@ def get_s_rhot_tab(rho, t, eos):
         return aneos_fe_eos.get_s_rhot_tab(rho, t)
     elif eos == 'ideal':
         return ideal_water.get_s_rhot(rho, t, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_s_rhot_tab(rho, t)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -99,6 +107,8 @@ def get_t_sp_tab(s, p, eos):
         return aneos_fe_eos.get_t_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_t_sp(s, p, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_t_sp_tab(s, p)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -113,6 +123,8 @@ def get_rho_sp_tab(s, p, eos):
         return aneos_fe_eos.get_rho_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_rho_sp(s, p, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_rho_sp_tab(s, p)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -132,6 +144,8 @@ def get_t_srho_tab(s, rho, eos):
         return aneos_fe_eos.get_t_srho_tab(s, rho)
     elif eos == 'ideal':
         return ideal_water.get_t_srho(s, rho, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_t_srho_tab(s, rho)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -146,6 +160,8 @@ def get_p_srho_tab(s, rho, eos):
         return aneos_fe_eos.get_p_srho_tab(s, rho)
     elif eos == 'ideal':
         return ideal_water.get_p_srho(s, rho, 0)
+    elif eos == 'mixture':
+        return zmix_eos.get_p_srho_tab(s, rho)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 

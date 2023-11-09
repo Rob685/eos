@@ -275,29 +275,51 @@ def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
 
 ###### S, P ######
 
-svals_sp = np.arange(3.0, 9.1, 0.1)
-logpvals_sp = np.arange(6, 14.1, 0.1)
+svals_sp_aqua = np.arange(3.0, 9.1, 0.1)
+logpvals_sp_aqua = np.arange(6, 14.1, 0.1)
 yvals_sp = np.arange(0.05, 0.95, 0.1)
 zvals_sp = np.arange(0, 1.0, 0.1)
 
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
+get_rho_rgi_sp_aqua = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
+get_t_rgi_sp_aqua = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(_s, _lgp, _y, _z):
-    if np.isscalar(_s):
-        return float(get_rho_rgi_sp(np.array([_s, _lgp, _y, _z]).T))
-    else:
-        return get_rho_rgi_sp(np.array([_s, _lgp, _y, _z]).T)
+svals_sp_serp = np.arange(0.1, 9.1, 0.05)
+logpvals_sp_serp = np.arange(11, 14.5, 0.05)
 
-def get_t_sp_tab(_s, _lgp, _y, _z):
-    if np.isscalar(_s):
-        return float(get_t_rgi_sp(np.array([_s, _lgp, _y, _z]).T))
-    else:
-        return get_t_rgi_sp(np.array([_s, _lgp, _y, _z]).T)
+logrho_res_sp_cms_serp, logt_res_sp_cms_serp = np.load('%s/cms/sp_base_z_serpentine_extended.npy' % CURR_DIR)
+
+get_rho_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logrho_res_sp_cms_serp, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logt_res_sp_cms_serp, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_rho_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T)
+    elif z_eos == 'serpentine':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
+
+def get_t_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
+    if z_eos == 'aqua':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T)
+    elif z_eos == 'serpentine':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
 
 ###### Rho, T ######
 
