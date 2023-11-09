@@ -192,19 +192,19 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
                 return sol.root
             except:
                 raise
-        sol = np.array([get_t_sp(s_, p_, y_, z_, z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
+        sol = np.array([get_t_sp(s_, p_, y_, z_, z_eos=z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
         return sol
 
 def get_rho_sp(_s, _lgp, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
     logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos=hhe_eos, alg=alg, z_eos=z_eos)
     return get_rho_pt(_lgp, logt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
 
-###### rho, T ######
+###### Rho, T ######
 
 def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
     if alg == 'root':
         if np.isscalar(_lgrho):
-            _lgrho, _lgt, _y = np.array([_lgrho]), np.array([_lgt]), np.array([_y]), np.array([_z])
+            _lgrho, _lgt, _y, _z = np.array([_lgrho]), np.array([_lgt]), np.array([_y]), np.array([_z])
             guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _y)
             sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _y, _z, hhe_eos, z_eos))
             return float(sol.x)
@@ -222,7 +222,7 @@ def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
         sol = np.array([get_p_rhot(rho_, t_, y_) for rho_, t_, y_ in zip(_lgrho, _lgt, _y, _z)])
         return sol
 
-###### S, rho ######
+###### S, Rho ######
 
 def get_t_srho(_s, _lgrho, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
     if alg == 'root':
@@ -247,7 +247,7 @@ def get_t_srho(_s, _lgrho, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
         sol = np.array([get_t_srho(s_, rho_, y_, z_) for s_, rho_, y_, z_ in zip(_s, _lgrho, _y, _z)])
         return sol
 
-###### rho, P ######
+###### Rho, P ######
 
 def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
     if alg == 'root':
@@ -275,12 +275,12 @@ def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos='cms', alg='brenth', z_eos=None):
 
 ###### S, P ######
 
-svals_sp = np.arange(5.5, 9.05, 0.05)
-logpvals_sp = np.arange(5.5, 14, 0.05)
-yvals_sp = np.arange(0.05, 0.55, 0.05)
-zvals_sp = np.arange(0, 0.55, 0.05)
+svals_sp = np.arange(3.0, 9.1, 0.1)
+logpvals_sp = np.arange(6, 14.1, 0.1)
+yvals_sp = np.arange(0.05, 0.95, 0.1)
+zvals_sp = np.arange(0, 1.0, 0.1)
 
-logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua.npy' % CURR_DIR)
+logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
 get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
@@ -299,14 +299,19 @@ def get_t_sp_tab(_s, _lgp, _y, _z):
     else:
         return get_t_rgi_sp(np.array([_s, _lgp, _y, _z]).T)
 
-###### \rho, T ######
+###### Rho, T ######
 
-logrhovals_rhot = np.linspace(-4.5, 2.0, 100)
+# logrhovals_rhot = np.linspace(-4.5, 2.0, 100)
+# logtvals_rhot = np.arange(2, 5.05, 0.05)
+# yvals_rhot = np.arange(0.05, 0.55, 0.05)
+# zvals_rhot = np.arange(0, 0.55, 0.05)
+
+logrhovals_rhot = np.linspace(-5.0, 2.0, 100)
 logtvals_rhot = np.arange(2, 5.05, 0.05)
-yvals_rhot = np.arange(0.05, 0.55, 0.05)
-zvals_rhot = np.arange(0, 0.55, 0.05)
+yvals_rhot = np.arange(0.05, 0.95, 0.1)
+zvals_rhot = np.arange(0, 1.0, 0.1)
 
-logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua.npy' % CURR_DIR)
+logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
 get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
@@ -325,7 +330,7 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z):
     else:
         return get_s_rgi_rhot(np.array([_lgrho, _lgt, _y, _z]).T)
 
-##### S, \rho #####
+##### S, Rho #####
 
 svals_srho = np.arange(5.5, 9.05, 0.05)
 logrhovals_srho = np.linspace(-4.5, 2.0, 100)
@@ -339,127 +344,124 @@ get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp
 get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_srho_tab(s, r, y, z):
-    if np.isscalar(s):
-        return float(get_p_rgi_srho(np.array([s, r, y, z]).T))
+def get_p_srho_tab(_s, _lgrho, _y, _z):
+    if np.isscalar(_s):
+        return float(get_p_rgi_srho(np.array([_s, _lgrho, _y, _z]).T))
     else:
-        return get_p_rgi_srho(np.array([s, r, y, z]).T)
+        return get_p_rgi_srho(np.array([_s, _lgrho, _y, _z]).T)
 
-def get_t_srho_tab(s, r, y, z):
-    if np.isscalar(s):
-        return float(get_t_rgi_srho(np.array([s, r, y, z]).T))
+def get_t_srho_tab(_s, _lgrho, _y, _z):
+    if np.isscalar(_s):
+        return float(get_t_rgi_srho(np.array([_s, _lgrho, _y, _z]).T))
     else:
-        return get_t_rgi_srho(np.array([s, r, y, z]).T)
+        return get_t_rgi_srho(np.array([_s, _lgrho, _y, _z]).T)
 
-def get_u_srho_tab(s, r, y, z, hhe_eos='cms', z_eos='aqua'):
-    _lgp, _lgt = get_p_srho_tab(s, r, y, z), get_t_srho_tab(s, r , y, z)
-    return get_u_pt(_lgp, _lgt, y, z, hhe_eos=hhe_eos, z_eos=z_eos)
+def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua'):
+    _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z), get_t_srho_tab(_s, _lgrho , _y, _z)
+    return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
 
 ############################### Derivatives ###############################
 
-def get_dudy_srho(s, rho, y, z, dy=0.01, dz=0.01):
-    U0 = 10**get_u_srho_tab(s, rho, y, z)
-    U1 = 10**get_u_srho_tab(s, rho, y*(1+dy), z)
-    U2 = 10**get_u_srho_tab(s, rho, y, z*(1+dz))
+def get_dudy_srho(_s, _lgrho, _y, _z, dy=0.01, dz=0.01):
+    U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z)
+    U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
+    U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
 
-    dudy_srhoz = (U1 - U0)/(y*dy)
-    dudz_srhoy = (U2 - U0)/(z*dz)
+    dudy_srhoz = (U1 - U0)/(_y*dy)
+    dudz_srhoy = (U2 - U0)/(_z*dz)
     return dudy_srhoz + dudz_srhoy
 
-def get_dsdy_rhop_srho(s, rho, y, z, ds=0.01, dy=0.01, dz=0.01):
-    S0 = s/erg_to_kbbar
+def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.01, dy=0.01, dz=0.01):
+    S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
 
-    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y, z)
-    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y, z)
-    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy), z)
-    P3 =  10**get_p_srho_tab(S0*erg_to_kbbar, rho, y, z*(1+dz))     
+    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z)
+    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z)
+    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z)
+    P3 =  10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))     
     
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
-    dpdy_srhoz = (P2 - P0)/(y*dy)
-    dpdz_srhoy = (P3 - P0)/(z*dz)
+    dpdy_srhoz = (P2 - P0)/(_y*dy)
+    dpdz_srhoy = (P3 - P0)/(_z*dz)
 
     dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
     dsdy_rhopy = -dpdz_srhoy/dpds_rhoyz
 
-    #dsdy_rhop = np.array([dsdy_rhopz, dsdy_rhopy])
-
     return dsdy_rhopz + dsdy_rhopy # should be able to add arbitrary components, this is temporary
 
-def get_dsdy_pt(p, t, y, z, dy=0.01, dz=0.01):
-    S0 = get_s_pt(p, t, y, z)
-    S1 = get_s_pt(p, t, y*(1+dy), z)
-    S2 = get_s_pt(p, t, y, z*(1+dz))
+def get_dsdy_pt(_lgp, _lgt, _y, _z, dy=0.01, dz=0.01):
+    S0 = get_s_pt(_lgp, _lgt, _y, _z)
+    S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
+    S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz))
 
-    dsdy_ptz = (S1 - S0)/(y*dy) # constant P, T, Z
-    dsdy_pty = (S2 - S0)/(z*dz) # constant P, T, Y
+    dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
+    dsdy_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
 
     return dsdy_ptz + dsdy_pty
 
-def get_c_s(s, p, y, z, dp=0.1):
-    P0 = 10**p
+def get_c_s(_s, _lgp, _y, _z, dp=0.1):
+    P0 = 10**_lgp
     P1 = P0*(1+dp)
-    R0 = get_rho_sp_tab(s, np.log10(P0), y, z)
-    R1 = get_rho_sp_tab(s, np.log10(P1), y, z)
+    R0 = get_rho_sp_tab(_s, np.log10(P0), _y, _z)
+    R1 = get_rho_sp_tab(_s, np.log10(P1), _y, _z)
 
     return np.sqrt((P1 - P0)/(10**R1 - 10**R0))
 
-def get_dtdrho_srho(s, rho, y, z, hhe_eos='cms', z_eos='aqua', drho=0.01):
-    R0 = 10**rho
+def get_dtdrho_srho(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', drho=0.01):
+    R0 = 10**_lgrho
     R1 = R0*(1+drho)
-    T0 = 10**get_t_srho_tab(s, np.log10(R0), z)
-    T1 = 10**get_t_srho_tab(s, np.log10(R1), z)
+    T0 = 10**get_t_srho_tab(_s, np.log10(R0), _y, _z)
+    T1 = 10**get_t_srho_tab(_s, np.log10(R1), _y, _z)
 
     return (T1 - T0)/(R1 - R0)
 
-def get_dtds_srho(s, rho, y, z, hhe_eos='cms', z_eos='aqua', ds=0.01):
-    S0 = s/erg_to_kbbar
+def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.01):
+    S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, rho, y, z)
-    T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho, y, z)
+    T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z)
+    T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z)
 
     return (T1 - T0)/(S1 - S0)
 
-def get_dtdy_srho(s, rho, y, z, dy=0.1, dz=0.1):
-    T0 = 10**get_t_srho(s, rho, y, z)
-    T1 = 10**get_t_srho(s, rho, y*(1+dy), z)
-    T2 = 10**get_t_srho(s, rho, y, z*(1+dz))
+def get_dtdy_srho(_s, _lgrho, _y, _z, dy=0.1, dz=0.1):
+    T0 = 10**get_t_srho(_s, _lgrho, _y, _z)
+    T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
+    T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
 
-    dtdy_srhoz = (T1 - T0)/(y*dy)
-    dtdz_srhoy = (T2 - T0)/(z*dz)
+    dtdy_srhoz = (T1 - T0)/(_y*dy)
+    dtdz_srhoy = (T2 - T0)/(_z*dz)
     return dtdy_srhoz + dtdz_srhoy
 
-def get_c_v(s, rho, y, z, hhe_eos='cms', z_eos='aqua', ds=0.1):
-    # ds/dlogT_{rho, Y}
-    S0 = s/erg_to_kbbar
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.1):
+    # ds/dlogT_{_lgrho, Y}
+    S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-
-    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho, y, z)
-    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y, z)
+    T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z)
+    T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z)
  
     return (S1 - S0)/(T1 - T0)
 
-def get_c_p(s, p, y, z, hhe_eos='cms', z_eos='aqua', ds=0.1):
+def get_c_p(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.1):
     # ds/dlogT_{P, Y}
-    S0 = s/erg_to_kbbar
+    S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, y, z)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, y, z)
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z)
 
     return (S1 - S0)/(T1 - T0)
 
-def get_gamma1(s, p, y, z, dp = 0.01):
+def get_gamma1(_s, _lgp, _y, _z, dp = 0.01):
     # dlogP/dlogrho_S, Y, Z
-    R0 = get_rho_sp_tab(s, p, y, z)
-    R1 = get_rho_sp_tab(s, p*(1+dp), y, z)
-    return (p*dp)/(R1 - R0)
+    R0 = get_rho_sp_tab(_s, _lgp, _y, _z)
+    R1 = get_rho_sp_tab(_s, _lgp*(1+dp), _y, _z)
+    return (_lgp*dp)/(R1 - R0)
 
-def get_nabla_ad(s, p, y, z, dp=0.01):
-    T0 = get_t_sp_tab(s, p, y, z)
-    T1 = get_t_sp_tab(s, p*(1+dp), y, z)
-    return (T1 - T0)/(p*dp)
+def get_nabla_ad(_s, _lgp, _y, _z, dp=0.01):
+    T0 = get_t_sp_tab(_s, _lgp, _y, _z)
+    T1 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z)
+    return (T1 - T0)/(_lgp*dp)
 
-def get_gruneisen(s, rho, y, z, drho = 0.01):
-    T0 = get_t_srho_tab(s, rho, y, z)
-    T1 = get_t_srho_tab(s, rho*(1+drho), y, z)
-    return (T1 - T0)/(rho*drho)
+def get_gruneisen(_s, _lgrho, _y, _z, drho = 0.01):
+    T0 = get_t_srho_tab(_s, _lgrho, _y, _z)
+    T1 = get_t_srho_tab(_s, _lgrho*(1+drho), _y, _z)
+    return (T1 - T0)/(_lgrho*drho)
