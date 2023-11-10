@@ -335,7 +335,7 @@ def get_rho_sp_tab(s, p, y, z=0.0):
     else:
         return get_rho_rgi_sp(np.array([s, p, y]).T)
 
-def get_t_sp_tab(s, p, y, z):
+def get_t_sp_tab(s, p, y, z=0.0):
     if np.isscalar(s):
         return float(get_t_rgi_sp(np.array([s, p, y]).T))
     else:
