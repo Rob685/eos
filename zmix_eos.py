@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from eos import mixtures_eos, metals_eos, ideal_eos
+from eos import metals_eos, ideal_eos
 from tqdm import tqdm
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
