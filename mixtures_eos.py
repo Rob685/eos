@@ -504,7 +504,7 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, dz=0.01):
     dtdz_srhoy = (T2 - T0)/(_z*dz)
     return dtdz_srhoy
 
-def get_drhodt_pyz(p, t, y, z, hhe_eos='cms', z_eos='aqua', dt=0.1):
+def get_drhodt_py(p, t, y, z, hhe_eos='cms', z_eos='aqua', dt=0.1):
     #y = cms.n_to_Y(x)
     rho0 = get_rho_pt(p, t, y, z, hhe_eos='cms', z_eos='aqua')
     rho1 = get_rho_pt(p, t*(1+dt), y, z, hhe_eos='cms', z_eos='aqua')
