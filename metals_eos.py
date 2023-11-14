@@ -30,7 +30,7 @@ def get_rho_pt_tab(p, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_rho_pt(p, t, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_rho_pt_tab(p, t)
+        return zmix_eos.get_rho_pt_tab(p, t, 0.25, 0.25)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -46,7 +46,7 @@ def get_s_pt_tab(p, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_s_pt(p, t, 0)/erg_to_kbbar
     elif eos == 'mixture':
-        return zmix_eos.get_s_pt_tab(p, t)
+        return zmix_eos.get_s_pt_tab(p, t, 0.25, 0.25)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 

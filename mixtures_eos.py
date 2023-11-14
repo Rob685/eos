@@ -90,6 +90,11 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         xz = x_Z(_y, _z, mz)
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='iron')
+    elif z_eos == 'mixture':
+        mz = 40
+        xz = x_Z(_y, _z, mz)
+        xh = x_H(_y, _z, mz)
+        s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='mixture')
     elif z_eos is None:
         mz = 2.0 # doesn't matter because xz should be 0
         xz = 0.0
@@ -297,6 +302,13 @@ get_rho_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp),
 get_t_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logt_res_sp_cms_serp, method='linear', \
             bounds_error=False, fill_value=None)
 
+logrho_res_sp_cms_mix, logt_res_sp_cms_mix = np.load('%s/cms/sp_base_z_serpentine_extended.npy' % CURR_DIR)
+
+get_rho_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_mix, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_mix, method='linear', \
+            bounds_error=False, fill_value=None)
+
 def get_rho_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
     if z_eos == 'aqua':
         if np.isscalar(_s):
@@ -308,6 +320,11 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
             return float(get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
         else:
             return get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
+    elif z_eos == 'mixture':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T)
 
 def get_t_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
     if z_eos == 'aqua':
@@ -320,9 +337,14 @@ def get_t_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
             return float(get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
         else:
             return get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
+    elif z_eos == 'mixture':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T)
 
 def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua'):
-    rho, t = get_rho_sp_tab(_s, _lgp, _y, _z), get_t_sp_tab(_s, _lgp , _y, _z)
+    rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, z_eos=z_eos), get_t_sp_tab(_s, _lgp , _y, _z, z_eos=z_eos)
     return rho, t
 
 ###### Rho, T ######
