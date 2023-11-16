@@ -17,6 +17,8 @@ pd.options.mode.chained_assignment = None
 
 ideal_xy = ideal_eos.IdealHHeMix()
 ideal_x = ideal_eos.IdealEOS(m=2)
+mz_default = 18.015
+ideal_z_default = ideal_eos.IdealEOS(m=mz_default)
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -750,7 +752,7 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     rho_hhe = 10**get_rho_sp_tab(s, p, y)
     if z > 0:
         if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+            rho_z = 10**ideal_z_default.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
         elif z_eos == 'aqua':
             rho_z = 10**aqua_eos.get_rho_pt(p, t)
         elif z_eos == 'ppv':
