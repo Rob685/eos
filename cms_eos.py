@@ -17,6 +17,8 @@ pd.options.mode.chained_assignment = None
 
 ideal_xy = ideal_eos.IdealHHeMix()
 ideal_x = ideal_eos.IdealEOS(m=2)
+mz_default = 18.015
+ideal_z_default = ideal_eos.IdealEOS(m=mz_default)
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -204,17 +206,17 @@ def get_s_ptz(lgp, lgt, y, z, z_eos=None):
         mg = 24.305
         si = 28.085
         o3 = 48.000
-        mz = mg+si+o3 
+        mz = mg+si+o3
         s_z = ppv_eos.get_s_pt_tab(lgp, lgt)
         xz = x_Z(y, z, mz)
         xh = x_H(y, z, mz)
-    # elif z_eos == 'ideal':
-    #     mz = 18.015
-    #     #mz = 18
-    #     ideal_z = ideal_eos.IdealEOS(m=mz)
-    #     s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
-    #     xz = x_Z(y, z, mz)
-    #     xh = x_H(y, z, mz)
+    elif z_eos == 'ideal':
+        mz = 18.015
+        #mz = 18
+        ideal_z = ideal_eos.IdealEOS(m=mz)
+        s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
+        xz = x_Z(y, z, mz)
+        xh = x_H(y, z, mz)
     elif z_eos is None:
         mz = 2.0
         xz = 0.0
@@ -230,7 +232,8 @@ def get_s_ptz(lgp, lgt, y, z, z_eos=None):
     # elif z_eos == 'ppv':
     #     s_z = ppv_eos.get_s_pt(lgp, lgt)
     else:
-        raise Exception('z_eos must be either None, ideal, aqua, or ppv')
+        raise Exception(
+            'z_eos must be either None, ideal, aqua, or ppv, was "%s"' % z_eos)
 
     xhe = 1 - xh - xz
     #xhe = Y_to_n(y)
@@ -252,16 +255,19 @@ def get_rho_pt(lgp, lgt, y, hg = True):
 def get_rho_ptz(lgp, lgt, y, z, z_eos=None):
     #if z > 0:
     rho_hhe = 10**get_rho_pt(lgp, lgt, y)
-    # if z_eos == 'ideal':
-    #     mz = 18.015
-    #     ideal_z = ideal_eos.IdealEOS(m=mz)
-    #     rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
-    if z_eos == 'aqua':
+    if z_eos == 'ideal':
+        mz = 18.015
+        ideal_z = ideal_eos.IdealEOS(m=mz)
+        rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
+    elif z_eos == 'aqua':
         rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
     elif z_eos == 'ppv':
         rho_z = 10**ppv_eos.get_rho_pt_tab(lgp, lgt)
     elif z_eos == None:
         rho_z = 1.0
+    else:
+        raise Exception(
+            'z_eos must be either None, ideal, aqua, or ppv, was "%s"' % z_eos)
     return np.log10(1/((1 - z)/rho_hhe + z/rho_z))
     #elif z == 0:
         #return get_rho_pt(lgp, lgt, y)
@@ -460,7 +466,7 @@ def get_s_rhot_tab(rho, t, y):
 # get_s_rgi_rhotz_ppv = RGI((logrhovals_rhotz, logtvals_rhotz, yvals_rhotz, zvals_rhotz), s_res_rhotz_ppv, method='linear', \
 #             bounds_error=False, fill_value=None)
 
-# def get_p_rhotz_tab(rho, t, y, z, z_eos='aqua'): 
+# def get_p_rhotz_tab(rho, t, y, z, z_eos='aqua'):
 #     if z_eos == 'aqua':
 #         if np.isscalar(rho):
 #             return float(get_p_rgi_rhotz_aqua(np.array([rho, t, y, z]).T))
@@ -642,7 +648,7 @@ TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when 
 PBOUNDS = [0, 15]
 
 XTOL = 1e-8
-    
+
 ###### Temperature ######
 def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
     if alg == 'root':
@@ -687,8 +693,9 @@ def get_t_spz(s, p, y, z, hg=True, alg='brenth', z_eos=None):
             except:
                 #print('s={}, p={}, y={}, z={}'.format(s, p, y, z))
                 raise
-        #sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
-        #return sol
+        print(s, p, y, z)
+        sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
+        return sol
 
 def get_t_srho(s, rho, y, alg='brenth'):
     if alg == 'root':
@@ -742,18 +749,18 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     # mixture temperature
     t = get_t_spz(s, p, y, z, alg=alg, z_eos=z_eos)
     # density components
-    rho_hhe = 10**get_rho_sp_tab(s, p, y)
+    rho_hhe = 10**get_rho_pt(p, t, y)
     if z > 0:
-        # if z_eos == 'ideal':
-        #     rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
-        if z_eos == 'aqua':
+        if z_eos == 'ideal':
+            rho_z = 10**ideal_z_default.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
+        elif z_eos == 'aqua':
             rho_z = 10**aqua_eos.get_rho_pt(p, t)
         elif z_eos == 'ppv':
             rho_z = 10**ppv_eos.get_rho_pt_tab(p, t)
         return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z))), t
     elif z == 0: # no need to calculate rho_z, although if I did, the above would return the right answer
         return get_rhot_sp_tab(s, p, y)
-    
+
 
 ###### Pressure ######
 def get_p_rhot(rho, t, y, alg='brenth'):
@@ -847,7 +854,7 @@ def get_u_sp(s, p, y):
     return get_u_pt(p, t, y)
 
 def get_u_rhot(rho, t, y):
-    p = get_p_rhot_tab(rho, t, y) 
+    p = get_p_rhot_tab(rho, t, y)
     return get_u_pt(p, t, y)
 
 def get_u_srho(s, rho, y):
@@ -889,8 +896,8 @@ def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1):
 
     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
-    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
-    
+    P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))
+
     dpds_rhoy = (P1 - P0)/(S1 - S0)
     dpdy_srho = (P2 - P0)/(y*dy)
 
@@ -933,7 +940,7 @@ def get_c_v(s, rho, y, ds=0.1):
 
     T0 = get_t_srho_tab(S0*erg_to_kbbar, rho, y)
     T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y)
- 
+
     return (S1 - S0)/(T1 - T0)
 
 def get_c_p(s, p, y, ds=0.1):
@@ -996,7 +1003,7 @@ def get_dudrho_rhot(rho, t, y, drho=0.01):
 ### density gradients ###
 
 def get_drhods_py(s, p, y, ds=0.01):
-    
+
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
 
@@ -1034,7 +1041,7 @@ def get_dtdy_srho(s, rho, y, dy=0.1, tab=True):
         T1 = 10**get_t_srho(s, rho, y*(1+dy))
     else:
         T0 = 10**get_t_srho_tab(s, rho, y)
-        T1 = 10**get_t_srho_tab(s, rho, y*(1+dy)) 
+        T1 = 10**get_t_srho_tab(s, rho, y*(1+dy))
 
     return (T1 - T0)/(y*dy)
 
@@ -1187,7 +1194,7 @@ def get_dcp_dy_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
 #     print('parallel:', end - start)
 #     np.save('%s/cms/parallel_test_tsrho.npy' % CURR_DIR, results)
 
-    
+
 
 
 
