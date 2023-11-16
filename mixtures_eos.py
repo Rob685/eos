@@ -302,7 +302,7 @@ get_rho_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp),
 get_t_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logt_res_sp_cms_serp, method='linear', \
             bounds_error=False, fill_value=None)
 
-logrho_res_sp_cms_mix, logt_res_sp_cms_mix = np.load('%s/cms/sp_base_z_serpentine_extended.npy' % CURR_DIR)
+logrho_res_sp_cms_mix, logt_res_sp_cms_mix = np.load('%s/cms/sp_base_z_mixture.npy' % CURR_DIR)
 
 get_rho_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_mix, method='linear', \
             bounds_error=False, fill_value=None)
