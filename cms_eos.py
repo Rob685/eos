@@ -749,7 +749,7 @@ def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
     # mixture temperature
     t = get_t_spz(s, p, y, z, alg=alg, z_eos=z_eos)
     # density components
-    rho_hhe = 10**get_rho_sp_tab(s, p, y)
+    rho_hhe = 10**get_rho_pt(p, t, y)
     if z > 0:
         if z_eos == 'ideal':
             rho_z = 10**ideal_z_default.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
