@@ -17,8 +17,9 @@ pd.options.mode.chained_assignment = None
 
 ideal_xy = ideal_eos.IdealHHeMix()
 ideal_x = ideal_eos.IdealEOS(m=2)
-mz_default = 18.015
-ideal_z_default = ideal_eos.IdealEOS(m=mz_default)
+# mz = 18.015
+mz = 40
+ideal_z_default = ideal_eos.IdealEOS(m=mz)
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -198,7 +199,6 @@ def get_s_ptz(lgp, lgt, y, z, z_eos=None):
     s_he = 10 ** get_s_he(lgt, lgp)
 
     if z_eos == 'aqua':
-        mz = 18.015
         s_z = aqua_eos.get_s_pt(lgp, lgt)
         xz = x_Z(y, z, mz)
         xh = x_H(y, z, mz)
@@ -206,22 +206,21 @@ def get_s_ptz(lgp, lgt, y, z, z_eos=None):
         mg = 24.305
         si = 28.085
         o3 = 48.000
-        mz = mg+si+o3
+        mz_tot = mg+si+o3
         s_z = ppv_eos.get_s_pt_tab(lgp, lgt)
-        xz = x_Z(y, z, mz)
-        xh = x_H(y, z, mz)
+        xz = x_Z(y, z, mz_tot)
+        xh = x_H(y, z, mz_tot)
     elif z_eos == 'ideal':
-        mz = 18.015
         #mz = 18
         ideal_z = ideal_eos.IdealEOS(m=mz)
         s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
         xz = x_Z(y, z, mz)
         xh = x_H(y, z, mz)
     elif z_eos is None:
-        mz = 2.0
+        mz_He = 2.0
         xz = 0.0
         s_z = 0.0
-        xh = x_H(y, z, mz)
+        xh = x_H(y, z, mz_He)
     # if (z_eos is None): # let's not calculate stuff when z = 0
     #     xz = 0.0
     #     s_z = 0.0
@@ -256,7 +255,6 @@ def get_rho_ptz(lgp, lgt, y, z, z_eos=None):
     #if z > 0:
     rho_hhe = 10**get_rho_pt(lgp, lgt, y)
     if z_eos == 'ideal':
-        mz = 18.015
         ideal_z = ideal_eos.IdealEOS(m=mz)
         rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
     elif z_eos == 'aqua':
