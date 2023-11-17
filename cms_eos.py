@@ -253,9 +253,9 @@ All functions should be the same for ease of use."""
 
 logrho_res_sp, logt_res_sp = np.load('%s/cms/sp_base_comb.npy' % CURR_DIR)
 
-svals_sp = np.arange(5.25, 10.1, 0.05)
-logpvals_sp = np.arange(5.5, 14, 0.05)
-yvals_sp = np.arange(0.05, 1.05, 0.05)
+svals_sp = np.arange(5.5, 10.05, 0.05)
+logpvals_sp = np.arange(5.5, 14.05, 0.05)
+yvals_sp = np.arange(0.05, 1.0, 0.05)
 
 get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logrho_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
