@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from eos import mixtures_eos
-erg_to_kbbar = mixtures_eos.erg_to_kbbar
+from eos import metals_eos, ideal_eos
 from tqdm import tqdm
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
@@ -9,10 +8,9 @@ import os
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
-metals_eos = mixtures_eos.metals_eos
-ideal_eos = mixtures_eos.ideal_eos
-
 ideal_z = ideal_eos.IdealEOS(m=40)
+
+erg_to_kbbar = 1.2027235500116248e-08
 
 def guarded_log(x):
     if np.isscalar(x):
