@@ -57,6 +57,8 @@ def get_u_pt_tab(p, t, eos):
         return serpentine_eos.get_u_pt_tab(p, t)
     elif eos == 'iron':
         return aneos_fe_eos.get_u_pt_tab(p, t)
+    elif eos == 'ideal':
+        return ideal_water.get_u_pt(p, t)
     else:
         raise Exception('Internal energy only available for aqua, serpentine, and iron.')
 

@@ -90,6 +90,11 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         xz = x_Z(_y, _z, mz)
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='iron')
+    elif z_eos == 'ideal':
+        mz = 18
+        xz = x_Z(_y, _z, mz)
+        xh = x_H(_y, _z, mz)
+        s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='ideal')
     elif z_eos == 'mixture':
         mz = 40
         xz = x_Z(_y, _z, mz)
@@ -101,7 +106,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         s_z = 0.0
         xh = x_H(_y, _z, mz)
     else:
-        raise Exception('z_eos must be either None, ideal, aqua, or ppv')
+        raise Exception('Acceptable z_eos: aqua, ppv, serpentine, iron, ideal, mixture, None')
 
     xhe = 1 - xh - xz
     if np.any(xh + xhe + xz) != 1.0:
