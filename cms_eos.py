@@ -364,13 +364,13 @@ def err_t_rhop(_lgt, _lgrho, _lgp, _y):
 
 ### inversion functions ###
 
-TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when the top limit of the CMS table is logT<5
+TBOUNDS = [2, 7]
 PBOUNDS = [0, 15]
 
 XTOL = 1e-8
     
 ###### Temperature ######
-def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
+def get_t_sp(s, p, y, hg=True, alg='root', z_eos=None):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
@@ -486,10 +486,6 @@ def get_u_rhot(rho, t, y):
 def get_u_srho(s, rho, y, z=0.0):
     p, t = get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
     return get_u_pt(p, t, y)
-
-# def get_s_ur(u, rho, y):
-#     t = get_t_ur(u, rho, y)
-#     return get_s_rhot(rho, t, y) # in cgs
 
 def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
