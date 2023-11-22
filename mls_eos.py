@@ -190,62 +190,19 @@ def get_smix_nd(Y, lgp, lgt):
 
     return smix_hg23 - smix_id
 
-def get_s_pt(lgp, lgt, y, hg = True):
+def get_s_pt(lgp, lgt, y, z=0.0):
     s_h = get_s_h(lgt, lgp)
     s_he = 10 ** get_s_he(lgt, lgp)
     smix = smix_interp(lgt, lgp)*(1 - y)*y
-    if not hg:
-        #smix = get_smix_id_y(y)/erg_to_kbbar
-        smix -= get_smix_nd(y, lgp, lgt)
     return (1 - y) * s_h + y * s_he + smix #
 
-def get_s_ptz(lgp, lgt, y, z, z_eos, mz=18.015):
-    s_nid_mix = get_smix_nd(y, lgp, lgt) # in cgs
-    s_h = 10 ** get_s_h(lgt, lgp) # in cgs
-    s_he = 10 ** get_s_he(lgt, lgp)
-    xz = x_Z(y, z, mz)
-    xh = x_H(y, z, mz)
-    if (z_eos is None): # let's not calculate stuff when z = 0
-        xz = 0.0
-        s_z = 0.0
-    elif z_eos == 'ideal':
-        s_z = ideal_z.get_s_pt(lgp, lgt, y) / erg_to_kbbar
-    elif z_eos == 'aqua':
-        s_z = aqua_eos.get_s_pt(lgp, lgt)
-    else:
-        raise Exception('z_eos must be either None, ideal, or aqua')
-
-    x_he = 1 - xh - xz
-    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(x_he)) / erg_to_kbbar
-
-    return (1 - y)* (1 - z) * s_h + y * (1 - z) * s_he + s_z * z + s_nid_mix*(1 - z) - s_id_zmix
-
-def get_rho_pt(lgp, lgt, y, hg = True):
+def get_rho_pt(lgp, lgt, y, z=0.0):
     rho_h = 10 ** get_rho_h(lgt, lgp)
     rho_he = 10 ** get_rho_he(lgt, lgp)
     vmix = vmix_interp(lgt, lgp)
-    #if hc_corr:
-        #vmix = vmix_interp(lgt, lgp)
-    if not hg:
-        vmix = 0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
-def get_rho_ptz(lgp, lgt, y, z=0.0, z_eos=None):
-    if z > 0.0 and z_eos is None:
-        raise Exception('You gotta chose a z_eos if you want metallicities!')
-
-    if z > 0:
-        rho_hhe = 10**get_rho_pt(lgp, lgt, y)
-        if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(lgp, lgt, y)
-        elif z_eos == 'aqua':
-            rho_z = 10**aqua_eos.get_rho_pt(lgp, lgt)
-
-        return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z)))
-    elif z == 0:
-        return get_rho_pt(lgp, lgt, y)
-
-def get_u_pt(lgp, lgt, y):
+def get_u_pt(lgp, lgt, y, z=0.0):
     u_h = 10**get_logu_h(lgt, lgp) # MJ/kg to erg/g
     u_he = 10**get_logu_he(lgt, lgp)
     return np.log10((1 - y)*u_h + y*u_he)
@@ -307,19 +264,19 @@ get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logrho_res_sp, method='l
 get_t_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logt_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(s, p, y):
+def get_rho_sp_tab(s, p, y, z=0.0):
     if np.isscalar(s):
         return float(get_rho_rgi_sp(np.array([s, p, y]).T))
     else:
         return get_rho_rgi_sp(np.array([s, p, y]).T)
 
-def get_t_sp_tab(s, p, y):
+def get_t_sp_tab(s, p, y, z=0.0):
     if np.isscalar(s):
         return float(get_t_rgi_sp(np.array([s, p, y]).T))
     else:
         return get_t_rgi_sp(np.array([s, p, y]).T)
 
-def get_rhot_sp_tab(s, p, y):
+def get_rhot_sp_tab(s, p, y, z=0.0):
     return get_rho_sp_tab(s, p, y), get_t_sp_tab(s, p, y)
 
 
@@ -341,13 +298,13 @@ get_p_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method
 get_t_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_srho_tab(s, r, y):
+def get_p_srho_tab(s, r, y, z=0.0):
     if np.isscalar(s):
         return float(get_p_rgi(np.array([s, r, y]).T))
     else:
         return get_p_rgi(np.array([s, r, y]).T)
 
-def get_t_srho_tab(s, r, y):
+def get_t_srho_tab(s, r, y, z=0.0):
     if np.isscalar(s):
         return float(get_t_rgi(np.array([s, r, y]).T))
     else:
@@ -367,13 +324,13 @@ get_p_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot
 get_s_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), s_res_rhot, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_rhot_tab(rho, t, y):
+def get_p_rhot_tab(rho, t, y, z=0.0):
     if np.isscalar(rho):
         return float(get_p_rhot_rgi(np.array([rho, t, y]).T))
     else:
         return get_p_rhot_rgi(np.array([rho, t, y]).T)
 
-def get_s_rhot_tab(rho, t, y):
+def get_s_rhot_tab(rho, t, y, z=0.0):
     if np.isscalar(rho):
         return float(get_s_rhot_rgi(np.array([rho, t, y]).T))
     else:
@@ -387,198 +344,130 @@ def err_p_srho(lgp, lgr, s_val, y):
     s_val /= erg_to_kbbar
     return (s_/s_val) - 1
 
-def err_t_sp(logt, logp, s_val, y, z, hg, z_eos):
-    #print(logt, logp, s_val, y, z)
-    #if np.any(z) > 0:
-    s_ = get_s_ptz(logp, logt, y, z, z_eos=z_eos)*erg_to_kbbar
-    #s_val /= erg_to_kbbar # in cgs
+def err_t_sp(logt, s_val, logp, y):
+    s_ = get_s_pt(logp, logt, y)*erg_to_kbbar
     return (s_/s_val) - 1
-    #else:
-        # s_ = get_s_pt(logp, logt, y, hg)*erg_to_kbbar
-        # #s_val /= erg_to_kbbar # in cgs
 
-        # return (s_/s_val) - 1
+def err_p_rhot(lgp, rhoval, lgtval, yval):
+    logrho = get_rho_pt(lgp, lgtval, yval)
+    return (logrho/rhoval) - 1
 
-def err_p_rhot(lgp, rhoval, lgtval, yval, zval, z_eos, alg):
-    if zval > 0.0:
-        #sval = float(get_s_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos))*erg_to_kbbar
-        logrho = get_rho_ptz(float(lgp), lgtval, yval, zval, z_eos = z_eos)
-        #pdb.set_trace()
-        return float(logrho/rhoval) - 1
+def err_p_srho(lgp, sval, rhoval, yval):
+    logrho = get_rho_sp_tab(sval, lgp, yval) # circumvents temperature
+    return (logrho/rhoval) - 1
 
-    elif zval == 0:
-        logrho = get_rho_pt(float(lgp), lgtval, yval)
-        #s *= erg_to_kbbar
-        if alg == 'root':
-            return  logrho/rhoval - 1
-        elif alg == 'brenth':
-            return float(logrho/rhoval) - 1
+def err_t_srho(lgt, sval, rhoval, yval):
+    #logp = get_p_rhot(rhoval, lgt, yval, alg='root')
+    s_test = get_s_rhot_tab(rhoval, lgt, yval)*erg_to_kbbar
+    return (s_test/sval) - 1
 
-#def err_t_srho(lgt, sval, rval, yval, zval, z_eos, alg):
-def err_t_srho(lgt, sval, rval, yval, alg):
-    #sval = sval /erg_to_kbbar
-    #lgp = get_p_rhot(rval, lgt, y)
-    # if zval > 0:
-    #     lgp = get_p_rhotz(rval, lgt, yval, zval, z_eos, alg)
-    #     s_ = get_s_ptz(lgp, lgt, yval, zval, z_eos)*erg_to_kbbar
-    #     return float(s_/sval)
-    #elif zval == 0:
-        # the original err_t_srho was this below, did it in cgs instead of kbbar
-    if alg == 'root':
-        lgp = float(get_p_rhot_tab(rval, float(lgt), yval))
-        s_ = get_s_pt(lgp, lgt, yval)*erg_to_kbbar
-        return  float(s_/sval) - 1
-    elif alg == 'brenth':
-        lgp = float(get_p_rhot_tab(rval, float(lgt), yval))
-        s_ = float(get_s_pt(lgp, lgt, yval))*erg_to_kbbar
-        return float(s_/sval) - 1
+def err_t_rhop(_lgt, _lgrho, _lgp, _y):
+    logrho_test = get_rho_pt(_lgp, _lgt, _y)
+    return (logrho_test/_lgrho) - 1
 
 ### inversion functions ###
 
-TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when the top limit of the CMS table is logT<5
+TBOUNDS = [2, 7]
 PBOUNDS = [0, 15]
 
-XTOL = 1e-4
+XTOL = 1e-8
     
 ###### Temperature ######
-def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
+def get_t_sp(s, p, y, hg=True, alg='root', z_eos=None):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
+            guess = ideal_xy.get_t_sp(s, p, y)
+            sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(s, p, y))
+            return float(sol.x)
         guess = ideal_xy.get_t_sp(s, p, y)
-        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, 0, hg, z_eos))
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(s, p, y))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(s):
             try:
-                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, 0, hg, z_eos)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, p, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
                 return sol.root
             except:
-                #print('s={}, p={}, y={}'.format(s, p, y))
                 raise
-        sol = np.array([get_t_sp(s_, p_, y_, hg) for s_, p_, y_ in zip(s, p, y)])
+        sol = np.array([get_t_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)])
         return sol
 
-def get_t_spz(s, p, y, z=0.0, hg=True, alg='brenth', z_eos=None):
-    #print(s, p, y, z)
-    # if z > 0.0 and z_eos is None:
-    #     raise Exception('You gotta chose a z_eos if you want metallicities!')
-
-    if alg == 'root':
-        if np.isscalar(s):
-            s, p, y, z = np.array([s]), np.array([p]), np.array([y]), np.array([z])
-        #print(s, p, y, z)
-        #guess = (1 - z)*ideal_xy.get_t_sp(s, p, y) + z*ideal_z.get_t_sp(s, p, y)
-        guess = ideal_xy.get_t_sp(s, p, y)
-        #guess = get_t_sp_tab(s, p, y)
-        #print(s, p, y, z)
-        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(p, s, y, z, hg, z_eos))
-        #print(s, p, y, z)
-        #pdb.set_trace()
-        return sol.x
-    elif alg == 'brenth':
-        if np.isscalar(s):
-            try:
-                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(p, s, y, z, hg, z_eos)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
-                return sol.root
-            except:
-                #print('s={}, p={}, y={}, z={}'.format(s, p, y, z))
-                raise
-        sol = np.array([get_t_spz(s_, p_, y_, z_, hg, z_eos) for s_, p_, y_, z_ in zip(s, p, y, z)])
-        return sol
-
-def get_t_srho(s, rho, y, alg='brenth'):
+def get_t_srho(s, rho, y, alg='root'):
     if alg == 'root':
         if np.isscalar(s):
             s, rho, y = np.array([s]), np.array([rho]), np.array([y])
+            guess = ideal_xy.get_t_srho(s, rho, y)
+            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
+            return float(sol.x)
         guess = ideal_xy.get_t_srho(s, rho, y)
-        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y, alg))
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(s):
         #guess = 2.5
             try:
-                sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, rho, y, alg))
+                sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, rho, y))
                 return sol.root
             except:
                 #print('s={}, rho={}, y={}'.format(s, rho, y))
                 raise
+        sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
+        return sol
 
+def get_t_rhop(_lgrho, _lgp, _y, alg='root'):
+    if alg == 'root':
+        if np.isscalar(_lgrho):
+            _lgrho, _lgp, _y = np.array([_lgrho]), np.array([_lgp]), np.array([_y])
+            guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
+            sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y))
+            return float(sol.x)
+
+        guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
+        sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y))
+        return sol.x
+    elif alg == 'brenth':
+        if np.isscalar(_lgrho):
+        #guess = 2.5
+            try:
+                sol = root_scalar(err_t_rhop, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(_lgrho, _lgp, _y))
+                return sol.root
+            except:
+                raise
+        sol = np.array([get_t_rhop(rho_, p_, y_) for rho_, p_, y_ in zip(_lgrho, _lgp, _y)])
+        return sol
 
 ###### Density ######
-def get_rhot_sp(s, p, y, tab=True, hg=True):
-    if not tab:
-        t = get_t_sp(s, p, y, hg)
-        rho = get_rho_pt(p, t, y, hg)
-    else: # tables have hg...
-        rho, t = get_rhot_sp_tab(s, p, y)
+def get_rhot_sp(s, p, y, z=0.0):
+    rho, t = get_rhot_sp_tab(s, p, y)
     return rho, t
-
-def get_rhot_spz(s, p, y, z, z_eos=None, alg='brenth'):
-    #if not tab:
-    '''This function does not have a table option yet'''
-    # mixture temperature
-    t = float(get_t_spz(s, p, y, z, alg=alg, z_eos=z_eos))
-    # density components
-    rho_hhe = 10**get_rho_sp_tab(p, t, y)
-    if z > 0:
-        if z_eos == 'ideal':
-            rho_z = 10**ideal_z.get_rho_pt(p, t, y) # y is a dummy input, no effect on ideal_z
-        elif z_eos == 'aqua':
-            rho_z = 10**aqua_eos.get_rho_pt(p, t)
-        return float(np.log10(1/((1 - z)/rho_hhe + z/rho_z))), t
-    elif z == 0: # no need to calculate rho_z, although if I did, the above would return the right answer
-        return get_rhot_sp_tab(s, p, y)
     
 
 ###### Pressure ######
-def get_p_rhot(rho, t, y, alg='brenth'):
+def get_p_rhot(rho, t, y, alg='root'):
     if alg == 'root':
         if np.isscalar(rho):
             rho, t, y = np.array([rho]), np.array([t]), np.array([y])
+            guess = ideal_x.get_p_rhot(rho, t, y)
+            sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y))
+            return float(sol.x)
         guess = ideal_x.get_p_rhot(rho, t, y)
-        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, alg))
+        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(rho):
             try:
-                sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(t, rho, y, alg))
+                sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(rho, t, y))
                 return sol.root
             except:
                 #print('rho={}, t={}, y={}'.format(rho, t, y))
                 raise
-        sol = np.array([get_p_rhot(rho_, t_, y_) for t_, rho_, y_ in zip(t, rho, y)])
+        sol = np.array([get_p_rhot(rho_, t_, y_) for rho_, t_, y_ in zip(rho, t, y)])
         return sol
 
-def get_p_rhotz(rho, t, y, z=0.0, z_eos=None, alg='brenth'):
-    # if z > 0.0 and z_eos is None:
-    #     raise Exception('You gotta chose a z_eos if you want metallicities!')
-    if alg == 'root':
-        # if np.isscalar(rho):
-        #     rho, t, y, z = np.array([rho]), np.array([t]), np.array([y]), np.array([z])
-        guess = ideal_xy.get_p_rhot(rho, t, y)
-        #pdb.set_trace()
-        sol = root(err_p_rhot, guess, tol=1e-8, method='hybr', args=(rho, t, y, z, z_eos, alg))
-        return sol.x
-    elif alg == 'brenth':
-        #if np.isscalar(rho):
-        try:
-            sol = root_scalar(err_p_rhot, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(rho, t, y, z, z_eos, alg))
-            return sol.root
-        except:
-            #print('rho={}, t={}, y={}'.format(rho, t, y))
-            raise
-        #sol = np.array([get_p_rhot(rho_, t_, y_, z_) for t_, rho_, y_, z_ in zip(t, rho, y, z)])
-        #return sol
-
-def get_p_srho(s, rho, y):
-    if np.isscalar(s):
-            #guess = 2.5
-        sol = root_scalar(err_p_srho, bracket=PBOUNDS, xtol=XTOL, method='brenth', args=(rho, s, y))
-        return sol.root
-
-    sol = np.array([get_p_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
-    return sol
+def get_p_srho(s, rho, y, alg='root'):
+    logt = get_t_srho(s, rho, y, alg)
+    return get_p_rhot_tab(rho, logt, y)
 
 
 def get_sp_rhot(rho, t, y):
@@ -586,57 +475,25 @@ def get_sp_rhot(rho, t, y):
     s = get_s_pt(logp, t, y)
     return s, logp
 
-# s, rho inversions
-
-        # sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
-        # return sol
-
-# def get_pt_srho(s, rho, y, tab=True, alg='brenth'):
-#     if alg == 'brenth':
-#         logt = get_t_srho(s, rho, y, alg)
-#         if tab:
-#             p = get_p_rhot_tab(rho, logt, y)
-#             return p, logt
-#         else:
-#             p = get_p_rhot(rho, t, y)
-#     elif alg == 'root':
-#         if np.isscalar(rho):
-#             #guess = ideal_x.get_pt_srho(s, rho, y) # guess used to be [8,3]
-#             sol = root(err_pt_srho, [8, 3], tol=1e-10, method='hybr', args=(s, rho, y))
-#             return sol.x
-#         p, t = np.array([get_pt_srho(s_, r_, y_, alg='root') for s_, r_, y_ in zip(s, rho, y)]).T
-#         return p, t
-
-# ROB (09/18/2023): finish implementing more efficient root function instead of looping root_scalar with ideal gas guesses
-
-# def get_s_rhot(rho, t, y):
-#     #y = cms.n_to_Y(x)
-#     p = get_p_rhot(rho, t, y)
-#     s = get_s_pt(p, t, y)
-#     return s # in cgs
+def get_pt_srho(s, rho, y):
+    return get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
 
 def get_u_sp(s, p, y):
     t = get_t_sp(s, p, y)
     return get_u_pt(p, t, y)
 
 def get_u_rhot(rho, t, y):
-    #y = cms.n_to_Y(x)
     p = get_p_rhot_tab(rho, t, y) 
     return get_u_pt(p, t, y)
 
-def get_u_srho(s, rho, y):
+def get_u_srho(s, rho, y, z=0.0):
     p, t = get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
     return get_u_pt(p, t, y)
-
-# def get_s_ur(u, rho, y):
-#     t = get_t_ur(u, rho, y)
-#     return get_s_rhot(rho, t, y) # in cgs
 
 def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
     #y = cms.n_to_Y(y)
-    s = get_s_pt(p, t, y)
-    return s # in cgs
+    return get_s_pt(p, t, y)
 
 ############## derivatives ##############
 
@@ -649,17 +506,18 @@ def get_dsdy_rhop(rho, p, y, dy=0.1):
 
     return (S1 - S0)/(y*dy)
 
-def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
+def get_dsdy_rhop_srho(s, rho, y, z=0.0, ds=0.1, dy=0.1, tab=True):
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
+
     if not tab:
         P0 = 10**get_p_srho(S0*erg_to_kbbar, rho, y)
         P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
         P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
-    else:
+    else: 
         P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
-        P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y) 
-        P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))   
+        P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
+        P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
     
     dpds_rhoy = (P1 - P0)/(S1 - S0)
     dpdy_srho = (P2 - P0)/(y*dy)
@@ -667,20 +525,20 @@ def get_dsdy_rhop_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
     return -dpdy_srho/dpds_rhoy
 
 
-def get_dsdy_rhot(rho, t, y, dy=0.01):
+def get_dsdy_rhot(rho, t, y, z=0.0, dy=0.01):
     S0 = get_s_rhot_tab(rho, t, y)
     S1 = get_s_rhot_tab(rho, t, y*(1+dy))
 
     dsdy = (S1 - S0)/(y*dy)
     return dsdy
 
-def get_dsdy_pt(p, t, y, dy=0.01):
+def get_dsdy_pt(p, t, y, z=0.0, dy=0.01):
     S0 = get_s_pt(p, t, y)
     S1 = get_s_pt(p, t, y*(1+dy))
 
     return (S1 - S0)/(y*dy)
 
-def get_dsdt_ry_rhot(rho, t, y, dt=0.1):
+def get_dsdt_ry_rhot(rho, t, y, z=0.0, dt=0.1):
     T0 = 10**t
     T1 = T0*(1+dt)
     S0 = get_s_rhot_tab(rho, np.log10(T0), y)
@@ -688,7 +546,7 @@ def get_dsdt_ry_rhot(rho, t, y, dt=0.1):
 
     return (S1 - S0)/(T1 - T0)
 
-def get_c_s(s, p, y, dp=0.1):
+def get_c_s(s, p, y, z=0.0, dp=0.1):
     P0 = 10**p
     P1 = P0*(1+dp)
     R0 = get_rho_sp_tab(s, np.log10(P0), y)
@@ -696,7 +554,7 @@ def get_c_s(s, p, y, dp=0.1):
 
     return np.sqrt((P1 - P0)/(10**R1 - 10**R0))
 
-def get_c_v(s, rho, y, ds=0.1):
+def get_c_v(s, rho, y, z=0.0, ds=0.1):
     # ds/dlogT_{rho, Y}
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
@@ -706,7 +564,7 @@ def get_c_v(s, rho, y, ds=0.1):
  
     return (S1 - S0)/(T1 - T0)
 
-def get_c_p(s, p, y, ds=0.1):
+def get_c_p(s, p, y, z=0.0, ds=0.1):
     # ds/dlogT_{P, Y}
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
@@ -716,35 +574,56 @@ def get_c_p(s, p, y, ds=0.1):
 
     return (S1 - S0)/(T1 - T0)
 
+### pressure gradients ###
+
+def get_dpdt_rhot(rho, t, y, z=0.0, dT=0.01):
+    T0 = 10**t
+    T1 = T0*(1+dT)
+    P0 = get_p_rhot_tab(rho, np.log10(T0), y)
+    P1 = get_p_rhot_tab(rho, np.log10(T1), y)
+    return (P1 - P0)/(T1 - T0)
+
+def get_gamma1(s, p, y, z=0.0, dp = 0.01):
+    R0 = get_rho_sp_tab(s, p, y)
+    R1 = get_rho_sp_tab(s, p*(1+dp), y)
+    return (p*dp)/(R1 - R0)
+
 
 ### energy gradients ###
 
 # to get chemical potential:
-def get_dudy_srho(s, rho, y, dy=0.1):
+def get_dudy_srho(s, rho, y, z=0.0, dy=0.1):
     U0 = 10**get_u_srho(s, rho, y)
     U1 = 10**get_u_srho(s, rho, y*(1+dy))
     return (U1 - U0)/(y*dy)
 
 # du/ds_(rho, Y) = T test
-def get_duds_rhoy_srho(s, rho, y, ds=0.1, tab=False):
+def get_duds_rhoy_srho(s, rho, y, z=0.0, ds=0.1):
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
     U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
     U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
     return (U1 - U0)/(S1*ds)
 
-def get_dudrho_sy_srho(s, rho, y, drho=0.1, tab=False):
+def get_dudrho_sy_srho(s, rho, y, z=0.0, drho=0.1):
     R1 = 10**rho
     R2 = R1*(1+drho)
     #rho1 = np.log10((10**rho)*(1+drho))
-    U0 = 10**get_u_srho(s, np.log10(R1), y, tab)
-    U1 = 10**get_u_srho(s, np.log10(R2), y, tab)
+    U0 = 10**get_u_srho(s, np.log10(R1), y)
+    U1 = 10**get_u_srho(s, np.log10(R2), y)
     #return (U1 - U0)/(R1*drho)
     return (U1 - U0)/((1/R1) - (1/R2))
 
+def get_dudrho_rhot(rho, t, y, z=0.0, drho=0.01):
+    R0 = 10**rho
+    R1 = R0*(1+drho)
+    U0 = 10**get_u_rhot(rho, t, y)
+    U1 = 10**get_u_rhot(np.log10(R1), t, y)
+    return (U1 - U0)/(R1 - R0)
+
 ### density gradients ###
 
-def get_drhods_py(s, p, y, ds=0.01):
+def get_drhods_py(s, p, y, z=0.0, ds=0.01):
     
     S1 = s/erg_to_kbbar
     S2 = S1*(1+ds)
@@ -757,7 +636,7 @@ def get_drhods_py(s, p, y, ds=0.01):
     return drhods
 
 
-def get_drhodt_py(p, t, y, dt=0.1):
+def get_drhodt_py(p, t, y, z=0.0, dt=0.1):
     #y = cms.n_to_Y(x)
     rho0 = get_rho_pt(p, t, y)
     rho1 = get_rho_pt(p, t*(1+dt), y)
@@ -768,7 +647,7 @@ def get_drhodt_py(p, t, y, dt=0.1):
 
 ### temperature gradients ###
 
-def get_dtdy_sp(s, p, y, dy=0.01):
+def get_dtdy_sp(s, p, y, z=0.0, dy=0.01):
     # t0 = get_t_sp(s, p, y)
     # t1 = get_t_sp(s, p, y*(1+dy))
     T0 = 10**get_t_sp_tab(s, p, y) # this was returning dlogT/dY before
@@ -777,7 +656,7 @@ def get_dtdy_sp(s, p, y, dy=0.01):
     dtdy = (T1 - T0)/(y*dy)
     return dtdy
 
-def get_dtdy_srho(s, rho, y, dy=0.1, tab=True):
+def get_dtdy_srho(s, rho, y, z=0.0, dy=0.1, tab=True):
     if not tab:
         T0 = 10**get_t_srho(s, rho, y)
         T1 = 10**get_t_srho(s, rho, y*(1+dy))
@@ -787,14 +666,14 @@ def get_dtdy_srho(s, rho, y, dy=0.1, tab=True):
 
     return (T1 - T0)/(y*dy)
 
-def get_dtdy_rhop(rho, p, y, dy=0.01):
+def get_dtdy_rhop(rho, p, y, z=0.0, dy=0.01):
     t0 = 10**get_t_rhop(rho, p, y)
     t1 = 10**get_t_rhop(rho, p, y*(1+dy))
 
     dtdy = (t1 - t0)/(y*dy)
     return dtdy
 
-def get_dtdrho_sy_srho(s, rho, y, drho = 0.01, tab=True): # dlogT/dlogrho_{s, Y}
+def get_dtdrho_sy_srho(s, rho, y, z=0.0, drho = 0.01, tab=True): # dlogT/dlogrho_{s, Y}
     R0 = 10**rho
     R1 = R0*(1+drho)
     if not tab:
@@ -805,7 +684,7 @@ def get_dtdrho_sy_srho(s, rho, y, drho = 0.01, tab=True): # dlogT/dlogrho_{s, Y}
         T1 = 10**get_t_srho_tab(s, np.log10(R1), y)
     return (T1 - T0)/(R1 - R0)
 
-def get_dtds_rhoy_srho(s, rho, y, ds=0.01, tab=True):
+def get_dtds_rhoy_srho(s, rho, y, z=0.0, ds=0.01, tab=True):
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
     if not tab:
@@ -816,130 +695,12 @@ def get_dtds_rhoy_srho(s, rho, y, ds=0.01, tab=True):
         T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho, y)
     return (T1 - T0)/(S1 - S0)
 
-def get_nabla_ad(s, p, y, dp=0.1):
-    t0 = get_t_sp_tab(s, p, y)
-    t1 = get_t_sp_tab(s, p*(1+dp), y)
-    return (t1 - t0)/(p*dp)
+def get_nabla_ad(s, p, y, z=0.0, dp=0.01):
+    T0 = get_t_sp_tab(s, p, y)
+    T1 = get_t_sp_tab(s, p*(1+dp), y)
+    return (T1 - T0)/(p*dp)
 
-
-# def get_dtdy_rp(rho, p, y, dy=0.01):
-#     t0 = get_t_pr(p, rho, y)
-#     t1 = get_t_pr(p, rho, y*(1+dy))
-
-#     dtdy = (t1 - t0)/(y*dy)
-#     return dtdy
-
-
-### Ledoux terms ###
-def get_B1(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
-    #p = get_p_srho(s, rho, y)
-    c_p = get_c_p(s, p, y)
-    rho, T = get_rhot_sp(s, p, y)
-    dsdy_rhop = get_dsdy_rhop(rho, p, y, dy=dy)
-    return ((10**p)/c_p)*dsdy_rhop
-
-def get_B2(s, p, y, dy=0.1): # neesd to be multiplied by dY/dP
-    t = get_t_sp(s, p, y)
-    c_p = get_c_p(s, p, y)
-    dsdy_pt = get_dsdy_pt(p, t, y, dy=dy)
-    return -((10**p)/c_p)*dsdy_pt
-
-
-### second derivatives ###
-
-def get_d2sdy2_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
-    # second derivative of dsdy_rhop
-    A0 = get_dsdy_rhop_srho(s, rho, y, ds, dy, tab)
-    A1 = get_dsdy_rhop_srho(s, rho, y*(1+dy), ds, dy, tab)
-    return (A1 - A0)/(y*dy)
-
-def get_d2sds2_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
-    # second derivative of dsdy_rhop
-    S0 = s/erg_to_kbbar
-    S1 = S0*(1+ds)
-    A0 = get_dsdy_rhop_srho(S0*erg_to_kbbar, rho, y, ds, dy, tab)
-    A1 = get_dsdy_rhop_srho(S1*erg_to_kbbar, rho, y, ds, dy, tab)
-    return (A1 - A0)/(S1 - S0)
-
-def get_dcv_ds_srho(s, rho, y, ds=0.1, tab=True):
-    S0 = s/erg_to_kbbar
-    S1 = S0*(1+ds)
-    CV0 = get_c_v(S0*erg_to_kbbar, rho, y, ds, tab)
-    CV1 = get_c_v(S1*erg_to_kbbar, rho, y, ds, tab)
-
-    return (CV1 - CV0)/(S1 - S0)
-
-def get_dcv_dy_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
-    # S0 = s/erg_to_kbbar
-    # S1 = S0*(1+ds)
-    CV0 = get_c_v(s, rho, y, ds, tab)
-    CV1 = get_c_v(s, rho, y*(1+dy), ds, tab)
-
-    return (CV1 - CV0)/(y*dy)
-
-def get_dcp_ds_srho(s, rho, y, ds=0.1, tab=True):
-    S0 = s/erg_to_kbbar
-    S1 = S0*(1+ds)
-    CP0 = get_c_p(S0*erg_to_kbbar, rho, y, ds, tab)
-    CP1 = get_c_p(S1*erg_to_kbbar, rho, y, ds, tab)
-
-    return (CP1 - CP0)/(S1 - S0)
-
-def get_dcp_dy_srho(s, rho, y, ds=0.1, dy=0.1, tab=True):
-    # S0 = s/erg_to_kbbar
-    # S1 = S0*(1+ds)
-    CP0 = get_c_p(s, rho, y, ds, tab)
-    CP1 = get_c_p(s, rho, y*(1+dy), ds, tab)
-
-    return (CP1 - CP0)/(y*dy)
-
-##### speed tests #####
-
-
-#def test():
-# import time
-# from joblib import Parallel, delayed
-
-# stest = np.zeros(240)+6.2
-# rhotest =  np.zeros(240)-4
-# ytest = np.zeros(240)+0.25
-
-# start = time.time()
-# p, t = get_pt_srho(stest, rhotest, ytest)
-# end = time.time()
-# print('get_pt_srho test:', end - start)
-
-# start = time.time()
-# t = get_t_srho(stest, rhotest, ytest)
-# end = time.time()
-# print('get_t_srho test:', end - start)
-
-# start = time.time()
-# p, t = get_p_srho_tab(stest, rhotest, ytest), get_t_srho_tab(stest, rhotest, ytest)
-# end = time.time()
-# print('tables:', end - start)
-
-# start = time.time()
-# Parallel(n_jobs=2, prefer="threads" )(delayed(get_t_srho)(s_, rho_, y_) for s_, rho_, y_ in zip(stest, rhotest, ytest))
-# end = time.time()
-# print('parallel code:', end - start)
-
-# from multiprocessing import Pool
-
-# def get_t_srho_par(iter):
-#     print(iter)
-#     logt = get_t_srho(stest[iter], rhotest[iter], ytest[iter])
-#     return logt
-
-# if __name__ == '__main__':
-#     pool = Pool(2)
-#     start = time.time()
-#     results = pool.map(get_t_srho_par, range(len(stest)))
-#     end = time.time()
-#     print('parallel:', end - start)
-#     np.save('%s/cms/parallel_test_tsrho.npy' % CURR_DIR, results)
-
-    
-
-
-
+def get_gruneisen(s, rho, y, z=0.0, drho = 0.01):
+    T0 = get_t_srho_tab(s, rho, y)
+    T1 = get_t_srho_tab(s, rho*(1+drho), y)
+    return (T1 - T0)/(rho*drho)

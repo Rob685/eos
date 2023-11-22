@@ -308,9 +308,13 @@ def get_s_rhot_tab(rho, t, y, z=0.0):
 #p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
 logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
 
-svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
-logrhovals_srho = np.arange(-5, 1.5, 0.05)
-yvals_srho = np.arange(0.05, 1.05, 0.05)
+# svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
+# logrhovals_srho = np.arange(-5, 1.5, 0.05)
+# yvals_srho = np.arange(0.05, 1.05, 0.05)
+
+svals_srho = np.arange(5.5, 9.05, 0.05) # new grid
+logrhovals_srho = np.linspace(-4.5, 2.0, 100)
+yvals_srho = np.arange(0.05, 1.0, 0.05)
 
 get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
@@ -350,8 +354,8 @@ def err_p_srho(lgp, sval, rhoval, yval):
     return (logrho/rhoval) - 1
 
 def err_t_srho(lgt, sval, rhoval, yval):
-    logp = get_p_rhot_tab(rhoval, lgt, yval)
-    s_test = get_s_pt(logp, lgt, yval)*erg_to_kbbar
+    #logp = get_p_rhot(rhoval, lgt, yval, alg='root')
+    s_test = get_s_rhot_tab(rhoval, lgt, yval)*erg_to_kbbar
     return (s_test/sval) - 1
 
 def err_t_rhop(_lgt, _lgrho, _lgp, _y):
@@ -360,13 +364,13 @@ def err_t_rhop(_lgt, _lgrho, _lgp, _y):
 
 ### inversion functions ###
 
-TBOUNDS = [2, 7] # s(rho, P, Y) only works for these bounds... [0, 7] even when the top limit of the CMS table is logT<5
+TBOUNDS = [2, 7]
 PBOUNDS = [0, 15]
 
 XTOL = 1e-8
     
 ###### Temperature ######
-def get_t_sp(s, p, y, hg=True, alg='brenth', z_eos=None):
+def get_t_sp(s, p, y, hg=True, alg='root', z_eos=None):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
@@ -482,10 +486,6 @@ def get_u_rhot(rho, t, y):
 def get_u_srho(s, rho, y, z=0.0):
     p, t = get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
     return get_u_pt(p, t, y)
-
-# def get_s_ur(u, rho, y):
-#     t = get_t_ur(u, rho, y)
-#     return get_s_rhot(rho, t, y) # in cgs
 
 def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
