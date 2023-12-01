@@ -98,10 +98,13 @@ get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, meth
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
 def get_rhot_sp_tab(s, p, y):
-    # cp_res = get_cp(np.array([y, s, p]).T)
-    # cv_res = get_cv(np.array([y, s, p]).T)
     return get_rho(np.array([y, s, p]).T), get_t(np.array([y, s, p]).T)
 
+def get_rho_sp_tab(s, p, y):
+    return get_rho(np.array([y, s, p]).T)
+
+def get_t_sp_tab(s, p, y):
+    return get_t(np.array([y, s, p]).T)
 # def get_rho_z(s, p, y, z, z_eos='ideal'): # y should be scaled outside
 #     if z_eos == 'ideal':
 #         rho_z = 10**get_rho_p_ideal(s, p)
@@ -512,3 +515,8 @@ def get_drhodt_py(p, t, y, dt=0.1):
     drhodt = (rho1 - rho0)/(t*dt)
 
     return drhodt
+
+def get_gamma1(s, p, y, z=0.0, dp = 0.01):
+    R0 = get_rho_sp_tab(s, p, y)
+    R1 = get_rho_sp_tab(s, p*(1+dp), y)
+    return (p*dp)/(R1 - R0)
