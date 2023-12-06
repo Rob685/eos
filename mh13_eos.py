@@ -4,21 +4,26 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.interpolate import RectBivariateSpline as RBS
 from astropy import units as u
 from scipy.optimize import root, root_scalar
-from astropy.constants import k_B
+from astropy.constants import k_B, m_e
 from astropy.constants import u as amu
+from eos import ideal_eos
 
 import os
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
 
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
+evel_to_erg = -(u.eV/m_e).to('erg/g').value
 MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
 dyn_to_bar = (u.dyne/(u.cm)**2).to('bar')
 erg_to_MJ = (u.erg/u.Kelvin/u.gram).to(u.MJ/u.Kelvin/u.kg)
 MJ_to_erg = (u.MJ/u.kg).to('erg/g')
 
 mp = amu.to('g') # grams
+
 kb = k_B.to('erg/K') # ergs/K
+
+ideal_xy = ideal_eos.IdealHHeMix()
 
 def kbel_to_kbbar(X):
     # will be useful for MH13 data down the road; multiply their S values by this, given that X = 1-Y
@@ -44,6 +49,7 @@ def mh13_reader(tab):
     eos_mh13['logrho'] = np.log10(eos_mh13['rho'])
     eos_mh13['logp'] = np.log10(eos_mh13['P'])+10 # in cgs
     eos_mh13['logt'] = np.log10(eos_mh13['T'])
+    eos_mh13['logu'] = np.log10(eos_mh13['E']*evel_to_erg)
     #eos_mh13['logs'] = np.log10(eos_mh13['S(kb/bar)']*erg_to_kbbar)#log cgs for interpolation
     return eos_mh13
 
@@ -68,12 +74,26 @@ logrhovals_mix = data_mix['logrho'][:,0]
 
 stab_mix = data_mix['S(kb/bar)']
 ptab_mix = data_mix['logp']
+utab_mix = data_mix['logu']
 
-def get_s_rhot_mix(logt, logrho): # in cgs
-    return RBS(logrhovals_mix, logtvals_mix, stab_mix).ev(logrho, logt)/erg_to_kbbar
+get_s_mix_rgi = RGI((logrhovals_mix, logtvals_mix), stab_mix, method='linear', bounds_error=False, fill_value=None)
+get_p_mix_rgi = RGI((logrhovals_mix, logtvals_mix), ptab_mix, method='linear', bounds_error=False, fill_value=None)
+get_u_mix_rgi = RGI((logrhovals_mix, logtvals_mix), utab_mix, method='linear', bounds_error=False, fill_value=None)
 
-def get_p_rhot_mix(logt, logrho):
-    return RBS(logrhovals_mix, logtvals_mix, ptab_mix).ev(logrho, logt)
+def get_s_rhot_mix(lgrho, lgt): # in cgs
+    if np.isscalar(lgrho):
+        return float(get_s_mix_rgi(np.array([lgrho, lgt]).T)/erg_to_kbbar)
+    return get_s_mix_rgi(np.array([lgrho, lgt]).T)/erg_to_kbbar
+
+def get_p_rhot_mix(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(get_p_mix_rgi(np.array([lgrho, lgt]).T))
+    return get_p_mix_rgi(np.array([lgrho, lgt]).T)
+
+def get_u_rhot_mix(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(get_u_mix_rgi(np.array([lgrho, lgt]).T))
+    return get_u_mix_rgi(np.array([lgrho, lgt]).T)
 
 ### helium tables ###
 data_he = grid_data_mh13('%s/mh13_he_eos.out' % CURR_DIR)
@@ -82,56 +102,168 @@ logrhovals_he = data_he['logrho'][:,0]
 
 stab_he = data_he['S(kb/bar)']
 ptab_he = data_he['logp']
+utab_he = data_he['logu']
 
-def get_s_rhot_he(logt, logrho): # in cgs
-    return RBS(logrhovals_he, logtvals_he, stab_he).ev(logrho, logt)/erg_to_kbbar
+get_s_he_rgi = RGI((logrhovals_he, logtvals_he), stab_he, method='linear', bounds_error=False, fill_value=None)
+get_p_he_rgi = RGI((logrhovals_he, logtvals_he), ptab_he, method='linear', bounds_error=False, fill_value=None)
+get_u_he_rgi = RGI((logrhovals_he, logtvals_he), utab_he, method='linear', bounds_error=False, fill_value=None)
 
-def get_p_rhot_he(logt, logrho):
-    return RBS(logrhovals_he, logtvals_he, ptab_he).ev(logrho, logt)
+def get_s_rhot_he(lgrho, lgt): # in cgs
+    if np.isscalar(lgrho):
+        return float(get_s_he_rgi(np.array([lgrho, lgt]).T)/erg_to_kbbar)
+    return get_s_he_rgi(np.array([lgrho, lgt]).T)/erg_to_kbbar
 
-### inversions ###
-def err_rhot(rt_pair, sval, pval):
-    rho, t = rt_pair
-    sval /= erg_to_kbbar
-    s, p = get_s_rhot_mix(t, rho), get_p_rhot_mix(t, rho)
-    return s/sval - 1, p/pval - 1
+def get_p_rhot_he(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(get_p_he_rgi(np.array([lgrho, lgt]).T))
+    return get_p_he_rgi(np.array([lgrho, lgt]).T)
 
-def err_t_rhop(lgt, rho, pval):
-    logp = get_p_rhot_mix(lgt, rho)
-    return logp/pval - 1
+def get_u_rhot_he(lgrho, lgt):
+    if np.isscalar(lgrho):
+        return float(get_u_he_rgi(np.array([lgrho, lgt]).T))
+    return get_u_he_rgi(np.array([lgrho, lgt]).T)
 
-# def err_t_sp(lgt, rho, sval):
-#     logp = get_p_rhot_mix(lgt, rho)
-#     return logp/pval - 1
 
-def get_rhot_sp(s, p):
-    if np.isscalar(s):
-        sol = root(err_rhot, [-0.5, 2.5], args=(s, p))
-        return sol.x
-    sol = np.array([get_rhot_sp(s_, p_) for s_, p_ in zip(s, p)])
-    return sol
+### mixtures ###
+y0 = 0.245
+def get_p_rhot(rho, t, y, z=0.0):
+    pmix = 10**get_p_rhot_mix(rho, t)
+    phe = 10**get_p_rhot_he(rho, t)
+    #print(pmix, phe)
+    return np.log10(((1 - y)/(1 - y0))*pmix + ((y - y0)/(1 - y0))*phe)
 
-def get_t_rhop(rho, p):
+def get_s_rhot(rho, t, y, z=0.0):
+    smix = get_s_rhot_mix(rho, t)
+    she = get_s_rhot_he(rho, t)
+    #smix_id = cms_eos.get_smix_id_y(y)
+    return ((1 - y)/(1 - y0))*smix + ((y - y0)/(1 - y0))*she #+ smix_id/erg_to_kbbar
+
+def get_u_rhot(rho, t, y, z=0.0):
+    umix = 10**get_u_rhot_mix(rho, t)
+    uhe = 10**get_u_rhot_he(rho, t)
+    #print(pmix, phe)
+    return np.log10(((1 - y)/(1 - y0))*umix + ((y - y0)/(1 - y0))*uhe)
+
+#### error functions ####
+
+def err_rho_pt(lgrhoval, lgpval, lgtval, yval):
+    logp_test = get_p_rhot(lgrhoval, lgtval, yval)
+    return (lgpval/logp_test) - 1
+
+def err_t_sp(logt, s_val, logp, y):
+    s_ = get_s_pt_tab(logp, logt, y)*erg_to_kbbar
+    return (s_/s_val) - 1
+
+def err_t_srho(lgt, sval, rhoval, yval):
+    s_test = get_s_rhot(rhoval, lgt, yval)*erg_to_kbbar
+    return (s_test/sval) - 1
+
+### S, P tables ###
+
+logpvals = np.linspace(9, 14, 100)
+logtvals = np.linspace(2.7, 5, 100)
+
+s_mix, logrho_mix = np.load('%s/mh13/pt_basis_mix.npy' % CURR_DIR)
+s_he, logrho_he = np.load('%s/mh13/pt_basis_he.npy' % CURR_DIR)
+
+stabs = [s_mix, s_he]
+rhotabs = [logrho_mix, logrho_he]
+ys = [0.245, 1.0]
+
+get_rho_pt_rgi = RGI((ys, logpvals, logtvals), rhotabs, method='linear', bounds_error=False, fill_value=None)
+get_s_pt_rgi = RGI((ys, logpvals, logtvals), stabs, method='linear', bounds_error=False, fill_value=None)
+
+def get_rho_pt_tab(p, t, y):
     if np.isscalar(p):
-        sol = root_scalar(err_t_rhop, bracket=[2.7, 5.06], method='brenth', args=(rho, p))
-        return sol.root
-    sol = np.array([get_t_rhop(r_, p_) for r_, p_ in zip(rho, p)])
-    return sol
+        return float(get_rho_pt_rgi(np.array([y, p, t]).T))
+    else:
+        return get_rho_pt_rgi(np.array([y, p, t]).T)
 
-def get_s_rhop(rho, p):
-    t = get_t_rhop(rho, p)
-    #y = cms.n_to_Y(y)
-    s = get_s_rhot_mix(rho, t)
-    return s # in cgs
+def get_s_pt_tab(p, t, y):
+    if np.isscalar(p):
+        return float(get_s_pt_rgi(np.array([y, p, t]).T))
+    else:
+        return get_s_pt_rgi(np.array([y, p, t]).T)
 
-### entropy gradients ###
+def get_u_pt_tab(p, t, y):
+    rho = get_rho_pt_tab(p, t, y)
+    return get_u_rhot(rho, t, y)
 
-# def get_dsdy_rhop(rho, p, y, dy=0.01):
-#     # P0, T0 = get_pt_srho(s, rho, y)
-#     # P1, T1 = get_pt_srho(s, rho, y*(1+dy))
-#     #S1 = get_s_pt(P0, T0, y)
-#     #S2 = get_s_pt(P1, T1, y*(1+dy))
-#     S0 = get_s_rhop(rho, p, y)
-#     S1 = get_s_rhop(rho, p, y*(1+dy))
+#### inversion functions ####
 
-#     return (S1 - S0)/(y*dy)
+TBOUNDS = [2, 7]
+PBOUNDS = [0, 15]
+
+XTOL = 1e-8
+
+### Temperature ###
+
+def get_t_sp(s, p, y, alg='root'):
+    if alg == 'root':
+        if np.isscalar(s):
+            s, p, y = np.array([s]), np.array([p]), np.array([y])
+            guess = ideal_xy.get_t_sp(s, p, y)
+            sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(s, p, y))
+            return float(sol.x)
+        guess = ideal_xy.get_t_sp(s, p, y)
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(s, p, y))
+        return sol.x
+    elif alg == 'brenth':
+        if np.isscalar(s):
+            try:
+                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, p, y)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+                return sol.root
+            except:
+                raise
+        sol = np.array([get_t_sp(s_, p_, y_) for s_, p_, y_ in zip(s, p, y)])
+        return sol
+
+def get_t_srho(s, rho, y, alg='root'):
+    if alg == 'root':
+        if np.isscalar(s):
+            s, rho, y = np.array([s]), np.array([rho]), np.array([y])
+            guess = ideal_xy.get_t_srho(s, rho, y)
+            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
+            return float(sol.x)
+        guess = ideal_xy.get_t_srho(s, rho, y)
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
+        return sol.x
+    elif alg == 'brenth':
+        if np.isscalar(s):
+        #guess = 2.5
+            try:
+                sol = root_scalar(err_t_srho, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, rho, y))
+                return sol.root
+            except:
+                #print('s={}, rho={}, y={}'.format(s, rho, y))
+                raise
+        sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
+        return sol
+
+### S, P tables ###
+
+logrho_res_sp, logt_res_sp = np.load('%s/mh13/sp_basis.npy' % CURR_DIR)
+
+svals_sp = np.arange(5.5, 10.1, 0.1)
+logpvals_sp = np.linspace(9, 14, 100)
+yvals_sp = np.arange(0.245, 1.0, 0.01)
+
+get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logrho_res_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logt_res_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_rho_sp_tab(s, p, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_rho_rgi_sp(np.array([s, p, y]).T))
+    else:
+        return get_rho_rgi_sp(np.array([s, p, y]).T)
+
+def get_t_sp_tab(s, p, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_t_rgi_sp(np.array([s, p, y]).T))
+    else:
+        return get_t_rgi_sp(np.array([s, p, y]).T)
+
+def get_rhot_sp_tab(s, p, y, z=0.0):
+    return get_rho_sp_tab(s, p, y), get_t_sp_tab(s, p, y)

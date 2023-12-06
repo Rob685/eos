@@ -370,7 +370,7 @@ PBOUNDS = [0, 15]
 XTOL = 1e-8
     
 ###### Temperature ######
-def get_t_sp(s, p, y, hg=True, alg='root', z_eos=None):
+def get_t_sp(s, p, y, hg=True, alg='root'):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
