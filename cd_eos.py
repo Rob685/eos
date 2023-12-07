@@ -137,7 +137,7 @@ def get_s_pt(lgp, lgt, y, z=0.0):
     s_h = 10 ** get_s_h(lgt, lgp)
     s_he = 10 ** get_s_he(lgt, lgp)
     smix = get_smix_id_y(y)
-    return (1 - y) * s_h + y * s_he + smix
+    return (1 - y) * s_h + y * s_he - smix
 
 def get_rho_pt(lgp, lgt, y, z=0.0):
     rho_h = 10 ** get_rho_h(lgt, lgp)
@@ -307,3 +307,298 @@ def get_s_rhop(rho, p, y):
     t = get_t_rhop(rho, p, y)
     #y = cms.n_to_Y(y)
     return get_s_pt(p, t, y)
+
+#### inverted tables ####
+
+#### S, P ####
+
+logrho_res_sp, logt_res_sp = np.load('%s/cd/sp_base_comb.npy' % CURR_DIR)
+
+svals_sp = np.arange(5.5, 10.05, 0.05)
+logpvals_sp = np.arange(5.5, 14.05, 0.05)
+yvals_sp = np.arange(0.05, 1.0, 0.05)
+
+get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logrho_res_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logt_res_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_rho_sp_tab(s, p, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_rho_rgi_sp(np.array([s, p, y]).T))
+    else:
+        return get_rho_rgi_sp(np.array([s, p, y]).T)
+
+def get_t_sp_tab(s, p, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_t_rgi_sp(np.array([s, p, y]).T))
+    else:
+        return get_t_rgi_sp(np.array([s, p, y]).T)
+
+def get_rhot_sp_tab(s, p, y, z=0.0):
+    return get_rho_sp_tab(s, p, y), get_t_sp_tab(s, p, y)
+
+
+#### Rho, T ####
+
+logp_res_rhot, s_res_rhot = np.load('%s/cd/rhot_base_comb.npy' % CURR_DIR)
+
+logrhovals_rhot = np.arange(-5, 1.5, 0.05)
+logtvals_rhot = np.arange(2.1, 5.1, 0.05)
+yvals_rhot = np.arange(0.05, 1.05, 0.05)
+
+get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), s_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_p_rgi_rhot(np.array([rho, t, y]).T))
+    else:
+        return get_p_rgi_rhot(np.array([rho, t, y]).T)
+
+def get_s_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_s_rgi_rhot(np.array([rho, t, y]).T))
+    else:
+        return get_s_rgi_rhot(np.array([rho, t, y]).T)
+
+#### S, Rho ####
+#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/cd/srho_base_comb.npy' % CURR_DIR)
+
+# svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
+# logrhovals_srho = np.arange(-5, 1.5, 0.05)
+# yvals_srho = np.arange(0.05, 1.05, 0.05)
+
+svals_srho = np.arange(5.5, 9.05, 0.05) # new grid
+logrhovals_srho = np.linspace(-4.5, 2.0, 100)
+yvals_srho = np.arange(0.05, 1.0, 0.05)
+
+get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, rho, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_p_rgi_srho(np.array([s, rho, y]).T))
+    else:
+        return get_p_rgi_srho(np.array([s, rho, y]).T)
+
+def get_t_srho_tab(s, rho, y, z=0.0):
+    if np.isscalar(s):
+        return float(get_t_rgi_srho(np.array([s, rho, y]).T))
+    else:
+        return get_t_rgi_srho(np.array([s, rho, y]).T)
+
+############## derivatives ##############
+
+
+### entropy gradients ###
+
+def get_dsdy_rhop(rho, p, y, dy=0.1):
+    S0 = get_s_rhop(rho, p, y)
+    S1 = get_s_rhop(rho, p, y*(1+dy))
+
+    return (S1 - S0)/(y*dy)
+
+def get_dsdy_rhop_srho(s, rho, y, z=0.0, ds=0.1, dy=0.1, tab=True):
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    if not tab:
+        P0 = 10**get_p_srho(S0*erg_to_kbbar, rho, y)
+        P1 = 10**get_p_srho(S1*erg_to_kbbar, rho, y)
+        P2 = 10**get_p_srho(S0*erg_to_kbbar, rho, y*(1+dy))
+    else: 
+        P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y)
+        P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, rho, y)
+        P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, rho, y*(1+dy))      
+    
+    dpds_rhoy = (P1 - P0)/(S1 - S0)
+    dpdy_srho = (P2 - P0)/(y*dy)
+
+    return -dpdy_srho/dpds_rhoy
+
+
+def get_dsdy_rhot(rho, t, y, z=0.0, dy=0.01):
+    S0 = get_s_rhot_tab(rho, t, y)
+    S1 = get_s_rhot_tab(rho, t, y*(1+dy))
+
+    dsdy = (S1 - S0)/(y*dy)
+    return dsdy
+
+def get_dsdy_pt(p, t, y, z=0.0, dy=0.01):
+    S0 = get_s_pt(p, t, y)
+    S1 = get_s_pt(p, t, y*(1+dy))
+
+    return (S1 - S0)/(y*dy)
+
+def get_dsdt_ry_rhot(rho, t, y, z=0.0, dt=0.1):
+    T0 = 10**t
+    T1 = T0*(1+dt)
+    S0 = get_s_rhot_tab(rho, np.log10(T0), y)
+    S1 = get_s_rhot_tab(rho, np.log10(T1), y)
+
+    return (S1 - S0)/(T1 - T0)
+
+def get_c_s(s, p, y, z=0.0, dp=0.1):
+    P0 = 10**p
+    P1 = P0*(1+dp)
+    R0 = get_rho_sp_tab(s, np.log10(P0), y)
+    R1 = get_rho_sp_tab(s, np.log10(P1), y)
+
+    return np.sqrt((P1 - P0)/(10**R1 - 10**R0))
+
+def get_c_v(s, rho, y, z=0.0, ds=0.1):
+    # ds/dlogT_{rho, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_srho_tab(S0*erg_to_kbbar, rho, y)
+    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, y)
+ 
+    return (S1 - S0)/(T1 - T0)
+
+def get_c_p(s, p, y, z=0.0, ds=0.1):
+    # ds/dlogT_{P, Y}
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, y)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, y)
+
+    return (S1 - S0)/(T1 - T0)
+
+### pressure gradients ###
+
+def get_dpdt_rhot(rho, t, y, z=0.0, dT=0.01):
+    T0 = 10**t
+    T1 = T0*(1+dT)
+    P0 = get_p_rhot_tab(rho, np.log10(T0), y)
+    P1 = get_p_rhot_tab(rho, np.log10(T1), y)
+    return (P1 - P0)/(T1 - T0)
+
+def get_gamma1(s, p, y, z=0.0, dp = 0.01):
+    R0 = get_rho_sp_tab(s, p, y)
+    R1 = get_rho_sp_tab(s, p*(1+dp), y)
+    return (p*dp)/(R1 - R0)
+
+
+### energy gradients ###
+
+# to get chemical potential:
+def get_dudy_srho(s, rho, y, z=0.0, dy=0.1):
+    U0 = 10**get_u_srho(s, rho, y)
+    U1 = 10**get_u_srho(s, rho, y*(1+dy))
+    return (U1 - U0)/(y*dy)
+
+# du/ds_(rho, Y) = T test
+def get_duds_rhoy_srho(s, rho, y, z=0.0, ds=0.1):
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y)
+    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y)
+    return (U1 - U0)/(S1*ds)
+
+def get_dudrho_sy_srho(s, rho, y, z=0.0, drho=0.1):
+    R1 = 10**rho
+    R2 = R1*(1+drho)
+    #rho1 = np.log10((10**rho)*(1+drho))
+    U0 = 10**get_u_srho(s, np.log10(R1), y)
+    U1 = 10**get_u_srho(s, np.log10(R2), y)
+    #return (U1 - U0)/(R1*drho)
+    return (U1 - U0)/((1/R1) - (1/R2))
+
+def get_dudrho_rhot(rho, t, y, z=0.0, drho=0.01):
+    R0 = 10**rho
+    R1 = R0*(1+drho)
+    U0 = 10**get_u_rhot(rho, t, y)
+    U1 = 10**get_u_rhot(np.log10(R1), t, y)
+    return (U1 - U0)/(R1 - R0)
+
+### density gradients ###
+
+def get_drhods_py(s, p, y, z=0.0, ds=0.01):
+    
+    S1 = s/erg_to_kbbar
+    S2 = S1*(1+ds)
+
+    rho0 = 10**get_rhot_sp(S1*erg_to_kbbar, p, y)[0]
+    rho1 = 10**get_rhot_sp(S2*erg_to_kbbar, p, y)[0]
+
+    drhods = (rho1 - rho0)/(S2 - S1)
+
+    return drhods
+
+
+def get_drhodt_py(p, t, y, z=0.0, dt=0.1):
+    #y = cms.n_to_Y(x)
+    rho0 = get_rho_pt(p, t, y)
+    rho1 = get_rho_pt(p, t*(1+dt), y)
+
+    drhodt = (rho1 - rho0)/(t*dt)
+
+    return drhodt
+
+### temperature gradients ###
+
+def get_dtdy_sp(s, p, y, z=0.0, dy=0.01):
+    # t0 = get_t_sp(s, p, y)
+    # t1 = get_t_sp(s, p, y*(1+dy))
+    T0 = 10**get_t_sp_tab(s, p, y) # this was returning dlogT/dY before
+    T1 = 10**get_t_sp_tab(s, p, y*(1+dy))
+
+    dtdy = (T1 - T0)/(y*dy)
+    return dtdy
+
+def get_dtdy_srho(s, rho, y, z=0.0, dy=0.1, tab=True):
+    if not tab:
+        T0 = 10**get_t_srho(s, rho, y)
+        T1 = 10**get_t_srho(s, rho, y*(1+dy))
+    else:
+        T0 = 10**get_t_srho_tab(s, rho, y)
+        T1 = 10**get_t_srho_tab(s, rho, y*(1+dy)) 
+
+    return (T1 - T0)/(y*dy)
+
+def get_dtdy_rhop(rho, p, y, z=0.0, dy=0.01):
+    t0 = 10**get_t_rhop(rho, p, y)
+    t1 = 10**get_t_rhop(rho, p, y*(1+dy))
+
+    dtdy = (t1 - t0)/(y*dy)
+    return dtdy
+
+def get_dtdrho_sy_srho(s, rho, y, z=0.0, drho = 0.01, tab=True): # dlogT/dlogrho_{s, Y}
+    R0 = 10**rho
+    R1 = R0*(1+drho)
+    if not tab:
+        T0 = 10**get_t_srho(s, np.log10(R0), y)
+        T1 = 10**get_t_srho(s, np.log10(R1), y)
+    else:
+        T0 = 10**get_t_srho_tab(s, np.log10(R0), y)
+        T1 = 10**get_t_srho_tab(s, np.log10(R1), y)
+    return (T1 - T0)/(R1 - R0)
+
+def get_dtds_rhoy_srho(s, rho, y, z=0.0, ds=0.01, tab=True):
+    S0 = s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    if not tab:
+        T0 = 10**get_t_srho(S0*erg_to_kbbar, rho, y)
+        T1 = 10**get_t_srho(S1*erg_to_kbbar, rho, y)
+    else:
+        T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, rho, y)
+        T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, rho, y)
+    return (T1 - T0)/(S1 - S0)
+
+def get_nabla_ad(s, p, y, z=0.0, dp=0.01):
+    T0 = get_t_sp_tab(s, p, y)
+    T1 = get_t_sp_tab(s, p*(1+dp), y)
+    return (T1 - T0)/(p*dp)
+
+def get_gruneisen(s, rho, y, z=0.0, drho = 0.01):
+    T0 = get_t_srho_tab(s, rho, y)
+    T1 = get_t_srho_tab(s, rho*(1+drho), y)
+    return (T1 - T0)/(rho*drho)
