@@ -290,9 +290,8 @@ def get_t_srho(s, rho, y, alg='brenth'):
         sol = np.array([get_t_srho(s_, rho_, y_) for s_, rho_, y_ in zip(s, rho, y)])
         return sol
 
-def get_pt_srho(s, rho, y, alg='brenth'):
-    t = get_t_srho(s, rho, y, alg=alg)
-    return get_p_rhot(rho, t, y), t
+def get_pt_srho(s, rho, y):
+    return get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
 
 #def get_pt_srho(s, rho, y)
 
