@@ -6,10 +6,11 @@ from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
 import os
-from eos import ideal_eos, aqua_eos, ppv_eos
+from eos import ideal_eos, metals_eos, cms_eos, mls_eos, scvh_eos
 import pdb
 
-from eos import cms_eos, mls_eos, metals_eos
+aqua_eos = metals_eos.aqua
+serpentine_eos = metals_eos.serpentine_eos
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -122,6 +123,8 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'scvh':
+        xy_eos = scvh_eos
     else:
         raise Exception('Only cms and mls (CMS19 and MLS22) allowed for now')
 
@@ -139,6 +142,8 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'scvh':
+        xy_eos = scvh_eos 
     else:
         raise Exception('Only cms and mls (CMS19 and MLS22) allowed for now')
 
