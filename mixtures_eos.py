@@ -162,16 +162,20 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     else:
         raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
 
-    u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
-    u_he = 10**xy_eos.get_logu_he(_lgt, _lgp)
-
     if z_eos is not None:
         u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, z_eos)
     if z_eos is None:
         u_z = 1.0 # doesn't matter because _z should be 0
         _z = 0.0
-    
-    return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
+
+    if hhe_eos == 'scvh':
+        u_xy = xy_eos.get_u_pt(_lgp, _lgt)
+        return (1 - _z)*u_xy + _z*u_z
+    else:
+        u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
+        u_he = 10**xy_eos.get_logu_he(_lgt, _lgp)
+        
+        return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
 
 ### error functions ###
 
