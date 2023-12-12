@@ -9,7 +9,7 @@ from astropy.constants import u as amu
 from astropy.constants import m_p
 #from numba import jit
 import os
-from eos import ideal_eos, aqua_eos, ppv_eos
+from eos import ideal_eos
 import pdb
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 

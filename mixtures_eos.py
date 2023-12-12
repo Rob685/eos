@@ -9,8 +9,10 @@ import os
 from eos import ideal_eos, metals_eos, cms_eos, mls_eos, scvh_eos
 import pdb
 
-aqua_eos = metals_eos.aqua
-serpentine_eos = metals_eos.serpentine_eos
+# aqua_eos = metals_eos.aqua_eos
+# serpentine_eos = metals_eos.serpentine_eos
+# ppv_eos = metals_eos.ppv_eos
+# fe_eos = metals_eos.fe_eos
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -61,12 +63,18 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'scvh':
+        xy_eos = scvh_eos
     else:
-        raise Exception('Only cms and mls (CMS19 and MLS22) allowed for now')
+        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
 
-    s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
-    s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
-    s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
+    if hhe_eos == 'scvh':
+        s_nid_mix = 0.0
+        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
+    else:
+        s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
+        s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
+        s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
 
     if z_eos == 'aqua':
         mz = 18.015
@@ -113,10 +121,14 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     if np.any(xh + xhe + xz) != 1.0:
         raise Exception('X + Y + Z != 0')
     s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
-    if np.isscalar(_lgp):
-        return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix)
+    if hhe_eos == 'scvh':
+        #s_id_zmix = 0.0
+        return (1 - _z)*s_xy + s_z * _z - s_id_zmix
+    else:
+        if np.isscalar(_lgp):
+            return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix)
 
-    return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix
+        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix
 
 def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     if hhe_eos == 'cms':
@@ -126,9 +138,12 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
     else:
-        raise Exception('Only cms and mls (CMS19 and MLS22) allowed for now')
+        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
 
-    rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y)
+    if hhe_eos == 'scvh':
+        rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y)
+    else:
+        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y)
 
     if z_eos is not None:
         rho_z = 10**metals_eos.get_rho_pt_tab(_lgp, _lgt, z_eos)
@@ -145,7 +160,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos 
     else:
-        raise Exception('Only cms and mls (CMS19 and MLS22) allowed for now')
+        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
 
     u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
     u_he = 10**xy_eos.get_logu_he(_lgt, _lgp)
@@ -171,7 +186,7 @@ def err_p_rhot(_lgp, _lgrho, _lgt, _y, _z, hhe_eos, z_eos):
 def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, alg, z_eos):
     # logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, alg=alg, z_eos=z_eos)
     # s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
-    s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z)*erg_to_kbbar
+    s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos)*erg_to_kbbar
     return (s_test/_s) - 1
 
 def err_t_rhop(_lgt, _lgrho, _lgp, _y, _z, hhe_eos, z_eos):
@@ -296,65 +311,64 @@ yvals_sp = np.arange(0.05, 0.95, 0.1)
 zvals_sp = np.arange(0, 1.0, 0.1)
 
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
+logrho_res_sp_scvh_aqua, logt_res_sp_scvh_aqua = np.load('%s/scvh/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_rho_rgi_sp_aqua = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
+get_rho_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_aqua = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
-            bounds_error=False, fill_value=None)
-
-svals_sp_serp = np.arange(0.1, 9.1, 0.05)
-logpvals_sp_serp = np.arange(11, 14.5, 0.05)
-
-logrho_res_sp_cms_serp, logt_res_sp_cms_serp = np.load('%s/cms/sp_base_z_serpentine_extended.npy' % CURR_DIR)
-
-get_rho_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logrho_res_sp_cms_serp, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logt_res_sp_cms_serp, method='linear', \
+get_t_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-logrho_res_sp_cms_mix, logt_res_sp_cms_mix = np.load('%s/cms/sp_base_z_mixture.npy' % CURR_DIR)
-
-get_rho_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_mix, method='linear', \
+get_rho_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_scvh_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_mix, method='linear', \
+get_t_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_scvh_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
-    if z_eos == 'aqua':
-        if np.isscalar(_s):
-            return float(get_rho_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_rho_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T)
-    elif z_eos == 'serpentine':
-        if np.isscalar(_s):
-            return float(get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_rho_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
-    elif z_eos == 'mixture':
-        if np.isscalar(_s):
-            return float(get_rho_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_rho_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T)
+# svals_sp_serp = np.arange(0.1, 9.1, 0.05)
+# logpvals_sp_serp = np.arange(11, 14.5, 0.05)
 
-def get_t_sp_tab(_s, _lgp, _y, _z, z_eos='aqua'):
-    if z_eos == 'aqua':
-        if np.isscalar(_s):
-            return float(get_t_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_t_rgi_sp_aqua(np.array([_s, _lgp, _y, _z]).T)
-    elif z_eos == 'serpentine':
-        if np.isscalar(_s):
-            return float(get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_t_rgi_sp_serp(np.array([_s, _lgp, _y, _z]).T)
-    elif z_eos == 'mixture':
-        if np.isscalar(_s):
-            return float(get_t_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_t_rgi_sp_mix(np.array([_s, _lgp, _y, _z]).T)
+# logrho_res_sp_cms_serp, logt_res_sp_cms_serp = np.load('%s/cms/sp_base_z_serpentine_extended.npy' % CURR_DIR)
 
-def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua'):
-    rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, z_eos=z_eos), get_t_sp_tab(_s, _lgp , _y, _z, z_eos=z_eos)
+# get_rho_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logrho_res_sp_cms_serp, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_sp_serp = RGI((svals_sp_serp, logpvals_sp_serp, yvals_sp, zvals_sp), logt_res_sp_cms_serp, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+# logrho_res_sp_cms_mix, logt_res_sp_cms_mix = np.load('%s/cms/sp_base_z_mixture.npy' % CURR_DIR)
+
+# get_rho_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_mix, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_mix, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos='c,s'):
+    if hhe_eos == 'cms':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
+
+def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms'):
+
+    if hhe_eos == 'cms':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
+
+def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms'):
+    rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos), get_t_sp_tab(_s, _lgp , _y, _z, hhe_eos=hhe_eos)
     return rho, t
 
 ###### Rho, T ######
@@ -371,22 +385,42 @@ zvals_rhot = np.arange(0, 1.0, 0.1)
 
 logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cms_aqua, method='linear', \
+logp_res_rhot_scvh_aqua, s_res_rhot_scvh_aqua = np.load('%s/scvh/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+
+get_p_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_s_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cms_aqua, method='linear', \
+get_s_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_rhot_tab(_lgrho, _lgt, _y, _z):
-    if np.isscalar(_lgrho):
-        return float(get_p_rgi_rhot(np.array([_lgrho, _lgt, _y, _z]).T))
-    else:
-        return get_p_rgi_rhot(np.array([_lgrho, _lgt, _y, _z]).T)
+get_p_rgi_rhot_scvh = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhot_scvh = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
 
-def get_s_rhot_tab(_lgrho, _lgt, _y, _z):
-    if np.isscalar(_lgrho):
-        return float(get_s_rgi_rhot(np.array([_lgrho, _lgt, _y, _z]).T))
-    else:
-        return get_s_rgi_rhot(np.array([_lgrho, _lgt, _y, _z]).T)
+def get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos='cms'):
+    if hhe_eos == 'cms':
+        if np.isscalar(_lgrho):
+            return float(get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T)
+
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_lgrho):
+            return float(get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
+
+def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos='cms'):
+    if hhe_eos == 'cms':
+        if np.isscalar(_lgrho):
+            return float(get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T)
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_lgrho):
+            return float(get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
 
 ##### S, Rho #####
 
@@ -395,27 +429,50 @@ logrhovals_srho = np.linspace(-4.5, 2.0, 100)
 yvals_srho = np.arange(0.05, 0.55, 0.05)
 zvals_srho = np.arange(0, 0.55, 0.05)
 
-logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
+logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
 
-get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho, method='linear', \
+logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua.npy' % CURR_DIR)
+
+get_p_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_srho = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho, method='linear', \
+get_t_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_p_srho_tab(_s, _lgrho, _y, _z):
-    if np.isscalar(_s):
-        return float(get_p_rgi_srho(np.array([_s, _lgrho, _y, _z]).T))
-    else:
-        return get_p_rgi_srho(np.array([_s, _lgrho, _y, _z]).T)
+get_p_rgi_srho_scvh = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho_scvh = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
 
-def get_t_srho_tab(_s, _lgrho, _y, _z):
-    if np.isscalar(_s):
-        return float(get_t_rgi_srho(np.array([_s, _lgrho, _y, _z]).T))
-    else:
-        return get_t_rgi_srho(np.array([_s, _lgrho, _y, _z]).T)
+def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms'):
+    if hhe_eos == 'cms':
+        if np.isscalar(_s):
+            return float(get_p_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_p_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T)
+
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_s):
+            return float(get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
+
+def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms'):
+    if hhe_eos == 'cms':
+        if np.isscalar(_s):
+            return float(get_t_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_t_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T)
+
+    elif hhe_eos == 'scvh':
+        if np.isscalar(_s):
+            return float(get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
+
+
 
 def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua'):
-    _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z), get_t_srho_tab(_s, _lgrho , _y, _z)
+    _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos = hhe_eos), get_t_srho_tab(_s, _lgrho , _y, _z, hhe_eos = hhe_eos)
     return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
 
 ############################### Derivatives ###############################

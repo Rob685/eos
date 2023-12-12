@@ -28,13 +28,16 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
 ### S, P ###
-s_grid = np.loadtxt('eos/zhang_eos/ppv/ppv_s.txt')*J_to_kbbar
-logpgrid = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_P_ascend.txt')*10) #Pascals to dyn/cm^2
-logrhovals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_rho.txt')*1e-3) # kg/m3 to g/cm3
-logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_T.txt'))
+s_grid = np.loadtxt('eos/zhang_eos/ppv/ppv_s1.txt')*J_to_kbbar
+logpgrid = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_P1.txt')*10)
+
+logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_T_map1.txt'))
+logrhovals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_rho_map1.txt')*1e-3)
+loguvals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_E_map1.txt')*J_to_erg)
 
 rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
 t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
+u_rgi = RGI((s_grid, logpgrid), loguvals, method='linear', bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(s, p):
     return rho_rgi(np.array([s, p]).T)
@@ -44,9 +47,12 @@ def get_t_sp_tab(s, p):
 def get_rhot_sp_tab(s, p):
     return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
 
+def get_u_sp_tab(s, p):
+    return u_rgi(np.array([s, p]).T)
+
 
 ### P, T ###
-logtgrid = np.arange(1.7, 5.05, 0.05)
+logtgrid = np.arange(2.3, 5.0, 0.05)
 
 s_res_pt, logrho_res_pt = np.load('%s/zhang_eos/ppv/pt_base.npy' % CURR_DIR)
 
@@ -67,12 +73,15 @@ def get_rho_pt_tab(p, t):
     else:
         return get_rho_rgi_pt(np.array([p, t]).T)
 
+def get_u_pt_tab(p, t):
+    s = get_s_pt_tab(p, t)
+    return get_u_sp_tab(s, p)
 
 ### rho, T ###
 
 logp_res_rhot, s_res_rhot = np.load('%s/zhang_eos/ppv/rhot_base.npy' % CURR_DIR)
 
-logrhogrid = np.arange(0.05, 2.5, 0.05)
+logrhogrid = np.arange(0.6, 2.01, 0.01)
 
 get_p_rgi_rhot = RGI((logrhogrid, logtgrid), logp_res_rhot, method='linear', \
             bounds_error=False, fill_value=None)
@@ -95,7 +104,7 @@ def get_s_rhot_tab(rho, t):
 
 logp_res_srho, logt_res_srho = np.load('%s/zhang_eos/ppv/srho_base.npy' % CURR_DIR)
 
-svals_srho = np.arange(0.01, 0.85, 0.01)
+svals_srho = np.arange(0.01, 0.65, 0.01)
 
 get_p_rgi_srho = RGI((svals_srho, logrhogrid), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
