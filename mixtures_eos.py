@@ -620,18 +620,18 @@ def get_c_p(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.1):
 
     return (S1 - S0)/(T1 - T0)
 
-def get_gamma1(_s, _lgp, _y, _z, dp = 0.01):
+def get_gamma1(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua', dp = 0.01):
     # dlogP/dlogrho_S, Y, Z
     R0 = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     R1 = get_rho_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     return (_lgp*dp)/(R1 - R0)
 
-def get_nabla_ad(_s, _lgp, _y, _z, dp=0.01):
+def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos='cms', z_eos='aqua', dp=0.01):
     T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     T1 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     return (T1 - T0)/(_lgp*dp)
 
-def get_gruneisen(_s, _lgrho, _y, _z, drho = 0.01):
+def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', drho = 0.01):
     T0 = get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     T1 = get_t_srho_tab(_s, _lgrho*(1+drho), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     return (T1 - T0)/(_lgrho*drho)
