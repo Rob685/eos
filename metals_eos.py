@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
-from eos import ideal_eos, ppv_eos, aqua_eos, serpentine_eos, aneos_fe_eos, zmix_eos
+from eos import ideal_eos, aqua_eos, ppv_eos, serpentine_eos, fe_eos, zmix_eos
 import os
 
 from astropy import units as u
@@ -26,7 +26,7 @@ def get_rho_pt_tab(p, t, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_pt_tab(p, t)
     elif eos == 'iron':
-        return aneos_fe_eos.get_rho_pt_tab(p, t)
+        return fe_eos.get_rho_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_rho_pt(p, t, 0)
     elif eos == 'mixture':
@@ -42,7 +42,7 @@ def get_s_pt_tab(p, t, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_s_pt_tab(p, t)
     elif eos == 'iron':
-        return aneos_fe_eos.get_s_pt_tab(p, t)
+        return fe_eos.get_s_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_s_pt(p, t, 0)/erg_to_kbbar
     elif eos == 'mixture':
@@ -56,7 +56,7 @@ def get_u_pt_tab(p, t, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_u_pt_tab(p, t)
     elif eos == 'iron':
-        return aneos_fe_eos.get_u_pt_tab(p, t)
+        return fe_eos.get_u_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_u_pt(p, t)
     else:
@@ -72,7 +72,7 @@ def get_p_rhot_tab(rho, t, eos):
     # elif eos == 'serpentine':
     #     #return serpentine_eos.get_p_rhot_tab(rho, t)
     elif eos == 'iron':
-        return aneos_fe_eos.get_p_rhot_tab(rho, t)
+        return fe_eos.get_p_rhot_tab(rho, t)
     elif eos == 'ideal':
         return ideal_water.get_p_rhot(rho, t, 0)
     elif eos == 'mixture':
@@ -88,7 +88,7 @@ def get_s_rhot_tab(rho, t, eos):
     # elif eos == 'serpentine':
     #     #return serpentine_eos.get_p_rhot_tab(rho, t)
     elif eos == 'iron':
-        return aneos_fe_eos.get_s_rhot_tab(rho, t)
+        return fe_eos.get_s_rhot_tab(rho, t)
     elif eos == 'ideal':
         return ideal_water.get_s_rhot(rho, t, 0)
     elif eos == 'mixture':
@@ -106,7 +106,7 @@ def get_t_sp_tab(s, p, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_t_sp_tab(s, p)
     elif eos == 'iron':
-        return aneos_fe_eos.get_t_sp_tab(s, p)
+        return fe_eos.get_t_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_t_sp(s, p, 0)
     elif eos == 'mixture':
@@ -122,7 +122,7 @@ def get_rho_sp_tab(s, p, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_sp_tab(s, p)
     elif eos == 'iron':
-        return aneos_fe_eos.get_rho_sp_tab(s, p)
+        return fe_eos.get_rho_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_rho_sp(s, p, 0)
     elif eos == 'mixture':
@@ -143,7 +143,7 @@ def get_t_srho_tab(s, rho, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_t_srho_tab(s, rho)
     elif eos == 'iron':
-        return aneos_fe_eos.get_t_srho_tab(s, rho)
+        return fe_eos.get_t_srho_tab(s, rho)
     elif eos == 'ideal':
         return ideal_water.get_t_srho(s, rho, 0)
     elif eos == 'mixture':
@@ -159,7 +159,7 @@ def get_p_srho_tab(s, rho, eos):
     elif eos == 'serpentine':
         return serpentine_eos.get_p_srho_tab(s, rho)
     elif eos == 'iron':
-        return aneos_fe_eos.get_p_srho_tab(s, rho)
+        return fe_eos.get_p_srho_tab(s, rho)
     elif eos == 'ideal':
         return ideal_water.get_p_srho(s, rho, 0)
     elif eos == 'mixture':

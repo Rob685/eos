@@ -10,14 +10,8 @@ import os
 
 from eos import ideal_eos
 
-mg = 24.305
-si = 28.085
-o3 = 48.000
-
-mgsio3 = mg+si+o3 # molecular weight of post-perovskite
-
 # for guesses
-ideal_z = ideal_eos.IdealEOS(m=mgsio3)
+ideal_z = ideal_eos.IdealEOS(m=56)
 
 mp = amu.to('g') # grams
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
@@ -26,35 +20,39 @@ J_to_kbbar = (u.J / (u.kg * u.K)).to(k_B/mp)
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
-
 ### S, P ###
-s_grid = np.loadtxt('eos/zhang_eos/ppv/ppv_s1.txt')*J_to_kbbar
-logpgrid = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_P1.txt')*10)
 
-logtvals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_T_map1.txt'))
-logrhovals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_rho_map1.txt')*1e-3)
-loguvals = np.log10(np.loadtxt('eos/zhang_eos/ppv/ppv_E_map1.txt')*J_to_erg)
+s_grid = np.loadtxt('eos/zhang_eos/iron/Fel_s1.txt')*J_to_kbbar
+logpgrid = np.log10(np.loadtxt('eos/zhang_eos/iron/Fel_P1.txt')*10)
+
+logtvals = np.log10(np.loadtxt('eos/zhang_eos/iron/Fel_T_map1.txt'))
+logrhovals = np.log10(np.loadtxt('eos/zhang_eos/iron/Fel_rho_map1.txt')*1e-3)
+loguvals = np.log10(np.loadtxt('eos/zhang_eos/iron/Fel_E_map1.txt')*J_to_erg)
 
 rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
 t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
 u_rgi = RGI((s_grid, logpgrid), loguvals, method='linear', bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(s, p):
+    if np.isscalar(s):
+        return float(rho_rgi(np.array([s, p]).T))
     return rho_rgi(np.array([s, p]).T)
 def get_t_sp_tab(s, p):
+    if np.isscalar(s):
+        return float(t_rgi(np.array([s, p]).T))
     return t_rgi(np.array([s, p]).T)
+    
+def get_u_sp_tab(s, p):
+    return u_rgi(np.array([s, p]).T)
 
 def get_rhot_sp_tab(s, p):
     return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
 
-def get_u_sp_tab(s, p):
-    return u_rgi(np.array([s, p]).T)
-
-
 ### P, T ###
-logtgrid = np.arange(2.3, 5.0, 0.05)
 
-s_res_pt, logrho_res_pt = np.load('%s/zhang_eos/ppv/pt_base.npy' % CURR_DIR)
+logtgrid = np.arange(2.455, 5.05, 0.05)
+
+s_res_pt, logrho_res_pt = np.load('%s/zhang_eos/iron/pt_base.npy' % CURR_DIR)
 
 get_s_rgi_pt = RGI((logpgrid, logtgrid), s_res_pt, method='linear', \
             bounds_error=False, fill_value=None)
@@ -74,14 +72,14 @@ def get_rho_pt_tab(p, t):
         return get_rho_rgi_pt(np.array([p, t]).T)
 
 def get_u_pt_tab(p, t):
-    s = get_s_pt_tab(p, t)
+    s = get_s_pt_tab(p, t)*erg_to_kbbar
     return get_u_sp_tab(s, p)
 
 ### rho, T ###
 
-logp_res_rhot, s_res_rhot = np.load('%s/zhang_eos/ppv/rhot_base.npy' % CURR_DIR)
+logrhogrid = np.arange(0.85, 2.01, 0.01)
 
-logrhogrid = np.arange(0.6, 2.01, 0.01)
+logp_res_rhot, s_res_rhot = np.load('%s/zhang_eos/iron/rhot_base.npy' % CURR_DIR)
 
 get_p_rgi_rhot = RGI((logrhogrid, logtgrid), logp_res_rhot, method='linear', \
             bounds_error=False, fill_value=None)
@@ -100,11 +98,11 @@ def get_s_rhot_tab(rho, t):
     else:
         return get_s_rgi_rhot(np.array([rho, t]).T)
 
-### S, rho ###
+### S, \rho ###
 
-logp_res_srho, logt_res_srho = np.load('%s/zhang_eos/ppv/srho_base.npy' % CURR_DIR)
+svals_srho = np.arange(0.01, 0.5, 0.01)
 
-svals_srho = np.arange(0.01, 0.65, 0.01)
+logp_res_srho, logt_res_srho = np.load('%s/zhang_eos/iron/srho_base.npy' % CURR_DIR)
 
 get_p_rgi_srho = RGI((svals_srho, logrhogrid), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
@@ -149,10 +147,7 @@ def get_s_pt(p, t):
 
 def get_rho_pt(p, t):
     s = get_s_pt(p, t)
-    if np.isscalar(p):
-        return get_rho_sp_tab(float(s*erg_to_kbbar), float(p))
-
-    return get_rho_sp_tab(s*erg_to_kbbar, p)
+    return get_rho_sp_tab(s, p)
 
 def get_p_rhot(rho, t):
     if np.isscalar(rho):
