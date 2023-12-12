@@ -340,7 +340,7 @@ get_t_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), l
 # get_t_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_mix, method='linear', \
 #             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos='c,s'):
+def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms'):
     if hhe_eos == 'cms':
         if np.isscalar(_s):
             return float(get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
