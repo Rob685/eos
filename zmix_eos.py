@@ -74,11 +74,11 @@ def err_p_rhot(_lgp, _lgrho, _lgt, _z2, _z3):
     logrho_test = get_rho_pt_tab(_lgp, _lgt, _z2, _z3)
     return (logrho_test/_lgrho) - 1
 
-def err_t_srho(_lgt, _s, _lgrho, _z2, _z3):
+def err_t_srho(_lgt, _s, _lgrho, _fice):
     # logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, alg=alg, z_eos=z_eos)
     # s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
     #logp = get_p_rhot(_lgrho, _lgt, _z2, _z3)
-    s_test = get_s_rhot_tab(_lgrho, _lgt)*erg_to_kbbar # fixed at _z2 and _z3 quarter fornow
+    s_test = get_s_rhot_tab(_lgrho, _lgt, _fice)*erg_to_kbbar # fixed at _z2 and _z3 quarter fornow
     #s_test = get_s_pt_tab(logp, _lgt, _z2, _z3)*erg_to_kbbar
     return (s_test/_s) - 1
 
@@ -87,7 +87,7 @@ PBOUNDS = [0, 15]
 
 XTOL = 1e-16
 
-def get_t_sp(_s, _lgp, _z2, _z3, alg='brenth'):
+def get_t_sp(_s, _lgp, _z2, _z3, alg='root'):
     if alg == 'root':
         if np.isscalar(_s):
             _s, _lgp, _z2, _z3 = np.array([_s]), np.array([_lgp]), np.array([_z2]), np.array([_z3])
@@ -108,7 +108,7 @@ def get_t_sp(_s, _lgp, _z2, _z3, alg='brenth'):
         sol = np.array([get_t_sp(s_, p_, y_, z_) for s_, p_, y_, z_ in zip(_s, _lgp, _z2, _z3)])
         return sol
 
-def get_p_rhot(_lgrho, _lgt, _z2, _z3, alg='brenth'):
+def get_p_rhot(_lgrho, _lgt, _z2, _z3, alg='root'):
     if alg == 'root':
         if np.isscalar(_lgrho):
             _lgrho, _lgt, _z2, _z3 = np.array([_lgrho]), np.array([_lgt]), np.array([_z2]), np.array([_z3])
@@ -129,16 +129,21 @@ def get_p_rhot(_lgrho, _lgt, _z2, _z3, alg='brenth'):
         sol = np.array([get_p_rhot(rho_, t_, y_, z_) for rho_, t_, y_, z_ in zip(_lgrho, _lgt, _z2, _z3)])
         return sol
 
-def get_t_srho(_s, _lgrho, _z2, _z3, alg='brenth'):
+def get_s_rhot(_lgrho, _lgt, _z2, _z3, alg='root'):
+    logp = get_p_rhot(_lgrho, _lgt, _z2, _z3, alg=alg)
+    return get_s_pt_tab(logp, _lgt, _z2, _z3)
+
+def get_t_srho(_s, _lgrho, _z2, _z3, alg='root'):
+    _fice = 1-_z2-_z3
     if alg == 'root':
         if np.isscalar(_s):
-            _s, _lgrho, _z2, _z3 = np.array([_s]), np.array([_lgrho]), np.array([_z2]), np.array([_z3])
+            _s, _lgrho, _fice = np.array([_s]), np.array([_lgrho]), np.array([_fice])
             guess = ideal_z.get_t_srho(_s, _lgrho, 0)
-            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _z2, _z3))
+            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _fice))
             return float(sol.x)
 
         guess = ideal_z.get_t_srho(_s, _lgrho, np.zeros(len(_s)))
-        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _z2, _z3))
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _fice))
         return sol.x
     elif alg == 'brenth':
         if np.isscalar(_s):
@@ -154,11 +159,11 @@ def get_t_srho(_s, _lgrho, _z2, _z3, alg='brenth'):
 
 ############################### Tabulated EOS Functions ###############################
 
-metal_mixtures_srho = ['srho_aqua_25_ppv50_iron25', 'srho_aqua_33_ppv33_iron33', 'srho_aqua_50_ppv33_iron16',\
+metal_mixtures_srho = ['srho_ppv50_iron50', 'srho_aqua_25_ppv50_iron25', 'srho_aqua_33_ppv33_iron33', 'srho_aqua_50_ppv33_iron16',\
                     'srho_aqua_75_ppv20_iron05']
-metal_mixtures_sp = ['sp_aqua_25_ppv50_iron25', 'sp_aqua_33_ppv33_iron33', 'sp_aqua_50_ppv33_iron16',\
+metal_mixtures_sp = ['sp_ppv50_iron50', 'sp_aqua_25_ppv50_iron25', 'sp_aqua_33_ppv33_iron33', 'sp_aqua_50_ppv33_iron16',\
                     'sp_aqua_75_ppv20_iron05']
-metal_mixtures_rhot = ['rhot_aqua_25_ppv50_iron25', 'rhot_aqua_33_ppv33_iron33', 'rhot_aqua_50_ppv33_iron16',\
+metal_mixtures_rhot = ['rhot_ppv50_iron50', 'rhot_aqua_25_ppv50_iron25', 'rhot_aqua_33_ppv33_iron33', 'rhot_aqua_50_ppv33_iron16',\
                     'rhot_aqua_75_ppv20_iron05']
 
 logrho_res_sp_mix = [] 
@@ -179,16 +184,16 @@ for file in metal_mixtures_rhot:
     logp_res_rhot_mix.append(logp_rhot)
     s_res_rhot_mix.append(s_rhot)
 
-logp_res_srho_mix = [] 
-logt_res_srho_mix = []
+# logp_res_srho_mix = [] 
+# logt_res_srho_mix = []
 
-for file in metal_mixtures_srho:
-    logp_srho, logt_srho = np.load('eos/metal_mixtures/{}.npy'.format(file))
+# for file in metal_mixtures_srho:
+#     logp_srho, logt_srho = np.load('eos/metal_mixtures/{}.npy'.format(file))
 
-    logp_res_srho_mix.append(logp_srho)
-    logt_res_srho_mix.append(logt_srho)
+#     logp_res_srho_mix.append(logp_srho)
+#     logt_res_srho_mix.append(logt_srho)
 
-f_ice = [0.25, 0.333, 0.50, 0.75]
+f_ice = [0, 0.25, 0.333, 0.50, 0.75]
 
 svals_sp = np.arange(0.01, 3.01, 0.01)
 logpvals_sp = np.arange(6, 15.05, 0.05)
@@ -209,10 +214,10 @@ get_p_rgi_rhot = RGI((f_ice, logrhovals_rhot, logtvals_rhot), logp_res_rhot_mix,
 get_s_rgi_rhot = RGI((f_ice, logrhovals_rhot, logtvals_rhot), s_res_rhot_mix, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_p_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logp_res_srho_mix, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logt_res_srho_mix, method='linear', \
-            bounds_error=False, fill_value=None)
+# get_p_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logp_res_srho_mix, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logt_res_srho_mix, method='linear', \
+#             bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(_s, _lgp, _fice):
     if np.isscalar(_s):
@@ -238,14 +243,14 @@ def get_s_rhot_tab(_lgrho, _lgt, _fice):
     else:
         return get_s_rgi_rhot(np.array([_fice, _lgrho, _lgt]).T)
 
-def get_p_srho_tab(_s, _lgrho, _fice):
-    if np.isscalar(_s):
-        return float(get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T))
-    else:
-        return get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T)
+# def get_p_srho_tab(_s, _lgrho, _fice):
+#     if np.isscalar(_s):
+#         return float(get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T))
+#     else:
+#         return get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T)
 
-def get_t_srho_tab(_s, _lgrho, _fice):
-    if np.isscalar(_s):
-        return float(get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T))
-    else:
-        return get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T)
+# def get_t_srho_tab(_s, _lgrho, _fice):
+#     if np.isscalar(_s):
+#         return float(get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T))
+#     else:
+#         return get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T)
