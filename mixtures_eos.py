@@ -120,10 +120,10 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
     xhe = 1 - xh - xz
     if np.any(xh + xhe + xz) != 1.0:
         raise Exception('X + Y + Z != 0')
-    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
+    #s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
     if hhe_eos == 'scvh':
         #s_id_zmix = 0.0
-        return (1 - _z)*s_xy + s_z * _z - s_id_zmix
+        return (1 - _z)*s_xy + s_z * _z #- s_id_zmix
     else:
         if np.isscalar(_lgp):
             return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix)
