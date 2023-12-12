@@ -340,7 +340,7 @@ get_t_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), l
 # get_t_rgi_sp_mix = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_mix, method='linear', \
 #             bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos='c,s'):
+def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos='cms'):
     if hhe_eos == 'cms':
         if np.isscalar(_s):
             return float(get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
@@ -424,14 +424,14 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos='cms'):
 
 ##### S, Rho #####
 
-svals_srho = np.arange(5.5, 9.05, 0.05)
-logrhovals_srho = np.linspace(-4.5, 2.0, 100)
-yvals_srho = np.arange(0.05, 0.55, 0.05)
-zvals_srho = np.arange(0, 0.55, 0.05)
+svals_srho = np.arange(3.0, 9.1, 0.05)
+logrhovals_srho = np.linspace(-5.0, 2.0, 100)
+yvals_srho = np.arange(0.05, 0.95, 0.1)
+zvals_srho = np.arange(0, 1.0, 0.1)
 
-logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua.npy' % CURR_DIR)
+logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
-logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua.npy' % CURR_DIR)
+logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
 get_p_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
@@ -576,8 +576,8 @@ def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos='cms', z_eos='aqua', ds=0.01):
     return (T1 - T0)/(S1 - S0)
 
 def get_dtdy_srho(_s, _lgrho, _y, _z, dy=0.01):
-    T0 = 10**get_t_srho(_s, _lgrho, _y, _z)
-    T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
+    T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z)
+    T1 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z)
     #T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
 
     dtdy_srhoz = (T1 - T0)/(_y*dy)
@@ -585,9 +585,9 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, dy=0.01):
     return dtdy_srhoz
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, dz=0.01):
-    T0 = 10**get_t_srho(_s, _lgrho, _y, _z)
+    T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z)
     #T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
-    T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
+    T2 = 10**get_t_srho_tab(_s, _lgrho, _y, _z*(1+dz))
 
     #dtdy_srhoz = (T1 - T0)/(_y*dy)
     dtdz_srhoy = (T2 - T0)/(_z*dz)
