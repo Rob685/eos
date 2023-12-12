@@ -169,8 +169,8 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos='cms', z_eos=None):
         _z = 0.0
 
     if hhe_eos == 'scvh':
-        u_xy = xy_eos.get_u_pt(_lgp, _lgt)
-        return (1 - _z)*u_xy + _z*u_z
+        u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt)
+        return np.log10((1 - _z)*u_xy + _z*u_z)
     else:
         u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
         u_he = 10**xy_eos.get_logu_he(_lgt, _lgp)
