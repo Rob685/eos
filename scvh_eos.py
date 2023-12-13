@@ -311,11 +311,11 @@ def get_u_pt(p, t, y, z = 0.0):
     u = eos_scvh.get_logu(p, t, y) # volume law
     return u
 
-def get_u_srho(s, rho, y, tab=True):
-    if not tab:
-        p, t = get_pt_srho(s, rho, y)
-    else:
-        p, t = get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
+def get_u_srho(s, rho, y, z = 0.0):
+    # if not tab:
+    #     p, t = get_pt_srho(s, rho, y)
+    # else:
+    p, t = get_p_srho_tab(s, rho, y), get_t_srho_tab(s, rho, y)
     return get_u_pt(p, t, y)
 
 ############## derivatives ##############
