@@ -73,7 +73,11 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     else:
         s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
-        s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
+
+        if hhe_eos == 'mls':
+            s_h = xy_eos.get_s_h(_lgt, _lgp)
+        else:
+            s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
         s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
 
     if z_eos == 'aqua':
@@ -317,7 +321,10 @@ yvals_sp_scvh = np.arange(0.15, 0.75, 0.05)
 #zvals_sp = np.arange(0, 1.0, 0.1)
 
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
+
 logrho_res_sp_scvh_aqua, logt_res_sp_scvh_aqua = np.load('%s/scvh/sp_base_z_aqua_extended.npy' % CURR_DIR)
+
+logrho_res_sp_mls_aqua, logt_res_sp_mls_aqua = np.load('%s/mls/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
 get_rho_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
@@ -327,6 +334,11 @@ get_t_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), lo
 get_rho_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_scvh, zvals_sp), logrho_res_sp_scvh_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_scvh, zvals_sp), logt_res_sp_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_rho_rgi_sp_mls = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_mls_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp_mls = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_mls_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
@@ -342,8 +354,16 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
         else:
             return get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
 
-def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
+    elif hhe_eos == 'mls':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T)
 
+    else:
+        raise Exception('Only cms, scvh, or mls available for now.')
+
+def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
     if hhe_eos == 'cms':
         if np.isscalar(_s):
             return float(get_t_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
@@ -355,6 +375,14 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
             return float(get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T))
         else:
             return get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'mls':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T)
+    else:
+        raise Exception('Only cms, scvh, or mls available for now.')
 
 def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
     rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos), get_t_sp_tab(_s, _lgp , _y, _z, hhe_eos, z_eos=z_eos)
@@ -371,6 +399,8 @@ logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_e
 
 logp_res_rhot_scvh_aqua, s_res_rhot_scvh_aqua = np.load('%s/scvh/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
+logp_res_rhot_mls_aqua, s_res_rhot_mls_aqua = np.load('%s/mls/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+
 get_p_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_s_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cms_aqua, method='linear', \
@@ -379,6 +409,11 @@ get_s_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot
 get_p_rgi_rhot_scvh = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_scvh_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_s_rgi_rhot_scvh = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_rhot_mls = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_mls_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhot_mls = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_mls_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
@@ -394,6 +429,15 @@ def get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
         else:
             return get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
 
+    elif hhe_eos == 'mls':
+        if np.isscalar(_lgrho):
+            return float(get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T)
+
+    else:
+        raise Exception('Only cms, scvh, or mls available for now.')
+
 def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
     if hhe_eos == 'cms':
         if np.isscalar(_lgrho):
@@ -405,6 +449,15 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
             return float(get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
         else:
             return get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
+
+    elif hhe_eos == 'mls':
+        if np.isscalar(_lgrho):
+            return float(get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T)
+
+    else:
+        raise Exception('Only cms, scvh, or mls available for now.')
 
 ##### S, Rho #####
 
