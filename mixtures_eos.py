@@ -470,6 +470,8 @@ logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqu
 
 logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
+logp_res_srho_mls_aqua, logt_res_srho_mls_aqua = np.load('%s/cms/srho_base_z_aqua_extended.npy' % CURR_DIR)
+
 get_p_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cms_aqua, method='linear', \
@@ -478,6 +480,11 @@ get_t_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), 
 get_p_rgi_srho_scvh = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_scvh_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_srho_scvh = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_scvh_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_srho_mls = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_mls_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho_mls = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_mls_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua'):
@@ -493,6 +500,12 @@ def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua'):
         else:
             return get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
 
+    elif hhe_eos == 'mls':
+        if np.isscalar(_s):
+            return float(get_p_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_p_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T)
+
 def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua'):
     if hhe_eos == 'cms':
         if np.isscalar(_s):
@@ -505,6 +518,12 @@ def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua'):
             return float(get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
         else:
             return get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
+
+    elif hhe_eos == 'mls':
+        if np.isscalar(_s):
+            return float(get_t_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_t_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T)
 
 
 
@@ -612,6 +631,14 @@ def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01):
 
     return (T1 - T0)/(S1 - S0)
 
+def get_dtds_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.01):
+    S0 = _s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    T0 = 10**get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    T1 = 10**get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+
+    return (T1 - T0)/(S1 - S0)
+
 def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
     T1 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos, z_eos=z_eos)
@@ -620,6 +647,7 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01):
     dtdy_srhoz = (T1 - T0)/(_y*dy)
     #dtdz_srhoy = (T2 - T0)/(_z*dz)
     return dtdy_srhoz
+    
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
