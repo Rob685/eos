@@ -631,6 +631,14 @@ def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01):
 
     return (T1 - T0)/(S1 - S0)
 
+def get_dtds_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.01):
+    S0 = _s/erg_to_kbbar
+    S1 = S0*(1+ds)
+    T0 = 10**get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    T1 = 10**get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+
+    return (T1 - T0)/(S1 - S0)
+
 def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
     T1 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos, z_eos=z_eos)
@@ -639,6 +647,7 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01):
     dtdy_srhoz = (T1 - T0)/(_y*dy)
     #dtdz_srhoy = (T2 - T0)/(_z*dz)
     return dtdy_srhoz
+    
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
