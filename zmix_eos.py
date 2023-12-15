@@ -184,14 +184,14 @@ for file in metal_mixtures_rhot:
     logp_res_rhot_mix.append(logp_rhot)
     s_res_rhot_mix.append(s_rhot)
 
-# logp_res_srho_mix = [] 
-# logt_res_srho_mix = []
+logp_res_srho_mix = [] 
+logt_res_srho_mix = []
 
-# for file in metal_mixtures_srho:
-#     logp_srho, logt_srho = np.load('eos/metal_mixtures/{}.npy'.format(file))
+for file in metal_mixtures_srho:
+    logp_srho, logt_srho = np.load('eos/metal_mixtures/{}.npy'.format(file))
 
-#     logp_res_srho_mix.append(logp_srho)
-#     logt_res_srho_mix.append(logt_srho)
+    logp_res_srho_mix.append(logp_srho)
+    logt_res_srho_mix.append(logt_srho)
 
 f_ice = [0, 0.25, 0.333, 0.50, 0.75]
 
