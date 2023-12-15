@@ -214,10 +214,10 @@ get_p_rgi_rhot = RGI((f_ice, logrhovals_rhot, logtvals_rhot), logp_res_rhot_mix,
 get_s_rgi_rhot = RGI((f_ice, logrhovals_rhot, logtvals_rhot), s_res_rhot_mix, method='linear', \
             bounds_error=False, fill_value=None)
 
-# get_p_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logp_res_srho_mix, method='linear', \
-#             bounds_error=False, fill_value=None)
-# get_t_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logt_res_srho_mix, method='linear', \
-#             bounds_error=False, fill_value=None)
+get_p_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logp_res_srho_mix, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho = RGI((f_ice, svals_srho, logrhovals_srho), logt_res_srho_mix, method='linear', \
+            bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(_s, _lgp, _fice):
     if np.isscalar(_s):
@@ -243,14 +243,14 @@ def get_s_rhot_tab(_lgrho, _lgt, _fice):
     else:
         return get_s_rgi_rhot(np.array([_fice, _lgrho, _lgt]).T)
 
-# def get_p_srho_tab(_s, _lgrho, _fice):
-#     if np.isscalar(_s):
-#         return float(get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T))
-#     else:
-#         return get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T)
+def get_p_srho_tab(_s, _lgrho, _fice):
+    if np.isscalar(_s):
+        return float(get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T))
+    else:
+        return get_p_rgi_srho(np.array([_fice, _s, _lgrho]).T)
 
-# def get_t_srho_tab(_s, _lgrho, _fice):
-#     if np.isscalar(_s):
-#         return float(get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T))
-#     else:
-#         return get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T)
+def get_t_srho_tab(_s, _lgrho, _fice):
+    if np.isscalar(_s):
+        return float(get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T))
+    else:
+        return get_t_rgi_srho(np.array([_fice, _s, _lgrho]).T)
