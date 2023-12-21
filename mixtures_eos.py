@@ -6,7 +6,7 @@ from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
 import os
-from eos import ideal_eos, metals_eos, cms_eos, mls_eos, scvh_eos
+from eos import ideal_eos, metals_eos, cms_eos, mls_eos, mh13_eos, scvh_eos
 import pdb
 
 # aqua_eos = metals_eos.aqua_eos
@@ -63,10 +63,12 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'mh13':
+        xy_eos = mh13_eos
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
     else:
-        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
+        raise Exception('Only cms, mls, mh13, scvh (CMS19, MLS22, MH13, and SCvH95) allowed for now')
 
     if hhe_eos == 'scvh':
         s_nid_mix = 0.0
@@ -138,10 +140,12 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'mh13':
+        xy_eos = mh13_eos
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
     else:
-        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
+        raise Exception('Only cms, mls, mh13, scvh (CMS19, MLS22, MH13, and SCvH95) allowed for now')
 
     if hhe_eos == 'scvh':
         rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y)
@@ -160,10 +164,12 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+    elif hhe_eos == 'mh13':
+        xy_eos = mh13_eos
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos 
     else:
-        raise Exception('Only cms and mls (CMS19, MLS22, and SCvH95) allowed for now')
+        raise Exception('Only cms, mls, mh13, scvh (CMS19, MLS22, MH13, and SCvH95) allowed for now')
 
     if z_eos is not None:
         u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, z_eos)
@@ -173,6 +179,9 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
 
     if hhe_eos == 'scvh':
         u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
+        return np.log10((1 - _z)*u_xy + _z*u_z)
+    elif hhe_eos == 'mh13':
+        u_xy = xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
     else:
         u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
@@ -458,6 +467,9 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
 
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
+
+def get_sp_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'):
+    return get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua'), get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua')
 
 ##### S, Rho #####
 
