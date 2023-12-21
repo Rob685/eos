@@ -73,6 +73,8 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     if hhe_eos == 'scvh':
         s_nid_mix = 0.0
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
+    elif hhe_eos == 'mh13':
+        s_nid_mix = cms_eos.get_smix_nd(np.zeros(len(_lgp))+0.246575, _lgp, _lgt)
     else:
         s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
 
@@ -712,3 +714,18 @@ def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho = 0.01):
     T0 = get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
     T1 = get_t_srho_tab(_s, _lgrho*(1+drho), _y, _z, hhe_eos, z_eos=z_eos)
     return (T1 - T0)/(_lgrho*drho)
+
+def get_K(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01):
+    P0 = 10**_lgp
+    P1 = P0*(1+dp)
+    R0 = 10**get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua')
+    R1 = 10**get_rho_pt(np.log10(P1), _lgt, _y, _z, hhe_eos, z_eos='aqua')
+
+    return -R0*(P1 - P0)/(R1 - R0)
+
+def get_alpha(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1):
+    T0 = 10**_lgt
+    T1 = T0*(1+dt)
+    R0 = 10**get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua')
+    R1 = 10**get_rho_pt(_lgp, np.log10(T1), _y, _z, hhe_eos, z_eos='aqua')
+    return R0*((1/R1 - 1/R0)/(T1 - T0))
