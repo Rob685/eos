@@ -319,7 +319,7 @@ def get_rhot_sp_tab(s, p, y, z=0.0):
 
 ### S, rho tables ###
 
-logp_res_srho, logt_res_srho = np.load('%s/mh13/srho_bbasis.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/mh13/srho_basis.npy' % CURR_DIR)
 
 # svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
 # logrhovals_srho = np.arange(-5, 1.5, 0.05)
