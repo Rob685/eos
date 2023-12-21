@@ -75,6 +75,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     elif hhe_eos == 'mh13':
         s_nid_mix = cms_eos.get_smix_nd(np.zeros(len(_lgp))+0.246575, _lgp, _lgt)
+        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     else:
         s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
 
@@ -131,6 +132,8 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
     if hhe_eos == 'scvh':
         return (1 - _z)*s_xy + s_z * _z
+    elif hhe_eos == 'mh13':
+        return (1 - _z)*s_xy + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix
     else:
         if np.isscalar(_lgp):
             return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix)
