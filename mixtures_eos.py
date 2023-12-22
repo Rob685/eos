@@ -408,6 +408,12 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
             return float(get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T))
         else:
             return get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'mh13':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T)
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
 
