@@ -332,6 +332,7 @@ yvals_sp = np.arange(0.05, 0.95, 0.1)
 zvals_sp = np.arange(0, 1.0, 0.1)
 
 yvals_sp_scvh = np.arange(0.15, 0.75, 0.05)
+yvals_sp_mh13 = np.arange(0.246575, 0.95, 0.1)
 #zvals_sp = np.arange(0, 1.0, 0.1)
 
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
@@ -357,9 +358,9 @@ get_rho_rgi_sp_mls = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), 
 get_t_rgi_sp_mls = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_mls_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_rho_rgi_sp_mh13 = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_mh13_aqua, method='linear', \
+get_rho_rgi_sp_mh13 = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_mh13, zvals_sp), logrho_res_sp_mh13_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_mh13 = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_mh13_aqua, method='linear', \
+get_t_rgi_sp_mh13 = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_mh13, zvals_sp), logt_res_sp_mh13_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua'):
