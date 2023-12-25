@@ -16,25 +16,25 @@ eos_scvh = scvh_man.eos(path_to_data='%s/scvh_mesa' % CURR_DIR)
 ideal_x = ideal_eos.IdealEOS(m=2)
 ideal_xy = ideal_eos.IdealHHeMix()
 
-def scvh_reader(tab_name):
-    tab = []
-    head = []
-    with open('%s/scvh/eos/%s' % (CURR_DIR, tab_name)) as file:
-        for j, line in enumerate(file):
-            line = line.rstrip('\n')
-            if line.startswith("#"):
-                line = line.lstrip('#')
-                head.append(line)
+# def scvh_reader(tab_name):
+#     tab = []
+#     head = []
+#     with open('%s/scvh/eos/%s' % (CURR_DIR, tab_name)) as file:
+#         for j, line in enumerate(file):
+#             line = line.rstrip('\n')
+#             if line.startswith("#"):
+#                 line = line.lstrip('#')
+#                 head.append(line)
 
-            else:# j > head: # skipping the header
-                tab.append(list(float(line[i:i+8]) for i in range(0, len(line), 8)))
+#             else:# j > head: # skipping the header
+#                 tab.append(list(float(line[i:i+8]) for i in range(0, len(line), 8)))
 
-    header = list(filter(None, ' '.join(head).split(' ')))
+#     header = list(filter(None, ' '.join(head).split(' ')))
 
-    tab = np.array(tab)
-    tab_ = np.reshape(tab, (300, 100))
+#     tab = np.array(tab)
+#     tab_ = np.reshape(tab, (300, 100))
 
-    return [float(val) for val in header], tab_
+#     return [float(val) for val in header], tab_
 
 # bounds_s, stab = scvh_reader('stabnew_adam.dat')
 # _, INDEX, R1, R2, T1, T2, T11, T12 = bounds_s # same bounds
@@ -45,40 +45,40 @@ def scvh_reader(tab_name):
 # stabs = np.array([scvh_reader(name)[-1] for name in stab_names])
 # ptabs = np.array([scvh_reader(name)[-1] for name in ptab_names])
 
-bounds_s, stab = scvh_reader('stabnew_adam.dat')
-R1, R2, T1, T2, T11, T12 = bounds_s[2:8] # same bounds
+# bounds_s, stab = scvh_reader('stabnew_adam.dat')
+# R1, R2, T1, T2, T11, T12 = bounds_s[2:8] # same bounds
 
-logrho_arr = np.linspace(R1, R2, 300)
-stab_names = ['s22scz.dat', 'stabnew_adam.dat', 's28scz.dat', 's30.dat']
-stabs = np.array([scvh_reader(name)[-1] for name in stab_names])
-ptab_names = ['p22scz.dat', 'ptabnew_adam.dat', 'p28scz.dat', 'p30.dat']
-ptabs = np.array([scvh_reader(name)[-1] for name in ptab_names])
+# logrho_arr = np.linspace(R1, R2, 300)
+# stab_names = ['s22scz.dat', 'stabnew_adam.dat', 's28scz.dat', 's30.dat']
+# stabs = np.array([scvh_reader(name)[-1] for name in stab_names])
+# ptab_names = ['p22scz.dat', 'ptabnew_adam.dat', 'p28scz.dat', 'p30.dat']
+# ptabs = np.array([scvh_reader(name)[-1] for name in ptab_names])
 
-def x(R):
-    return (R - R1)*(300)/(R2 - R1)
+# def x(R):
+#     return (R - R1)*(300)/(R2 - R1)
 
-def T1p(R):
-    m1 = (T11 - T1)/(R2 - R1)
-    return m1*(R - R1) + T1
+# def T1p(R):
+#     m1 = (T11 - T1)/(R2 - R1)
+#     return m1*(R - R1) + T1
 
-def T2p(R):
-    m2 = (T12 - T2)/(R2 - R1)
-    return m2*(R - R1) + T2
+# def T2p(R):
+#     m2 = (T12 - T2)/(R2 - R1)
+#     return m2*(R - R1) + T2
 
-def get_logtarr(R):
-    return np.linspace(T1p(R), T2p(R), 100)
+# def get_logtarr(R):
+#     return np.linspace(T1p(R), T2p(R), 100)
 
-def y(R, T):
-    return ((T - T1p(R))/(T2p(R) - T1p(R)))*(100)
+# def y(R, T):
+#     return ((T - T1p(R))/(T2p(R) - T1p(R)))*(100)
 
-yhe_arr = np.array([0.22, 0.25, 0.28, 0.30])
+# yhe_arr = np.array([0.22, 0.25, 0.28, 0.30])
 
-#x_arr = np.arange(0, 300, 1)
-x_arr = x(logrho_arr)
-y_arr = np.arange(0, 100, 1)
+# #x_arr = np.arange(0, 300, 1)
+# x_arr = x(logrho_arr)
+# y_arr = np.arange(0, 100, 1)
 
-interp_s = RGI((yhe_arr, x_arr, y_arr), stabs, method='linear', bounds_error=False, fill_value=None)
-interp_p = RGI((yhe_arr, x_arr, y_arr), ptabs, method='linear', bounds_error=False, fill_value=None)
+# interp_s = RGI((yhe_arr, x_arr, y_arr), stabs, method='linear', bounds_error=False, fill_value=None)
+# interp_p = RGI((yhe_arr, x_arr, y_arr), ptabs, method='linear', bounds_error=False, fill_value=None)
 
 
 ###### derivatives ######
@@ -106,57 +106,37 @@ def get_rho_sp_tab(s, p, _y, z = 0.0):
 def get_t_sp_tab(s, p, _y, z = 0.0):
     return get_t(np.array([_y, s, p]).T)
 
-def get_s_rhot_tab(r, t, _y, z = 0.0):
+# def get_s_rhot_tab(r, t, _y, z = 0.0):
 
-    if np.isscalar(r):
-        return (10**float(interp_s((_y, x(r), y(r, t)))))/erg_to_kbbar
-    else:
-        return (10**interp_s(np.array([_y, x(r), y(r, t)]).T))/erg_to_kbbar
+#     if np.isscalar(r):
+#         return (10**float(interp_s((_y, x(r), y(r, t)))))/erg_to_kbbar
+#     else:
+#         return (10**interp_s(np.array([_y, x(r), y(r, t)]).T))/erg_to_kbbar
 
-def get_p_rhot_tab(r, t, _y, z = 0.0):
-    if np.isscalar(r):
-        return float(interp_p((_y, x(r), y(r, t))))
-    else:
-        return interp_p(np.array([_y, x(r), y(r, t)]).T)
+# def get_p_rhot_tab(r, t, _y, z = 0.0):
+#     if np.isscalar(r):
+#         return float(interp_p((_y, x(r), y(r, t))))
+#     else:
+#         return interp_p(np.array([_y, x(r), y(r, t)]).T)
 
-def get_sp_rhot(r, t, _y, z = 0.0):
-    if np.isscalar(r):
-        return (10**float(interp_s((_y, x(r), y(r, t)))))/erg_to_kbbar, float(interp_p((y, x(r), y(r, t))))
-    else:
-        return (10**interp_s(np.array([_y, x(r), y(r, t)]).T))/erg_to_kbbar, interp_p(np.array([y, x(r), y(r, t)]).T)
-
-### P(s, rho, Y), T(s, rho, Y) tables ###
-#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
-logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_comb.npy' % CURR_DIR)
-
-svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
-logrhovals_srho = np.arange(-6, 1.5, 0.05)
-yvals_srho = np.arange(0.15, 0.75, 0.05)
-
-get_p_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
-            bounds_error=False, fill_value=None)
-
-def get_p_srho_tab(s, r, y, z = 0.0):
-    if np.isscalar(s):
-        return float(get_p_rgi(np.array([s, r, y]).T))
-    else:
-        return get_p_rgi(np.array([s, r, y]).T)
-
-def get_t_srho_tab(s, r, y, z = 0.0):
-    if np.isscalar(s):
-        return float(get_t_rgi(np.array([s, r, y]).T))
-    else:
-        return get_t_rgi(np.array([s, r, y]).T)
+# def get_sp_rhot(r, t, _y, z = 0.0):
+#     if np.isscalar(r):
+#         return (10**float(interp_s((_y, x(r), y(r, t)))))/erg_to_kbbar, float(interp_p((y, x(r), y(r, t))))
+#     else:
+#         return (10**interp_s(np.array([_y, x(r), y(r, t)]).T))/erg_to_kbbar, interp_p(np.array([y, x(r), y(r, t)]).T)
 
 ### rho(P, T, Y), s(P, T, Y) tables ###
 
-logrho_res_pt, s_res_pt = np.load('%s/scvh/pt_base_comb.npy' % CURR_DIR)
+#logrho_res_pt, s_res_pt = np.load('%s/scvh/pt_base_comb.npy' % CURR_DIR)
+logrho_res_pt, s_res_pt = np.load('%s/scvh/pt_base_new.npy' % CURR_DIR)
 
-logpvals_pt = np.arange(6, 14.1, 0.1) # new grid
-logtvals_pt = np.arange(2.1, 5.1, 0.05)
-yvals_pt = np.arange(0.15, 0.75, 0.05)
+# logpvals_pt = np.arange(6, 14.1, 0.1) # new grid
+# logtvals_pt = np.arange(2.1, 5.1, 0.05)
+# yvals_pt = np.arange(0.15, 0.75, 0.05)
+
+logpvals_pt = p_arr[0][0]
+logtvals_pt = np.arange(2.1, 5.05, 0.05)
+yvals_pt = y_arr[:,0][:,0]
 
 get_rho_pt_rgi = RGI((logpvals_pt, logtvals_pt, yvals_pt), logrho_res_pt, method='linear', \
             bounds_error=False, fill_value=None)
@@ -174,6 +154,65 @@ def get_s_pt_tab(p, t, y, z = 0.0):
         return float(get_s_pt_rgi(np.array([p, t, y]).T))
     else:
         return get_s_pt_rgi(np.array([p, t, y]).T)
+
+### Rho, t basis ###
+
+logp_res_rhot, s_res_rhot = np.load('%s/scvh/rhot_base_new.npy' % CURR_DIR)
+
+logrhovals_rhot = np.linspace(-5, 1.5, 100)
+logtvals_rhot = logtvals_pt.copy()
+yvals_rhot = yvals_pt.copy()
+
+get_p_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), s_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_p_rhot_rgi(np.array([rho, t, y]).T))
+    else:
+        return get_p_rhot_rgi(np.array([rho, t, y]).T)
+
+def get_s_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_s_rhot_rgi(np.array([rho, t, y]).T))
+    else:
+        return get_s_rhot_rgi(np.array([rho, t, y]).T)
+
+def get_sp_rhot_tab(rho, t, y, z=0.0):
+    return get_s_rhot_tab(rho, t, y), get_p_rhot_tab(rho, t, y)
+
+### P(s, rho, Y), T(s, rho, Y) tables ###
+#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
+#logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_comb.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_new.npy' % CURR_DIR)
+
+# svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
+# logrhovals_srho = np.arange(-6, 1.5, 0.05)
+# yvals_srho = np.arange(0.15, 0.75, 0.05)
+
+svals_srho = s_arr[0][:,0]
+logrhovals_srho = np.linspace(-5, 1.5, 100)
+yvals_srho = y_arr[:,0][:,0]
+
+get_p_srho_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_srho_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logt_res_srho, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_srho_tab(s, rho, y, z = 0.0):
+    if np.isscalar(s):
+        return float(get_p_srho_rgi(np.array([s, rho, y]).T))
+    else:
+        return get_p_srho_rgi(np.array([s, rho, y]).T)
+
+def get_t_srho_tab(s, rho, y, z = 0.0):
+    if np.isscalar(s):
+        return float(get_t_srho_rgi(np.array([s, rho, y]).T))
+    else:
+        return get_t_srho_rgi(np.array([s, rho, y]).T)
+
 
 ### error functions ###
 def err_rhot(rt_pair, sval, pval, y, z = 0.0):
@@ -207,7 +246,7 @@ def err_t_srho(lgt, sval, lgr, y, z = 0.0):
 
 TBOUNDS = [0, 7] # logrho and logt_sp test passes with [0, 6]
 PBOUNDS = [0, 15] # works with 1, 15
-RHOBOUNDS = [R1+0, R2-2] # works with +1 and -2
+RHOBOUNDS = [-7, 1.5] # works with +1 and -2
 
 XTOL = 1e-8
 

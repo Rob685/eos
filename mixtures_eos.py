@@ -243,12 +243,12 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
                 return sol.root
             except:
                 raise
-        sol = np.array([get_t_sp(s_, p_, y_, z_, z_eos=z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
+        sol = np.array([get_t_sp(s_, p_, y_, z_, hhe_eos, z_eos=z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
         return sol
 
-def get_rho_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
+def get_rhot_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
     logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos, alg=alg, z_eos=z_eos)
-    return get_rho_pt(_lgp, logt, _y, _z, hhe_eos, z_eos=z_eos)
+    return get_rho_pt(_lgp, logt, _y, _z, hhe_eos, z_eos=z_eos), logt
 
 ###### Rho, T ######
 
@@ -336,7 +336,7 @@ yvals_sp_scvh = np.arange(0.15, 0.75, 0.05)
 
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
-logrho_res_sp_scvh_aqua, logt_res_sp_scvh_aqua = np.load('%s/scvh/sp_base_z_aqua_extended.npy' % CURR_DIR)
+logrho_res_sp_scvh_aqua, logt_res_sp_scvh_aqua = np.load('%s/scvh/sp_base_z_aqua_extended_new.npy' % CURR_DIR)
 
 logrho_res_sp_mls_aqua, logt_res_sp_mls_aqua = np.load('%s/mls/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
@@ -430,7 +430,7 @@ zvals_rhot = np.arange(0, 1.0, 0.1)
 
 logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
-logp_res_rhot_scvh_aqua, s_res_rhot_scvh_aqua = np.load('%s/scvh/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+logp_res_rhot_scvh_aqua, s_res_rhot_scvh_aqua = np.load('%s/scvh/rhot_base_z_aqua_extended_new.npy' % CURR_DIR)
 
 logp_res_rhot_mls_aqua, s_res_rhot_mls_aqua = np.load('%s/mls/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
@@ -523,7 +523,7 @@ zvals_srho = np.arange(0, 1.0, 0.1)
 
 logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
-logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended.npy' % CURR_DIR)
+logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended_new.npy' % CURR_DIR)
 
 logp_res_srho_mls_aqua, logt_res_srho_mls_aqua = np.load('%s/mls/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
