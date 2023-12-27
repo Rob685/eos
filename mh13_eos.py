@@ -287,7 +287,7 @@ def get_s_pt_tab(p, t, y):
 
 def get_u_pt_tab(p, t, y):
     rho = get_rho_pt_tab(p, t, y)
-    return get_u_rhot_tab(rho, t, y)
+    return np.abs(get_u_rhot_tab(rho, t, y))
 
 ### S, P tables ###
 
