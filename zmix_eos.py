@@ -64,7 +64,7 @@ def get_u_pt_tab(_lgp, _lgt, _z2, _z3):
     u_ppv = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, eos='ppv')
     u_iron = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, eos='iron')
 
-    return (1 - _z2) * (1 - _z3) * u_aqua + _z2 * (1 - _z3) * u_ppv + _z3 * u_iron
+    return np.log10((1 - _z2) * (1 - _z3) * u_aqua + _z2 * (1 - _z3) * u_ppv + _z3 * u_iron)
 
 def err_t_sp(_lgt, _s, _lgp, _z2, _z3):
     s_test = get_s_pt_tab(_lgp, _lgt, _z2, _z3)*erg_to_kbbar

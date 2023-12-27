@@ -74,7 +74,7 @@ def get_rho_pt_tab(p, t):
         return get_rho_rgi_pt(np.array([p, t]).T)
 
 def get_u_pt_tab(p, t):
-    s = get_s_pt_tab(p, t)
+    s = get_s_pt_tab(p, t)*erg_to_kbbar
     return get_u_sp_tab(s, p)
 
 ### rho, T ###
