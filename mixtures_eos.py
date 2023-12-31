@@ -9,10 +9,16 @@ import os
 from eos import ideal_eos, metals_eos, cms_eos, mls_eos, mh13_eos, scvh_eos
 import pdb
 
-# aqua_eos = metals_eos.aqua_eos
-# serpentine_eos = metals_eos.serpentine_eos
-# ppv_eos = metals_eos.ppv_eos
-# fe_eos = metals_eos.fe_eos
+"""
+    This file provides access to H-He and H-He-Z mixtures.
+    The mixtures are calculated via the volume addition law. 
+    For convenience, please use the _tab functions insteaad of the inversion functions.
+    The _tab functions provide direct access to pre-calculated tables, and the inversion functions
+    perform direct inversions from the P, T tables. 
+    
+    Author: Roberto Tejada Arevalo
+    
+"""
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -126,6 +132,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     else:
         raise Exception('Acceptable z_eos: aqua, ppv, serpentine, iron, ideal, mixture, None')
 
+    # Calculating entropy of mixing terms
     xhe = 1 - xh - xz
     if np.any(xh + xhe + xz) != 1.0:
         raise Exception('X + Y + Z != 0')
@@ -157,6 +164,7 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     else:
         rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y)
 
+    # Calculating volume of mixing terms
     if z_eos is not None:
         rho_z = 10**metals_eos.get_rho_pt_tab(_lgp, _lgt, z_eos)
     if z_eos is None:
@@ -181,7 +189,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     if z_eos is None:
         u_z = 1.0 # doesn't matter because _z should be 0
         _z = 0.0
-
+    # Calculating energy of mixtures via the volume addition law.
     if hhe_eos == 'scvh':
         u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
