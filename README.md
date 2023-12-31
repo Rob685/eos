@@ -6,3 +6,8 @@ To ease thermodynamic derivative calculations, we have inverted the H-He EOSes t
 
 
 <img width="603" alt="Screenshot 2023-12-30 at 20 01 17" src="https://github.com/Rob685/eos/assets/48569647/5c18c88b-c64a-425a-ac1b-87cb204fc16c">
+
+To download and use these tables, 
+
+1. git lfs install
+2. git clone ```https://github.com/Rob685/eos.git```
