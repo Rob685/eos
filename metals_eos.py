@@ -30,7 +30,7 @@ def get_rho_pt_tab(p, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_rho_pt(p, t, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_rho_pt_tab(p, t, 0.25, 0.25)
+        return zmix_eos.get_rho_pt_tab(p, t, 0.333, 0.166)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -46,7 +46,7 @@ def get_s_pt_tab(p, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_s_pt(p, t, 0)/erg_to_kbbar
     elif eos == 'mixture':
-        return zmix_eos.get_s_pt_tab(p, t, 0.25, 0.25)
+        return zmix_eos.get_s_pt_tab(p, t, 0.333, 0.166)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -61,6 +61,8 @@ def get_u_pt_tab(p, t, eos):
         return fe_eos.get_u_pt_tab(p, t)
     elif eos == 'ideal':
         return ideal_water.get_u_pt(p, t)
+    elif eos == 'mixture':
+        return zmix_eos.get_u_pt_tab(p, t, 0.333, 0.166)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -78,7 +80,8 @@ def get_p_rhot_tab(rho, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_p_rhot(rho, t, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_p_rhot_tab(rho, t)
+        f_ice = np.zeros(len(rho))+1-0.333-0.166 # constant for now
+        return zmix_eos.get_p_rhot_tab(rho, t, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -94,7 +97,8 @@ def get_s_rhot_tab(rho, t, eos):
     elif eos == 'ideal':
         return ideal_water.get_s_rhot(rho, t, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_s_rhot_tab(rho, t)
+        f_ice = np.zeros(len(rho))+1-0.333-0.166
+        return zmix_eos.get_s_rhot_tab(rho, t, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -112,7 +116,8 @@ def get_t_sp_tab(s, p, eos):
     elif eos == 'ideal':
         return ideal_water.get_t_sp(s, p, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_t_sp_tab(s, p)
+        f_ice = np.zeros(len(s))+1-0.333-0.166
+        return zmix_eos.get_t_sp_tab(s, p, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -128,7 +133,8 @@ def get_rho_sp_tab(s, p, eos):
     elif eos == 'ideal':
         return ideal_water.get_rho_sp(s, p, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_rho_sp_tab(s, p)
+        f_ice = np.zeros(len(s))+1-0.333-0.166
+        return zmix_eos.get_rho_sp_tab(s, p, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -149,7 +155,8 @@ def get_t_srho_tab(s, rho, eos):
     elif eos == 'ideal':
         return ideal_water.get_t_srho(s, rho, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_t_srho_tab(s, rho)
+        f_ice = np.zeros(len(s))+1-0.333-0.166
+        return zmix_eos.get_t_srho_tab(s, rho, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
@@ -165,7 +172,8 @@ def get_p_srho_tab(s, rho, eos):
     elif eos == 'ideal':
         return ideal_water.get_p_srho(s, rho, 0)
     elif eos == 'mixture':
-        return zmix_eos.get_p_srho_tab(s, rho)
+        f_ice = np.zeros(len(s))+1-0.333-0.166
+        return zmix_eos.get_p_srho_tab(s, rho, f_ice)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
