@@ -20,6 +20,19 @@ from astropy.constants import k_B, m_p
 from astropy.constants import u as amu
 from scipy.interpolate import RegularGridInterpolator as RGI
 
+"""
+    This file provides access to the ideal EOS and accepts
+    the same format as the other non-ideal EOSes. 
+    
+    This file does not use precomputed tables and it can be
+    used to compare to the other EOSes. The ideal EOS is also 
+    used to provided initial guesses to the inversion optimization
+    functions used in all other EOS files.
+
+    Authors: Yubo Su, Roberto Tejada Arevalo
+    
+"""
+
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
 kB = 1.38e-16

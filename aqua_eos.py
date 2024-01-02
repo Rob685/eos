@@ -8,6 +8,19 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
 from eos import ideal_eos
 
+"""
+    This file provides access to the AQUA table (Haldemann et al. 2020). 
+    The AQUA table accounts for different phases of water.
+
+    As with the H-He tables, this file reads pre-computed inverted tables and 
+    includes the inversion functions used to produce the tables.
+
+    The pre-computed table function names end with _tab.
+    
+    Authors: Roberto Tejada Arevalo
+    
+"""
+
 mp = amu.to('g')
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 Pa_to_dyn = u.Pa.to('dyn/cm^2')
@@ -51,7 +64,7 @@ def grid_data(df, basis):
 
 
 ### P, T ####
-aqua_data_pt = grid_data(aqua_reader('pt'), 'pt')
+aqua_data_pt = grid_data(aqua_reader('pt'), 'pt') # 2D grid
 
 logpvals_pt = aqua_data_pt['logp'][:,0]
 logtvals = aqua_data_pt['logt'][0]
@@ -147,29 +160,6 @@ def get_t_sp_tab(s, p):
 def get_rhot_sp_tab(s, p):
     return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
 
-### p(rho, t), s(rho, t) ###
-
-# logp_res_rhot, s_res_rhot = np.load('%s/aqua/rhot_base.npy' % CURR_DIR)
-
-# logrhovals_rhot = np.arange(-12, 2.05, 0.1)
-
-# get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals), logp_res_rhot, method='linear', \
-#             bounds_error=False, fill_value=None)
-# get_s_rgi_rhot = RGI((logrhovals_rhot, logtvals), s_res_rhot, method='linear', \
-#             bounds_error=False, fill_value=None)
-
-# def get_p_rhot_tab(rho, t):
-#     if np.isscalar(rho):
-#         return float(get_p_rgi_rhot(np.array([rho, t]).T))
-#     else:
-#         return get_p_rgi_rhot(np.array([rho, t]).T)
-
-# def get_s_rhot_tab(rho, t):
-#     if np.isscalar(rho):
-#         return float(get_s_rgi_rhot(np.array([rho, t]).T))
-#     else:
-#         return get_s_rgi_rhot(np.array([rho, t]).T)
-
 ### p(s, rho), T(s, rho) ###
 
 logp_res_srho, logt_res_srho = np.load('%s/aqua/srho_base.npy' % CURR_DIR)
@@ -201,9 +191,7 @@ PBOUNDS = [0, 16]
 XTOL = 1e-8
 
 def err_t_sp(logt, s_val, logp):
-    #print(logt, logp, s_val, y, z)
     s_ = get_s_pt_tab(logp, logt)*erg_to_kbbar
-    #s_val /= erg_to_kbbar # in cgs
 
     return (s_/s_val) - 1
 
@@ -246,7 +234,7 @@ def get_t_sp(s, p, alg='brenth'):
     elif alg == 'brenth':
         if np.isscalar(s):
             try:
-                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, p)) # range should be 2, 5 but doesn't converge for higher z unless it's lower
+                sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(s, p))
                 return sol.root
             except:
                 #print('s={}, p={}, y={}'.format(s, p, y))

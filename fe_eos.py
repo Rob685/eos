@@ -10,6 +10,18 @@ import os
 
 from eos import ideal_eos
 
+"""
+    This file provides access to an Iron EOS table from Jisheng Zhang. 
+
+    As with the H-He tables, this file reads pre-computed inverted tables and 
+    includes the inversion functions used to produce the tables.
+
+    The pre-computed table function names end with _tab.
+    
+    Authors: Jisheng Zhang, Roberto Tejada Arevalo
+    
+"""
+
 # for guesses
 ideal_z = ideal_eos.IdealEOS(m=56)
 

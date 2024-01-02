@@ -9,6 +9,19 @@ from astropy import units as u
 from astropy.constants import k_B
 from astropy.constants import u as amu
 
+""" 
+    This file puts together all of the available metal EOSes of this repo. 
+    Instead of calling each module individually, one can import this file
+    and select the metal EOS to use with the EOS argument in each function. 
+    
+    This file further provides access to metal mixtures. For now, the 'mixture'
+    option provides a mixture of 50% water, 33.3% post-perovskite, and 16.6%
+    iron. A dependency on water fraction will be added in the near future.
+
+    Author: Roberto Tejada Arevalo
+    
+"""
+
 mp = amu.to('g') # grams
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 

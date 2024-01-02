@@ -14,6 +14,15 @@ import pdb
 # kb = k_B.to('erg/K').value
 erg_to_kbbar = 1.202723550011625e-08
 
+"""
+    This file comes directly from Christopher Mankovich's alice repository (https://github.com/chkvch/alice).
+    It is only used to compute the internal energy when called in scvh_eos.py.
+
+    This is necessary because the entropy of mixing calculations in this file are different from our precomputed
+    tables used in scvh_eos.py, but those tables do not have the interal energy of mixtures.
+    
+"""
+
 class eos:
     def __init__(self, path_to_data=None, fac_for_numerical_partials=1e-10):
         '''

@@ -4,6 +4,29 @@ from scipy.optimize import root, root_scalar
 from scipy.interpolate import RegularGridInterpolator as RGI
 from eos import aneos, scvh_man, ideal_eos, cms_eos
 import os
+
+"""
+    This file provides thermodynamic quantities and derivatives for the Saumon, Chabrier, and van Horn (1995) H-He EOS.
+
+    The functions rely on precomputed tables, and such functions end with _tab. 
+    The functions used to invert the tables are also available.
+
+    All independnet thermodynamic quantities are ordered in the following manner in the function arguments: s, rho, p, t, y, z
+    Therefore, all functions will follow the same ordering convention.
+    All functions have the dependent_independent naming convenction; e.g., get_rho_pt is \rho(P, T, Y), get_t_srho is T(s, rho, Y).
+
+    Pressure is in log 10 in dyn/cm^2
+    Temperature is in log 10 K
+    density is in log 10 g/cm^3
+    input entropy is in kb/baryon
+    output entropy is in erg/g/K
+    internal energy is in erg/g
+    Y is the helium mass fraciton
+
+    Authors: Roberto Tejada Arevalo, Adam Burrows
+
+"""
+
 erg_to_kbbar = 1.202723550011625e-08
 mh = 1 
 mhe = 4.0026

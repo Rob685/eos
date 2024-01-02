@@ -10,6 +10,18 @@ import os
 
 from eos import ideal_eos
 
+"""
+    This file provides access to an post-perovskite EOS table from Jisheng Zhang. 
+
+    As with the H-He tables, this file reads pre-computed inverted tables and 
+    includes the inversion functions used to produce the tables.
+
+    The pre-computed table function names end with _tab.
+    
+    Authors: Jisheng Zhang, Roberto Tejada Arevalo
+    
+"""
+
 mg = 24.305
 si = 28.085
 o3 = 48.000

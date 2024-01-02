@@ -6,6 +6,16 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
 import os
 
+"""
+    This file computes metallicity mixtures for any two metal 
+    fractions of ppv and iron (_z2 and _z3) with water. 
+
+    This will be further developed in the near future.
+
+    Author: Roberto Tejada Arevalo
+
+"""
+
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 ideal_z = ideal_eos.IdealEOS(m=40)

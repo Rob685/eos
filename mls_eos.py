@@ -11,6 +11,31 @@ from astropy.constants import m_p
 import os
 from eos import ideal_eos, aqua_eos
 import pdb
+
+"""
+    This file provides thermodynamic quantities and derivatives for the Mazevet, Licari, and Soubiran (2022) H-He EOS.
+
+    The functions rely on precomputed tables, and such functions end with _tab. 
+    The functions used to invert the tables are also available.
+
+    All independnet thermodynamic quantities are ordered in the following manner in the function arguments: s, rho, p, t, y, z
+    Therefore, all functions will follow the same ordering convention.
+    All functions have the dependent_independent naming convenction; e.g., get_rho_pt is \rho(P, T, Y), get_t_srho is T(s, rho, Y).
+
+    Pressure is in log 10 in dyn/cm^2
+    Temperature is in log 10 K
+    density is in log 10 g/cm^3
+    input entropy is in kb/baryon
+    output entropy is in erg/g/K
+    internal energy is in erg/g
+    Y is the helium mass fraciton
+
+    The entropy of mixing corrections by Howard & Guillot (2023) are added in get_s_pt. 
+
+    Author: Roberto Tejada Arevalo
+
+"""
+
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 pd.options.mode.chained_assignment = None
@@ -91,15 +116,7 @@ logtvals_he = cms_hedata['logt'][:,0]
 
 #### H data ####
 
-# svals_h = cms_hdata['logs']
-# rhovals_h = cms_hdata['logrho']
-# loguvals_h = cms_hdata['logu']
-
 rhovals_h, svals_h, loguvals_h = np.load('%s/mls/mls_h_pt.npy' % CURR_DIR)
-
-# get_s_h = RBS(logtvals, logpvals, svals_h) # x or y are not changing so can leave out to speed things up
-# get_rho_h = RBS(logtvals, logpvals, rhovals_h)
-# get_logu_h = RBS(logtvals, logpvals, loguvals_h, s=0)
 
 get_s_h_rgi = RGI((logtvals, logpvals), svals_h.T, method='linear', bounds_error=False, fill_value=None)
 get_rho_h_rgi = RGI((logtvals, logpvals), rhovals_h.T, method='linear', bounds_error=False, fill_value=None)
@@ -111,13 +128,6 @@ def get_rho_h(lgt, lgp):
     return get_rho_h_rgi(np.array([lgt, lgp]).T)
 def get_logu_h(lgt, lgp):
     return get_logu_h_rgi(np.array([lgt, lgp]).T)
-
-# derivatives
-
-# get_rhot_h = RBS(logtvals, logpvals, cms_hdata['dlrho/dlT_P'])
-# get_rhop_h = RBS(logtvals, logpvals, cms_hdata['dlrho/dlP_T'])
-# get_sp_h = RBS(logtvals, logpvals, cms_hdata['dlS/dlP_T'])
-# get_st_h = RBS(logtvals, logpvals, cms_hdata['dlS/dlT_P'])
 
 #### He data ####
 
@@ -151,38 +161,25 @@ def x_Z(Y, Z, mz):
     Ntot = (1-Y)*(1-Z)/mh + (Y*(1-Z)/mhe) + Z/mz
     return (Z/mz)/Ntot
 
-# def guarded_log(x):
-#     if x == 0:
-#         return 0
-#     elif x  < 0:
-#         raise ValueError('a')
-#     return x * np.log(x)
-
-def guarded_log(x):
+def guarded_log(x): # necessary for entropy of mixing calculations
     if np.isscalar(x):
         if x == 0:
             return 0
         elif x  < 0:
             raise ValueError('a')
         return x * np.log(x)
-    # else:
-    #     if np.any(x) == 0:
-    #         return 0
-    #     elif np.any(x)  < 0:
-    #         raise ValueError('a')
-    #     return x * np.log(x)
 
     return np.array([guarded_log(x_) for x_ in x])
 
 ### isolating the ideal and interacting entropy of mixing terms from HG23 ###
 
-def get_smix_id_y(Y):
+def get_smix_id_y(Y): # ideal compnent of the entropy of mixing
     #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
     xhe = Y_to_n(Y)
     xh = 1 - xhe
     return -1*(guarded_log(xh) + guarded_log(xhe))
 
-def get_smix_nd(Y, lgp, lgt):
+def get_smix_nd(Y, lgp, lgt): # non-ideal component of the entropy of mixing
 
     # the HG23 \Delta S_mix is the combination of the non-ideal and ideal entropy of mixing
     smix_hg23 = smix_interp(lgt, lgp)*(1 - Y)*Y
@@ -208,50 +205,6 @@ def get_u_pt(lgp, lgt, y, z=0.0):
     return np.log10((1 - y)*u_h + y*u_he)
 
 ###### inverted tables ######
-
-## t, rho (s, p, y) ##
-"""To revert to the old version with the HG corrections, uncomment the first line.
-All functions should be the same for ease of use."""
-
-
-""" The commented values below are the old S, P basis. While the values are okay, the derivatives are suspect."""
-# s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, chirho_arr, chit_arr, gamma1_arr, grada_arr = np.load('%s/cms/cms_hg_thermo.npy' % CURR_DIR)
-# #s_arr, p_arr, t_arr, r_arr, y_arr, cp_arr, cv_arr, grada_arr = np.load('%s/cms/cms_thermo.npy' % CURR_DIR)
-
-# get_rho_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), r_arr, method='linear', bounds_error=False, fill_value=None)
-# get_t_ = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), t_arr, method='linear', bounds_error=False, fill_value=None)
-
-# get_cp = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), cp_arr, method='linear', bounds_error=False, fill_value=None)
-# get_cv = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), cv_arr, method='linear', bounds_error=False, fill_value=None)
-
-# get_chirho = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chirho_arr, method='linear', bounds_error=False, fill_value=None)
-# get_chit = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chit_arr, method='linear', bounds_error=False, fill_value=None)
-
-# get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, method='linear', bounds_error=False, fill_value=None)
-# get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
-
-# def get_rho_t(s, p, y):
-#     return get_rho_(np.array([y, s, p]).T), get_t_(np.array([y, s, p]).T)
-
-# def get_c_p(s, p, y):
-#     cp_res = get_cp(np.array([y, s, p]).T)
-#     return cp_res
-
-# def get_c_v(s, p, y):
-#     cv_res = get_cv(np.array([y, s, p]).T)
-#     return cv_res
-
-# def get_chi_rho(s, p, y):
-#     chirho_res = get_chirho(np.array([y, s, p]).T)
-#     return chirho_res
-
-# def get_chi_t(s, p, y):
-#     chit_res = get_chit(np.array([y, s, p]).T)
-#     return chit_res
-
-# def get_grad_ad(s, p, y):
-#     grada = get_grada(np.array([y, s, p]).T)
-#     return grada
 
 logrho_res_sp, logt_res_sp = np.load('%s/mls/sp_base_comb.npy' % CURR_DIR)
 
@@ -282,12 +235,7 @@ def get_rhot_sp_tab(s, p, y, z=0.0):
 
 
 ### P(s, rho, Y), T(s, rho, Y) tables ###
-#p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
 logp_res_srho, logt_res_srho = np.load('%s/mls/srho_base_comb.npy' % CURR_DIR)
-
-# # svals_srho = np.arange(5.75, 9.1, 0.01) # old grid
-# # logrhovals_srho = np.arange(-4, 1, 0.05)
-# # yvals_srho = np.arange(0.1, 1, 0.01)
 
 svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
 logrhovals_srho = np.arange(-5, 1.5, 0.05)

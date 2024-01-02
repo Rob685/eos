@@ -9,6 +9,15 @@ from astropy import units as u
 from astropy.constants import k_B
 from astropy.constants import u as amu
 
+"""
+    This module borrows from the alice repository from Christopher 
+    Mankovich (https://github.com/chkvch/alice) to provide access
+    to the ANEOS Serpentine EOS in the same format as all other EOSes.
+
+    Author: Roberto Tejada Arevalo
+
+"""
+
 mp = amu.to('g') # grams
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 
