@@ -742,21 +742,29 @@ def get_drhodt_py(p, t, y, z, hhe_eos, z_eos='aqua', dt=0.1):
 
     return drhodt
 
-def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1):
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
     # ds/dlogT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+    if tab:
+        T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_srho(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
  
     return (S1 - S0)/(T1 - T0)
 
-def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1):
+def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
     # ds/dlogT_{P, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    if tab:
+        T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_sp(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
 
     return (S1 - S0)/(T1 - T0)
 
@@ -766,9 +774,13 @@ def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01):
     R1 = get_rho_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
     return (_lgp*dp)/(R1 - R0)
 
-def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01):
-    T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
+def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01, tab=True):
+    if tab:
+        T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
     return (T1 - T0)/(_lgp*dp)
 
 def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho = 0.01):
