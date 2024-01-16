@@ -41,6 +41,7 @@ mhe = 4.0026
 ###### H-He mixing ######
 
 def Y_to_n(_y):
+    ''' Change between mass and number fraction '''
     return ((_y/mhe)/(((1 - _y)/mh) + (_y/mhe)))
 def n_to_Y(x):
     return (mhe * x)/(1 + 3.0026*x)
@@ -54,6 +55,7 @@ def x_Z(_y, _z, mz):
     return (_z/mz)/Ntot
 
 def guarded_log(x):
+    ''' Used to calculate ideal enetropy of mixing: xlogx'''
     if np.isscalar(x):
         if x == 0:
             return 0
@@ -65,6 +67,14 @@ def guarded_log(x):
 #### P, _lgt mixtures ####
 
 def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
+    """
+    This calculates the entropy for a metallicity mixture.
+    The cms and mls EOSes already contain the HG23 non-ideal corrections
+    to the entropy. These terms contain the ideal entropy of mixing, so 
+    for metal mixures, we subtract the H-He ideal entropy of mixing and 
+    add back the metal mixture entropy of mixing plus the non-ideal 
+    correction. 
+    """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
@@ -148,6 +158,11 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix
 
 def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
+    """
+    This calculates the log10 of the density for a metallicity mixture.
+    The cms and mls EOSes already contain the HG23 non-ideal corrections
+    to the density.
+    """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
@@ -173,6 +188,11 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     return np.log10(1/((1 - _z)/rho_hhe + _z/rho_z))
 
 def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
+    """
+    This calculates the log10 of the specific internal energy.
+    The volume addition law is used for all EOSes. There are 
+    no non-ideal correction terms for the internal energy yet.
+    """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
     elif hhe_eos == 'mls':
