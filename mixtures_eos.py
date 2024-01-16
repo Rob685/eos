@@ -770,21 +770,38 @@ def get_drhodt_py(p, t, y, z, hhe_eos, z_eos='aqua', dt=0.1):
 
     return drhodt
 
-def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1):
+def get_drhody_pt(p, t, y, z, hhe_eos, z_eos='aqua', dy=0.1):
+    #y = cms.n_to_Y(x)
+    rho0 = get_rho_pt(p, t, y, z, hhe_eos, z_eos=z_eos)
+    rho1 = get_rho_pt(p, t, y*(1+dy), z, hhe_eos, z_eos=z_eos)
+
+    drhodt = (rho1 - rho0)/(y*dy)
+
+    return drhodt
+
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
     # ds/dlogT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+    if tab:
+        T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_srho(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
  
     return (S1 - S0)/(T1 - T0)
 
-def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1):
+def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
     # ds/dlogT_{P, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1+ds)
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    if tab:
+        T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_sp(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
 
     return (S1 - S0)/(T1 - T0)
 
@@ -794,10 +811,16 @@ def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01):
     R1 = get_rho_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
     return (_lgp*dp)/(R1 - R0)
 
-def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01):
-    T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-    T1 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
-    return (T1 - T0)/(_lgp*dp)
+def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01, tab=True):
+    if tab:
+        T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp_tab(_s, _lgp*(1-dp), _y, _z, hhe_eos, z_eos=z_eos)
+        T2 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
+    else:
+        T0 = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+        T1 = get_t_sp(_s, _lgp*(1-dp), _y, _z, hhe_eos, z_eos=z_eos)
+        T2 = get_t_sp(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos)
+    return (T2 - T1)/(_lgp*2*dp)
 
 def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho = 0.01):
     T0 = get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos)
@@ -813,8 +836,29 @@ def get_K(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01):
     return -R0*(P1 - P0)/(R1 - R0)
 
 def get_alpha(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1):
+    '''
+    Coefficient of thermal expansion
+    '''
     T0 = 10**_lgt
     T1 = T0*(1+dt)
     R0 = 10**get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua')
     R1 = 10**get_rho_pt(_lgp, np.log10(T1), _y, _z, hhe_eos, z_eos='aqua')
     return R0*((1/R1 - 1/R0)/(T1 - T0))
+
+def get_brunt(s, lgp, lgrho, y, z, g):
+    '''
+    first-order right derivatives b/c that's what the code sees in the
+    hydrostatic.py module
+    '''
+    N_sq = 0 * lgrho
+    rho_bar = 10**((lgrho[ :-1] + lgrho[1: ])/ 2)
+    p_bar = 10**((lgp[ :-1] + lgp[1: ])/ 2)
+    s_bar = (s[ :-1] + s[1: ])/ 2
+    y_bar = (y[ :-1] + y[1: ])/ 2
+    z_bar = (z[ :-1] + z[1: ])/ 2
+    g_bar = (g[ :-1] + g[1: ]) / 2
+    N_sq[1: ] = g_bar**2 * rho_bar / p_bar * (
+        (lgrho[1: ] - lgrho[ :-1]) / (lgp[1: ] - lgp[ :-1])
+        - 1 / mixtures_eos.get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos, z_eos))
+    N_sq[0] = N_sq[1] # doesn't matter
+    return N_sq
