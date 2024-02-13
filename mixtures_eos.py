@@ -779,7 +779,7 @@ def get_drhody_pt(p, t, y, z, hhe_eos, z_eos='aqua', dy=0.1):
 
     return drhodt
 
-def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, tab=True):
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
     # ds/dlogT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1-ds)
@@ -811,7 +811,7 @@ def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True):
 
     return (S2 - S1)/(T2 - T1)
 
-def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01, tab=True):
+def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01):
     # dlogP/dlogrho_S, Y, Z
     #if tab:
     R0 = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
@@ -868,6 +868,6 @@ def get_brunt(s, lgp, lgrho, y, z, g):
     g_bar = (g[ :-1] + g[1: ]) / 2
     N_sq[1: ] = g_bar**2 * rho_bar / p_bar * (
         (lgrho[1: ] - lgrho[ :-1]) / (lgp[1: ] - lgp[ :-1])
-        - 1 / mixtures_eos.get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos, z_eos))
+        - 1 / get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos='cms', z_eos='aqua'))
     N_sq[0] = N_sq[1] # doesn't matter
     return N_sq
