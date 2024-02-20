@@ -120,14 +120,18 @@ get_chit = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), chit_arr, method
 get_grada = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), grada_arr, method='linear', bounds_error=False, fill_value=None)
 get_gamma1 = RGI((y_arr[:,0][:,0], s_arr[0][:,0], p_arr[0,:][0]), gamma1_arr, method='linear', bounds_error=False, fill_value=None)
 
-def get_rhot_sp_tab(s, p, _y, z = 0.0):
-    return get_rho(np.array([_y, s, p]).T), get_t(np.array([_y, s, p]).T)
-
 def get_rho_sp_tab(s, p, _y, z = 0.0):
+    if np.isscalar(s):
+        return float(get_rho(np.array([_y, s, p]).T))
     return get_rho(np.array([_y, s, p]).T)
 
 def get_t_sp_tab(s, p, _y, z = 0.0):
+    if np.isscalar(s):
+        return float(get_t(np.array([_y, s, p]).T))
     return get_t(np.array([_y, s, p]).T)
+
+def get_rhot_sp_tab(s, p, _y, z = 0.0):
+    return get_rho_sp_tab(s, p, _y), get_t_sp_tab(s, p, _y)
 
 # def get_s_rhot_tab(r, t, _y, z = 0.0):
 
@@ -199,17 +203,17 @@ def get_p_rhot_tab(rho, t, y, z=0.0):
 
 def get_s_rhot_tab(rho, t, y, z=0.0):
     if np.isscalar(rho):
-        return float(get_s_rhot_rgi(np.array([rho, t, y]).T))
+        return float(get_s_rhot_rgi(np.array([rho, t, y]).T))/erg_to_kbbar
     else:
-        return get_s_rhot_rgi(np.array([rho, t, y]).T)
+        return get_s_rhot_rgi(np.array([rho, t, y]).T)/erg_to_kbbar
 
 def get_sp_rhot_tab(rho, t, y, z=0.0):
-    return get_s_rhot_tab(rho, t, y), get_p_rhot_tab(rho, t, y)
+    return get_s_rhot_tab(rho, t, y)/erg_to_kbbar, get_p_rhot_tab(rho, t, y)
 
 ### P(s, rho, Y), T(s, rho, Y) tables ###
 #p_srho, t_srho = np.load('%s/cms/p_sry.npy' % CURR_DIR), np.load('%s/cms/t_sry.npy' % CURR_DIR)
 #logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_comb.npy' % CURR_DIR)
-logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_new.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/scvh/srho_base_updated.npy' % CURR_DIR)
 
 # svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
 # logrhovals_srho = np.arange(-6, 1.5, 0.05)
@@ -260,10 +264,10 @@ def err_t_sp(logt, logp, s_val, y, z = 0.0):
 
     return (s_/s_val) - 1
 
-def err_t_srho(lgt, sval, lgr, y, z = 0.0):
-    s = get_s_rhot_tab(lgr, lgt, y)
-    sval /= erg_to_kbbar
-    return s/sval - 1
+def err_t_srho(lgt, sval, rhoval, yval):
+    #logp = get_p_rhot(rhoval, lgt, yval, alg='root')
+    s_test = get_s_rhot_tab(rhoval, lgt, yval)*erg_to_kbbar
+    return (s_test/sval) - 1
 
 ### inversions ###
 
@@ -342,7 +346,10 @@ def get_t_srho(s, rho, y, alg='root'):
     if alg == 'root':
         if np.isscalar(s):
             s, rho, y = np.array([s]), np.array([rho]), np.array([y])
-        guess = cms_eos.get_t_srho_tab(s, rho, y)
+            guess = ideal_xy.get_t_srho(s, rho, y)
+            sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
+            return float(sol.x)
+        guess = ideal_xy.get_t_srho(s, rho, y)
         sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(s, rho, y))
         return sol.x
 
