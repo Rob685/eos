@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import root
 from tqdm import tqdm
 from scipy.interpolate import RegularGridInterpolator as RGI
+import os
 
 """
     This file provides tables for Hydrogen-Water mixtures 
@@ -19,6 +20,8 @@ from scipy.interpolate import RegularGridInterpolator as RGI
     Authors: Roberto Tejada Arevalo
     
 """
+
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def get_s_h(lgp, lgt): # hydrogen entropy
     if np.isscalar(lgp):
@@ -136,9 +139,9 @@ logpvals_sp = np.arange(5, 14.05, 0.05)
 svals_sp = np.arange(5.0, 10.05, 0.05)
 zvals_sp = np.arange(0.05, 1.0, 0.05)
 
-get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logrho_res, method='linear', \
+get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logrho_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logt_res, method='linear', \
+get_t_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logt_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
 
 def get_rho_sp_tab(s, p, z):
@@ -157,7 +160,7 @@ def get_rhot_sp_tab(s, p, z):
     return get_rho_sp_tab(s, p, z), get_t_sp_tab(s, p, z)
 
 def get_u_sp(s, p, z):
-    t = get_t_sp(s, p, z)
+    t = get_t_sp_tab(s, p, z)
     return get_u_pt(p, t, z)
 
 ### p(rho, t), s(rho, t) ###
