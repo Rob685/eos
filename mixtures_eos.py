@@ -6,7 +6,7 @@ from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
 import os
-from eos import ideal_eos, metals_eos, cms_eos, mls_eos, mh13_eos, scvh_eos
+from eos import ideal_eos, metals_eos, cms_eos, cd_eos, mls_eos, mh13_eos, scvh_eos
 import pdb
 
 """
@@ -77,6 +77,8 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
+    elif hhe_eos == 'cd':
+        xy_eos = cd_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
     elif hhe_eos == 'mh13':

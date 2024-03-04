@@ -136,8 +136,8 @@ def get_smix_id_y(Y):
 def get_s_pt(lgp, lgt, y, z=0.0):
     s_h = 10 ** get_s_h(lgt, lgp)
     s_he = 10 ** get_s_he(lgt, lgp)
-    smix = get_smix_id_y(y)
-    return (1 - y) * s_h + y * s_he - smix
+    smix = get_smix_id_y(y) / erg_to_kbbar
+    return (1 - y) * s_h + y * s_he + smix
 
 def get_rho_pt(lgp, lgt, y, z=0.0):
     rho_h = 10 ** get_rho_h(lgt, lgp)
@@ -186,7 +186,7 @@ PBOUNDS = [0, 15]
 XTOL = 1e-8
     
 ###### Temperature ######
-def get_t_sp(s, p, y, hg=True, alg='root'):
+def get_t_sp(s, p, y,  alg='root'):
     if alg == 'root':
         if np.isscalar(s):
             s, p, y = np.array([s]), np.array([p]), np.array([y])
@@ -345,7 +345,7 @@ logp_res_rhot, s_res_rhot = np.load('%s/cd/rhot_base_comb.npy' % CURR_DIR)
 
 logrhovals_rhot = np.arange(-5, 1.5, 0.05)
 logtvals_rhot = np.arange(2.1, 5.1, 0.05)
-yvals_rhot = np.arange(0.05, 1.05, 0.05)
+yvals_rhot = np.arange(0.05, 1.0, 0.05)
 
 get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot, method='linear', \
             bounds_error=False, fill_value=None)
