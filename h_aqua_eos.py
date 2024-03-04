@@ -130,7 +130,7 @@ def get_t_srho(_s, _lgrho, _z):
 
 ### rho(s, p), t(s, p) ###
 
-logrho_res_sp, logt_res_sp = np.load('%s/h_aqua/sp_base.npy')
+logrho_res_sp, logt_res_sp = np.load('%s/h_aqua/sp_base.npy' % CURR_DIR)
 
 logpvals_sp = np.arange(5, 14.05, 0.05)
 svals_sp = np.arange(5.0, 10.05, 0.05)
