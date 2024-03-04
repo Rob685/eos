@@ -91,6 +91,10 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     if hhe_eos == 'scvh':
         s_nid_mix = 0.0
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
+
+    elif hhe_eos == 'cd':
+        s_nid_mix = 0.0
+        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     elif hhe_eos == 'mh13':
         s_nid_mix = cms_eos.get_smix_nd(np.zeros(len(_lgp))+0.246575, _lgp, _lgt)
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
@@ -150,6 +154,8 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         raise Exception('X + Y + Z != 0')
     s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
     if hhe_eos == 'scvh':
+        return (1 - _z)*s_xy + s_z * _z
+    elif hhe_eos == 'cd':
         return (1 - _z)*s_xy + s_z * _z
     elif hhe_eos == 'mh13':
         return (1 - _z)*s_xy + s_z * _z# + s_nid_mix*(1 - _z) - s_id_zmix*_z
@@ -873,3 +879,21 @@ def get_brunt(s, lgp, lgrho, y, z, g):
         - 1 / get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos='cms', z_eos='aqua'))
     N_sq[0] = N_sq[1] # doesn't matter
     return N_sq
+
+def hhe_thermo_consist(s, p, y, hhe_eos):
+    if hhe_eos == 'cms':
+        xy_eos = cms_eos
+    elif hhe_eos == 'cd':
+        xy_eos = cd_eos
+    elif hhe_eos == 'scvh':
+        xy_eos = scvh_eos
+
+    logrho, logt = xy_eos.get_rhot_sp_tab(s, p, y)
+
+    logt_test = np.log10(xy_eos.get_duds_rhoy_srho(s, logrho, y, ds=0.01))
+    logp_test = np.log10(xy_eos.get_dudrho_sy_srho(s, logrho, y, drho=0.01))
+
+    err_T = (logt - logt_test)/logt
+    err_P = (p - logp_test)/p
+
+    return err_T, err_P
