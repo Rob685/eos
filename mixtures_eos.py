@@ -86,7 +86,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
     else:
-        raise Exception('Only cms, mls, mh13, scvh (CMS19, MLS22, MH13, and SCvH95) allowed for now')
+        raise Exception('Only cms, mls, mh13, scvh (CMS19+HG23, MLS22+HG23, MH13, and SCvH95) allowed for now')
 
     if hhe_eos == 'scvh':
         s_nid_mix = 0.0
@@ -182,7 +182,7 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     elif hhe_eos == 'cd':
         xy_eos = cd_eos
     else:
-        raise Exception('Only cms, cd, mls, mh13, scvh (CMS19, CD21, MLS22, MH13, and SCvH95) allowed for now')
+        raise Exception('Only cms, cd, mls, mh13, scvh (CMS19+HG23, CD21, MLS22+HG23, MH13, and SCvH95) allowed for now')
 
     if hhe_eos == 'scvh':
         rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y)
@@ -205,6 +205,8 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
+    elif hhe_eos == 'cd':
+        xy_eos = cd_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
     elif hhe_eos == 'mh13':
@@ -212,7 +214,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos 
     else:
-        raise Exception('Only cms, mls, mh13, scvh (CMS19, MLS22, MH13, and SCvH95) allowed for now')
+        raise Exception('Only cms, cd, mls, mh13, scvh (CMS19+HG23, CD21, MLS22+HG23, MH13, and SCvH95) allowed for now')
 
     if z_eos is not None:
         u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, z_eos)
