@@ -64,9 +64,24 @@ def guarded_log(x):
         return x * np.log(x)
     return np.array([guarded_log(x_) for x_ in x])
 
+def get_smix_id_y(Y):
+    #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
+    xhe = Y_to_n(Y)
+    xh = 1 - xhe
+    q = mh*xh + mhe*xhe
+    return -1*(guarded_log(xh) + guarded_log(xhe)) / q
+
+def get_smix_id_yz(Y, Z, mz):
+    #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
+    xh = x_H(Y, Z, mz)
+    xz = x_Z(Y, Z, mz)
+    xhe = 1 - xh - xz
+    q = mh*xh + mhe*xhe + mz*xz
+    return -1*(guarded_log(xh) + guarded_log(xhe) + guarded_log(xz)) / q
+
 #### P, _lgt mixtures ####
 
-def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
+def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     """
     This calculates the entropy for a metallicity mixture.
     The cms and mls EOSes already contain the HG23 non-ideal corrections
@@ -92,15 +107,21 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         s_nid_mix = 0.0
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
 
-    elif hhe_eos == 'cd':
-        s_nid_mix = 0.0
-        s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y)
+    # elif hhe_eos == 'cd':
+    #     s_nid_mix = 0.0
+    #     s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y)
     elif hhe_eos == 'mh13':
         s_nid_mix = cms_eos.get_smix_nd(np.zeros(len(_lgp))+0.246575, _lgp, _lgt)
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     else:
         #if hg:
-        s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
+        if hhe_eos == 'cms':
+            if hg:
+                s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
+            else:
+                s_nid_mix = 0.0
+        elif hhe_eos == 'cd':
+            s_nid_mix = 0.0
 
         if hhe_eos == 'mls':
             s_h = xy_eos.get_s_h(_lgt, _lgp)
@@ -154,22 +175,23 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     if np.any(xh + xhe + xz) != 1.0:
         raise Exception('X + Y + Z != 0')
 
-    qz = xh*mh + xhe*mh3 + xz*mz
-    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / qz /  erg_to_kbbar
+    #qz = xh*mh + xhe*mh3 + xz*mz
+    s_id_zmix = get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
     if hhe_eos == 'scvh':
         return (1 - _z)*s_xy + s_z * _z
     elif hhe_eos == 'cd':
-        return (1 - _z)*s_xy + s_z * _z
+        #return (1 - _z)*s_xy + s_z * _z - get_smix_id_y(y) + s_id_zmix
+        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_id_zmix
     elif hhe_eos == 'mh13':
         return (1 - _z)*s_xy + s_z * _z# + s_nid_mix*(1 - _z) - s_id_zmix*_z
     elif hhe_eos == 'cms':
-        if hg:
-            if np.isscalar(_lgp):
-                return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix)
+        #if hg:
+        if np.isscalar(_lgp):
+            return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
 
-            return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) - s_id_zmix
-        else:
-            return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z #+ s_nid_mix*(1 - _z) - s_id_zmix
+        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
+        # else:
+        #     return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z #+ s_nid_mix*(1 - _z) - s_id_zmix
 
 def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     """
