@@ -129,9 +129,11 @@ def guarded_log(x):
     return np.array([guarded_log(x_) for x_ in x])
 
 def get_smix_id_y(Y):
+    #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
     xhe = Y_to_n(Y)
     xh = 1 - xhe
-    return -1*(guarded_log(xh) + guarded_log(xhe))
+    q = mh*xh + mhe*xhe
+    return -1*(guarded_log(xh) + guarded_log(xhe)) / q
 
 def get_s_pt(lgp, lgt, y, z=0.0):
     s_h = 10 ** get_s_h(lgt, lgp)
