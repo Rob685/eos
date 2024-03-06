@@ -725,9 +725,9 @@ def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
 
         else:
             if np.isscalar(_s):
-                return float(get_p_rgi_srho_cms_hg(np.array([_s, _lgrho, _y, _z]).T))
+                return float(get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T))
             else:
-                return get_p_rgi_srho_cms_hg(np.array([_s, _lgrho, _y, _z]).T)
+                return get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
