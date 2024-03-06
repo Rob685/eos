@@ -153,7 +153,9 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     xhe = 1 - xh - xz
     if np.any(xh + xhe + xz) != 1.0:
         raise Exception('X + Y + Z != 0')
-    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / erg_to_kbbar
+
+    qz = xh*mh + xhe*mh3 + xz*mz
+    s_id_zmix = (guarded_log(xh) + guarded_log(xz) + guarded_log(xhe)) / qz /  erg_to_kbbar
     if hhe_eos == 'scvh':
         return (1 - _z)*s_xy + s_z * _z
     elif hhe_eos == 'cd':
