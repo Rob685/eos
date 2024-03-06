@@ -126,6 +126,13 @@ def guarded_log(x):
         elif x  < 0:
             raise ValueError('a')
         return x * np.log(x)
+    # else:
+    #     if np.any(x) == 0:
+    #         return 0
+    #     elif np.any(x)  < 0:
+    #         raise ValueError('a')
+    #     return x * np.log(x)
+
     return np.array([guarded_log(x_) for x_ in x])
 
 def get_smix_id_y(Y):
