@@ -262,7 +262,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         u_xy = xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
     else:
-        u_xy = 10**xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
+        u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
         
         #return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
@@ -818,19 +818,19 @@ def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
     return dudz_srhoy
 
 # du/ds_(rho, Y) = T test
-def get_duds_rhoy_srho(s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True):
-    S1 = s/erg_to_kbbar
+def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True):
+    S1 = _s/erg_to_kbbar
     S2 = S1*(1+ds)
-    U0 = 10**get_u_srho(S1*erg_to_kbbar, rho, y, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    U1 = 10**get_u_srho(S2*erg_to_kbbar, rho, y, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U0 = 10**get_u_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U1 = 10**get_u_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     return (U1 - U0)/(S1*ds)
 
-def get_dudrho_sy_srho(s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho=0.1, hg=True):
-    R1 = 10**rho
+def get_dudrho_sy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho=0.1, hg=True):
+    R1 = 10**_lgrho
     R2 = R1*(1+drho)
     #rho1 = np.log10((10**rho)*(1+drho))
-    U0 = 10**get_u_srho(s, np.log10(R1), y, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    U1 = 10**get_u_srho(s, np.log10(R2), y, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U0 = 10**get_u_srho_tab(_s, np.log10(R1), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U1 = 10**get_u_srho_tab(_s, np.log10(R2), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     #return (U1 - U0)/(R1*drho)
     return (U1 - U0)/((1/R1) - (1/R2))
 
