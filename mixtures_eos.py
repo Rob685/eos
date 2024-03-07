@@ -255,17 +255,17 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
         u_z = 1.0 # doesn't matter because _z should be 0
         _z = 0.0
     # Calculating energy of mixtures via the volume addition law.
-    if hhe_eos == 'scvh':
-        u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
-        return np.log10((1 - _z)*u_xy + _z*u_z)
-    elif hhe_eos == 'mh13':
+    # if hhe_eos == 'scvh':
+    #     u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
+    #     return np.log10((1 - _z)*u_xy + _z*u_z)
+    if hhe_eos == 'mh13':
         u_xy = xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
     else:
-        u_h = 10**xy_eos.get_logu_h(_lgt, _lgp) # MJ/kg to erg/g
-        u_he = 10**xy_eos.get_logu_he(_lgt, _lgp)
+        u_xy = 10**xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
+        return np.log10((1 - _z)*u_xy + _z*u_z)
         
-        return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
+        #return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
 
 ### error functions ###
 
@@ -790,7 +790,8 @@ def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
         else:
             return get_t_rgi_srho_mh13(np.array([_s, _lgrho, _y, _z]).T)
 
-
+def get_pt_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
+    return get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg), get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
 
 def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
     _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), get_t_srho_tab(_s, _lgrho , _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
