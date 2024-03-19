@@ -115,7 +115,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
     else:
         #if hg:
-        if hhe_eos == 'cms':
+        if hhe_eos == 'cms' or hhe_eos == 'mls':
             if hg:
                 s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
             else:
