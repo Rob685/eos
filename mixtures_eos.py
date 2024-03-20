@@ -188,19 +188,19 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
         return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_id_zmix
     elif hhe_eos == 'mh13':
         return (1 - _z)*s_xy + s_z * _z# + s_nid_mix*(1 - _z) - s_id_zmix*_z
-    elif hhe_eos == 'cms':
+    elif hhe_eos == 'cms' or hhe_eos == 'mls':
         #if hg:
         if np.isscalar(_lgp):
             return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
 
         return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
 
-    elif hhe_eos == 'mls':
-        #if hg:
-        if np.isscalar(_lgp):
-            return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
+    # elif hhe_eos == 'mls':
+    #     #if hg:
+    #     if np.isscalar(_lgp):
+    #         return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
 
-        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
+    #     return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
         # else:
         #     return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z #+ s_nid_mix*(1 - _z) - s_id_zmix
 
@@ -225,7 +225,7 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
 
     if hhe_eos == 'scvh':
         rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y)
-    elif hhe_eos == 'cms':
+    elif hhe_eos == 'cms' or hhe_eos == 'mls':
         rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y, hg=hg)
     else:
         rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y)

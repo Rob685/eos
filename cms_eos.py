@@ -181,12 +181,6 @@ def guarded_log(x):
         elif x  < 0:
             raise ValueError('a')
         return x * np.log(x)
-    # else:
-    #     if np.any(x) == 0:
-    #         return 0
-    #     elif np.any(x)  < 0:
-    #         raise ValueError('a')
-    #     return x * np.log(x)
 
     return np.array([guarded_log(x_) for x_ in x])
 
@@ -279,7 +273,8 @@ All functions should be the same for ease of use."""
 
 #### S, P ####
 
-logrho_res_sp, logt_res_sp = np.load('%s/cms/sp_base_comb.npy' % CURR_DIR)
+#logrho_res_sp, logt_res_sp = np.load('%s/cms/sp_base_comb.npy' % CURR_DIR)
+logrho_res_sp, logt_res_sp = np.load('%s/cms/sp_base_comb_hg_corr.npy' % CURR_DIR) #base_comb was last table
 logrho_res_sp_nohg, logt_res_sp_nohg = np.load('%s/cms/sp_base_comb_nohg.npy' % CURR_DIR)
 
 svals_sp = np.arange(5.5, 10.05, 0.05)
@@ -326,7 +321,8 @@ def get_rhot_sp_tab(s, p, y, z=0.0, hg=True):
 
 #### Rho, T ####
 
-logp_res_rhot, s_res_rhot = np.load('%s/cms/rhot_base_comb.npy' % CURR_DIR)
+#logp_res_rhot, s_res_rhot = np.load('%s/cms/rhot_base_comb.npy' % CURR_DIR)
+logp_res_rhot, s_res_rhot = np.load('%s/cms/rhot_base_comb_hg_corr.npy' % CURR_DIR)
 logp_res_rhot_nohg, s_res_rhot_nohg = np.load('%s/cms/rhot_base_comb_nohg.npy' % CURR_DIR)
 
 logrhovals_rhot = np.arange(-5, 1.5, 0.05)
@@ -369,7 +365,7 @@ def get_s_rhot_tab(rho, t, y, z=0.0, hg=True):
 
 
 #### S, Rho ####
-logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/cms/srho_base_comb_hg_corr.npy' % CURR_DIR)
 logp_res_srho_nohg, logt_res_srho_nohg = np.load('%s/cms/srho_base_comb_nohg.npy' % CURR_DIR)
 
 svals_srho = np.arange(5.5, 9.05, 0.05) # new grid

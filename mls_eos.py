@@ -173,11 +173,12 @@ def guarded_log(x): # necessary for entropy of mixing calculations
 
 ### isolating the ideal and interacting entropy of mixing terms from HG23 ###
 
-def get_smix_id_y(Y): # ideal compnent of the entropy of mixing
+def get_smix_id_y(Y):
     #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
     xhe = Y_to_n(Y)
     xh = 1 - xhe
-    return -1*(guarded_log(xh) + guarded_log(xhe))
+    q = mh*xh + mhe*xhe
+    return -1*(guarded_log(xh) + guarded_log(xhe)) / q
 
 def get_smix_nd(Y, lgp, lgt): # non-ideal component of the entropy of mixing
 
@@ -187,16 +188,22 @@ def get_smix_nd(Y, lgp, lgt): # non-ideal component of the entropy of mixing
 
     return smix_hg23 - smix_id
 
-def get_s_pt(lgp, lgt, y, z=0.0):
+def get_s_pt(lgp, lgt, y, z=0.0, hg=True):
     s_h = get_s_h(lgt, lgp)
     s_he = 10 ** get_s_he(lgt, lgp)
-    smix = smix_interp(lgt, lgp)*(1 - y)*y
+    if hg:
+        smix = smix_interp(lgt, lgp)*(1 - y)*y
+    else:
+        smix = get_smix_id_y(y) / erg_to_kbbar
     return (1 - y) * s_h + y * s_he + smix #
 
-def get_rho_pt(lgp, lgt, y, z=0.0):
+def get_rho_pt(lgp, lgt, y, z=0.0, hg=True):
     rho_h = 10 ** get_rho_h(lgt, lgp)
     rho_he = 10 ** get_rho_he(lgt, lgp)
-    vmix = vmix_interp(lgt, lgp)
+    if hg:
+        vmix = vmix_interp(lgt, lgp)
+    else:
+        vmix = 0.0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
 def get_u_pt(lgp, lgt, y, z=0.0):
@@ -206,11 +213,15 @@ def get_u_pt(lgp, lgt, y, z=0.0):
 
 ###### inverted tables ######
 
-logrho_res_sp, logt_res_sp = np.load('%s/mls/sp_base_comb.npy' % CURR_DIR)
+logrho_res_sp, logt_res_sp = np.load('%s/mls/sp_base_comb_hg_corr.npy' % CURR_DIR)
 
-svals_sp = np.arange(5.25, 10.1, 0.05)
-logpvals_sp = np.arange(5.5, 14, 0.05)
-yvals_sp = np.arange(0.05, 1.05, 0.05)
+# svals_sp = np.arange(5.25, 10.1, 0.05) # old mls22 grid
+# logpvals_sp = np.arange(5.5, 14, 0.05)
+# yvals_sp = np.arange(0.05, 1.05, 0.05)
+
+svals_sp = np.arange(5.5, 10.05, 0.05)
+logpvals_sp = np.arange(5.5, 14.05, 0.05)
+yvals_sp = np.arange(0.05, 1.0, 0.05)
 
 get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, yvals_sp), logrho_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
@@ -232,14 +243,39 @@ def get_t_sp_tab(s, p, y, z=0.0):
 def get_rhot_sp_tab(s, p, y, z=0.0):
     return get_rho_sp_tab(s, p, y), get_t_sp_tab(s, p, y)
 
+### P(rho, T, Y), s(rho, T, Y) tables ###
+
+logp_res_rhot, s_res_rhot = np.load('%s/mls/rhot_base_comb_hg_corr.npy' % CURR_DIR)
+
+logrhovals_rhot = np.arange(-5, 1.5, 0.05)
+logtvals_rhot = np.arange(2.1, 5.1, 0.05)
+yvals_rhot = np.arange(0.05, 1.0, 0.05)
+
+get_p_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), s_res_rhot, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_p_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_p_rhot_rgi(np.array([rho, t, y]).T))
+    else:
+        return get_p_rhot_rgi(np.array([rho, t, y]).T)
+
+def get_s_rhot_tab(rho, t, y, z=0.0):
+    if np.isscalar(rho):
+        return float(get_s_rhot_rgi(np.array([rho, t, y]).T))
+    else:
+        return get_s_rhot_rgi(np.array([rho, t, y]).T)
+
 
 
 ### P(s, rho, Y), T(s, rho, Y) tables ###
-logp_res_srho, logt_res_srho = np.load('%s/mls/srho_base_comb.npy' % CURR_DIR)
+logp_res_srho, logt_res_srho = np.load('%s/mls/srho_base_comb_hg_corr.npy' % CURR_DIR)
 
-svals_srho = np.arange(5.0, 10.1, 0.05) # new grid
-logrhovals_srho = np.arange(-5, 1.5, 0.05)
-yvals_srho = np.arange(0.05, 1.05, 0.05)
+svals_srho = np.arange(5.5, 9.05, 0.05)
+logrhovals_srho = np.linspace(-4.5, 2.0, 100)
+yvals_srho = np.arange(0.05, 1.0, 0.05)
 
 get_p_rgi = RGI((svals_srho, logrhovals_srho, yvals_srho), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
@@ -258,31 +294,6 @@ def get_t_srho_tab(s, r, y, z=0.0):
     else:
         return get_t_rgi(np.array([s, r, y]).T)
 
-
-### P(rho, T, Y), s(rho, T, Y) tables ###
-
-logp_res_rhot, s_res_rhot = np.load('%s/mls/rhot_base_comb.npy' % CURR_DIR)
-
-logrhovals_rhot = np.arange(-5, 1.5, 0.05)
-logtvals_rhot = np.arange(2.1, 5.1, 0.05)
-yvals_rhot = np.arange(0.05, 1.05, 0.05)
-
-get_p_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), logp_res_rhot, method='linear', \
-            bounds_error=False, fill_value=None)
-get_s_rhot_rgi = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot), s_res_rhot, method='linear', \
-            bounds_error=False, fill_value=None)
-
-def get_p_rhot_tab(rho, t, y, z=0.0):
-    if np.isscalar(rho):
-        return float(get_p_rhot_rgi(np.array([rho, t, y]).T))
-    else:
-        return get_p_rhot_rgi(np.array([rho, t, y]).T)
-
-def get_s_rhot_tab(rho, t, y, z=0.0):
-    if np.isscalar(rho):
-        return float(get_s_rhot_rgi(np.array([rho, t, y]).T))
-    else:
-        return get_s_rhot_rgi(np.array([rho, t, y]).T)
 
 ### error functions ###
 
