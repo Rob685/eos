@@ -408,6 +408,7 @@ def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
 ###### S, P ######
 
 svals_sp_aqua = np.arange(3.0, 9.1, 0.1)
+svals_sp_aqua_cms = np.arange(4.0, 9.1, 0.1)
 svals_sp_aqua_cd = np.arange(4.0, 9.1, 0.1)
 logpvals_sp_aqua = np.arange(6, 14.1, 0.1)
 yvals_sp = np.arange(0.05, 0.95, 0.1)
@@ -417,7 +418,7 @@ yvals_sp_scvh = np.arange(0.15, 0.75, 0.05)
 yvals_sp_mh13 = np.arange(0.246575, 0.95, 0.1)
 #zvals_sp = np.arange(0, 1.0, 0.1)
 
-logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended.npy' % CURR_DIR)
+logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_extended_hg.npy' % CURR_DIR)
 
 logrho_res_sp_cms_nohg_aqua, logt_res_sp_cms_nohg_aqua = np.load('%s/cms/sp_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
@@ -429,9 +430,9 @@ logrho_res_sp_mls_aqua, logt_res_sp_mls_aqua = np.load('%s/mls/sp_base_z_aqua_ex
 
 logrho_res_sp_mh13_aqua, logt_res_sp_mh13_aqua = np.load('%s/mh13/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_rho_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
+get_rho_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_cms = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
+get_t_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_rho_rgi_sp_cms_nohg = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_nohg_aqua, method='linear', \
@@ -549,7 +550,7 @@ logtvals_rhot = np.arange(2, 5.05, 0.05)
 yvals_rhot = np.arange(0.05, 0.95, 0.1)
 zvals_rhot = np.arange(0, 1.0, 0.1)
 
-logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_hg.npy' % CURR_DIR)
 
 logp_res_rhot_cms_nohg_aqua, s_res_rhot_cms_nohg_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
