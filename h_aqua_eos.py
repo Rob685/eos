@@ -58,7 +58,7 @@ def get_rho_pt(lgp, lgt, z): # density of mixture
     
     return np.log10(1/((1 - z)/rho_h + z/rho_z))
 
-def get_logu_pt(lgp, lgt, z): # internal energy of mixture
+def get_u_pt(lgp, lgt, z): # internal energy of mixture
     u_h = 10**get_logu_h(lgp, lgt)
     u_z = 10**aqua_eos.get_u_pt_tab(lgp, lgt)
 
