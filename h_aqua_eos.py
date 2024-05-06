@@ -4,6 +4,9 @@ from scipy.optimize import root
 from tqdm import tqdm
 from scipy.interpolate import RegularGridInterpolator as RGI
 import os
+from astropy import units as u
+from astropy.constants import k_B
+from astropy.constants import u as amu
 
 """
     This file provides tables for Hydrogen-Water mixtures 
@@ -21,7 +24,30 @@ import os
     
 """
 
+mp = amu.to('g') # grams
+kb = k_B.to('erg/K') # ergs/K
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
+
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+mh = 1
+mz = 18.01528
+
+def Y_to_x(_z):
+    ''' Change between mass and number fraction OF WATER'''
+    return ((_z/mz)/(((1 - _z)/mh) + (_z/mz)))
+
+def guarded_log(x):
+    ''' Used to calculate ideal enetropy of mixing: xlogx'''
+    if np.isscalar(x):
+        if x == 0:
+            return 0
+        elif x  < 0:
+            raise ValueError('Number fraction went negative.')
+        return x * np.log(x)
+    return np.array([guarded_log(x_) for x_ in x])
+
+###### HYDROGEN COMPONENTS ######
 
 def get_s_h(lgp, lgt): # hydrogen entropy
     if np.isscalar(lgp):
@@ -40,11 +66,13 @@ def get_logu_h(lgp, lgt): # hydrogen internal energy
         return float(cms_eos.get_logu_h_rgi(np.array([lgt, lgp]).T))
     else:
         return cms_eos.get_logu_h_rgi(np.array([lgt, lgp]).T)
+
+###### MIXTURES ######
     
-def get_s_id(z): # indeal entropy of mixing
-    xz = cms_eos.Y_to_n(z)
+def get_s_id(_z): # indeal entropy of mixing
+    xz = Y_to_x(_z)
     xh = 1 - xz
-    return (cms_eos.guarded_log(xh) + cms_eos.guarded_log(xz))/erg_to_kbbar
+    return (guarded_log(xh) + guarded_log(xz))/erg_to_kbbar
     
 def get_s_pt(lgp, lgt, z, sid=True): # entropy of mixutre
     s_h = get_s_h(lgp, lgt)
@@ -246,23 +274,18 @@ def get_dsdz_rhop_srho(_s, _lgrho, _z, ds=0.01, dz=0.01):
     P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _z*(1+dz))     
     
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
-    #dpdy_srhoz = (P2 - P0)/(_y*dy)
     dpdz_srhoy = (P3 - P0)/(_z*dz)
 
-    #dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
-    dsdz_rhopy = -dpdz_srhoy/dpds_rhoyz # triple product rule
+    dsdz_rhopy = -dpdz_srhoy/dpds_rhoyz
 
-    return dsdz_rhopy #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
+    return dsdz_rhopy
 
 def get_dsdz_pt(_lgp, _lgt, _z, dz=0.01):
     S0 = get_s_pt(_lgp, _lgt, _z)
-    #S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
-    S2 = get_s_pt(_lgp, _lgt, _z*(1+dz))
+    S1 = get_s_pt(_lgp, _lgt, _z*(1+dz))
+    S2 = get_s_pt(_lgp, _lgt, _z*(1-dz))
 
-    #dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
-    dsdz_ptz = (S2 - S0)/(_z*dz)
-
-    return dsdz_ptz
+    return (S1 - S2)/(2*_z*dz)
 
 def get_c_s(_s, _lgp, _z,  dp=0.1):
     P0 = 10**_lgp

@@ -41,7 +41,7 @@ mhe = 4.0026
 ###### H-He mixing ######
 
 def Y_to_n(_y):
-    ''' Change between mass and number fraction '''
+    ''' Change between mass and number fraction OF HELIUM'''
     return ((_y/mhe)/(((1 - _y)/mh) + (_y/mhe)))
 def n_to_Y(x):
     return (mhe * x)/(1 + 3.0026*x)
