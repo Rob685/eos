@@ -116,7 +116,7 @@ PBOUNDS = [0, 15]
 
 XTOL = 1e-16
 
-ideal_xy = ideal_eos.IdealHHeMix(m_he=4)
+ideal_xy = ideal_eos.IdealHHeMix(m_he=mz)
 ###### S, P ######
 
 def get_t_sp(_s, _lgp, _z):
@@ -126,9 +126,10 @@ def get_t_sp(_s, _lgp, _z):
         guess = ideal_xy.get_t_sp(_s, _lgp, _z)
         sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _z))
         return float(sol.x)
-    guess = ideal_xy.get_t_sp(_s, _lgp, _z)
-    sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _z))
-    return sol.x
+    #guess = ideal_xy.get_t_sp(_s, _lgp, _z)
+    #sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _z))
+    sol = np.array([get_t_sp(s, lgp, z) for s, lgp, z in zip(_s, _lgp, _z)])
+    return sol
     
 def get_p_rhot(_lgrho, _lgt, _z):
     #if alg == 'root':
@@ -137,9 +138,9 @@ def get_p_rhot(_lgrho, _lgt, _z):
         guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
         sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _z))
         return float(sol.x)
-    guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
-    sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _z))
-    return sol.x
+    #guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
+    sol = np.array([get_p_rhot(rho, t, z) for rho, t, z in zip(_lgrho, _lgt, _z)])
+    return sol
 
 def get_s_rhot(_lgrho, _lgt, _z):
     logp = get_p_rhot(_lgrho, _lgt, _z)
@@ -163,9 +164,9 @@ def get_t_srho(_s, _lgrho, _z):
 
 logrho_res_sp, logt_res_sp = np.load('%s/h_aqua/sp_base.npy' % CURR_DIR)
 
-logpvals_sp = np.arange(5, 14.05, 0.05)
-svals_sp = np.arange(5.0, 10.05, 0.05)
-zvals_sp = np.arange(0.05, 1.0, 0.05)
+logpvals_sp = np.arange(6, 14.1, 0.1)
+svals_sp = np.arange(2.0, 9.05, 0.05)
+zvals_sp = np.arange(0.01, 1.0, 0.01)
 
 get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logrho_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
