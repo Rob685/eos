@@ -4,6 +4,9 @@ from scipy.optimize import root
 from tqdm import tqdm
 from scipy.interpolate import RegularGridInterpolator as RGI
 import os
+from astropy import units as u
+from astropy.constants import k_B
+from astropy.constants import u as amu
 
 """
     This file provides tables for Hydrogen-Water mixtures 
@@ -21,7 +24,30 @@ import os
     
 """
 
+mp = amu.to('g') # grams
+kb = k_B.to('erg/K') # ergs/K
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
+
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+mh = 1
+mz = 18.01528
+
+def Y_to_x(_z):
+    ''' Change between mass and number fraction OF WATER'''
+    return ((_z/mz)/(((1 - _z)/mh) + (_z/mz)))
+
+def guarded_log(x):
+    ''' Used to calculate ideal enetropy of mixing: xlogx'''
+    if np.isscalar(x):
+        if x == 0:
+            return 0
+        elif x  < 0:
+            raise ValueError('Number fraction went negative.')
+        return x * np.log(x)
+    return np.array([guarded_log(x_) for x_ in x])
+
+###### HYDROGEN COMPONENTS ######
 
 def get_s_h(lgp, lgt): # hydrogen entropy
     if np.isscalar(lgp):
@@ -40,11 +66,13 @@ def get_logu_h(lgp, lgt): # hydrogen internal energy
         return float(cms_eos.get_logu_h_rgi(np.array([lgt, lgp]).T))
     else:
         return cms_eos.get_logu_h_rgi(np.array([lgt, lgp]).T)
+
+###### MIXTURES ######
     
-def get_s_id(z): # indeal entropy of mixing
-    xz = cms_eos.Y_to_n(z)
+def get_s_id(_z): # indeal entropy of mixing
+    xz = Y_to_x(_z)
     xh = 1 - xz
-    return (cms_eos.guarded_log(xh) + cms_eos.guarded_log(xz))/erg_to_kbbar
+    return (guarded_log(xh) + guarded_log(xz))/erg_to_kbbar
     
 def get_s_pt(lgp, lgt, z, sid=True): # entropy of mixutre
     s_h = get_s_h(lgp, lgt)
@@ -88,7 +116,7 @@ PBOUNDS = [0, 15]
 
 XTOL = 1e-16
 
-ideal_xy = ideal_eos.IdealHHeMix(m_he=4)
+ideal_xy = ideal_eos.IdealHHeMix(m_he=mz)
 ###### S, P ######
 
 def get_t_sp(_s, _lgp, _z):
@@ -98,9 +126,10 @@ def get_t_sp(_s, _lgp, _z):
         guess = ideal_xy.get_t_sp(_s, _lgp, _z)
         sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _z))
         return float(sol.x)
-    guess = ideal_xy.get_t_sp(_s, _lgp, _z)
-    sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _z))
-    return sol.x
+    #guess = ideal_xy.get_t_sp(_s, _lgp, _z)
+    #sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _z))
+    sol = np.array([get_t_sp(s, lgp, z) for s, lgp, z in zip(_s, _lgp, _z)])
+    return sol
     
 def get_p_rhot(_lgrho, _lgt, _z):
     #if alg == 'root':
@@ -109,9 +138,9 @@ def get_p_rhot(_lgrho, _lgt, _z):
         guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
         sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _z))
         return float(sol.x)
-    guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
-    sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _z))
-    return sol.x
+    #guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _z)
+    sol = np.array([get_p_rhot(rho, t, z) for rho, t, z in zip(_lgrho, _lgt, _z)])
+    return sol
 
 def get_s_rhot(_lgrho, _lgt, _z):
     logp = get_p_rhot(_lgrho, _lgt, _z)
@@ -135,9 +164,9 @@ def get_t_srho(_s, _lgrho, _z):
 
 logrho_res_sp, logt_res_sp = np.load('%s/h_aqua/sp_base.npy' % CURR_DIR)
 
-logpvals_sp = np.arange(5, 14.05, 0.05)
-svals_sp = np.arange(5.0, 10.05, 0.05)
-zvals_sp = np.arange(0.05, 1.0, 0.05)
+logpvals_sp = np.arange(6, 14.1, 0.1)
+svals_sp = np.arange(2.0, 9.05, 0.05)
+zvals_sp = np.arange(0.01, 1.0, 0.01)
 
 get_rho_rgi_sp = RGI((svals_sp, logpvals_sp, zvals_sp), logrho_res_sp, method='linear', \
             bounds_error=False, fill_value=None)
@@ -246,23 +275,18 @@ def get_dsdz_rhop_srho(_s, _lgrho, _z, ds=0.01, dz=0.01):
     P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _z*(1+dz))     
     
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
-    #dpdy_srhoz = (P2 - P0)/(_y*dy)
     dpdz_srhoy = (P3 - P0)/(_z*dz)
 
-    #dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
-    dsdz_rhopy = -dpdz_srhoy/dpds_rhoyz # triple product rule
+    dsdz_rhopy = -dpdz_srhoy/dpds_rhoyz
 
-    return dsdz_rhopy #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
+    return dsdz_rhopy
 
 def get_dsdz_pt(_lgp, _lgt, _z, dz=0.01):
     S0 = get_s_pt(_lgp, _lgt, _z)
-    #S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
-    S2 = get_s_pt(_lgp, _lgt, _z*(1+dz))
+    S1 = get_s_pt(_lgp, _lgt, _z*(1+dz))
+    S2 = get_s_pt(_lgp, _lgt, _z*(1-dz))
 
-    #dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
-    dsdz_ptz = (S2 - S0)/(_z*dz)
-
-    return dsdz_ptz
+    return (S1 - S2)/(2*_z*dz)
 
 def get_c_s(_s, _lgp, _z,  dp=0.1):
     P0 = 10**_lgp
