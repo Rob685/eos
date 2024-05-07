@@ -11,13 +11,13 @@ import pdb
 
 """
     This file provides access to H-He and H-He-Z mixtures.
-    The mixtures are calculated via the volume addition law. 
+    The mixtures are calculated via the volume addition law.
     For convenience, please use the _tab functions insteaad of the inversion functions.
     The _tab functions provide direct access to pre-calculated tables, and the inversion functions
-    perform direct inversions from the P, T tables. 
-    
+    perform direct inversions from the P, T tables.
+
     Author: Roberto Tejada Arevalo
-    
+
 """
 
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -85,10 +85,10 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     """
     This calculates the entropy for a metallicity mixture.
     The cms and mls EOSes already contain the HG23 non-ideal corrections
-    to the entropy. These terms contain the ideal entropy of mixing, so 
-    for metal mixures, we subtract the H-He ideal entropy of mixing and 
-    add back the metal mixture entropy of mixing plus the non-ideal 
-    correction. 
+    to the entropy. These terms contain the ideal entropy of mixing, so
+    for metal mixures, we subtract the H-He ideal entropy of mixing and
+    add back the metal mixture entropy of mixing plus the non-ideal
+    correction.
     """
     if hhe_eos == 'cms':
         xy_eos = cms_eos
@@ -142,7 +142,7 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
         mg = 24.305
         si = 28.085
         o3 = 48.000
-        mz = mg+si+o3 
+        mz = mg+si+o3
         xz = x_Z(_y, _z, mz)
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='ppv')
@@ -241,7 +241,7 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
 def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     """
     This calculates the log10 of the specific internal energy.
-    The volume addition law is used for all EOSes. There are 
+    The volume addition law is used for all EOSes. There are
     no non-ideal correction terms for the internal energy yet.
     """
     if hhe_eos == 'cms':
@@ -253,7 +253,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     elif hhe_eos == 'mh13':
         xy_eos = mh13_eos
     elif hhe_eos == 'scvh':
-        xy_eos = scvh_eos 
+        xy_eos = scvh_eos
     else:
         raise Exception('Only cms, cd, mls, mh13, scvh (CMS19+HG23, CD21, MLS22+HG23, MH13, and SCvH95) allowed for now')
 
@@ -272,7 +272,7 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     else:
         u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
         return np.log10((1 - _z)*u_xy + _z*u_z)
-        
+
         #return np.log10((1 - _y)*(1 - _z) * u_h + _y * (1 - _z)* u_he + _z * u_z)
 
 ### error functions ###
@@ -850,8 +850,8 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))     
-    
+    #P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))
+
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
     dpdy_srhoz = (P2 - P0)/(_y*dy)
     #dpdz_srhoy = (P3 - P0)/(_z*dz)
@@ -868,8 +868,8 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.
     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     #P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z)
-    P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)     
-    
+    P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
     dpds_rhoyz = (P1 - P0)/(S1 - S0)
     #dpdy_srhoz = (P2 - P0)/(_y*dy)
     dpdz_srhoy = (P3 - P0)/(_z*dz)
@@ -939,7 +939,7 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True):
     dtdy_srhoz = (T1 - T0)/(_y*dy)
     #dtdz_srhoy = (T2 - T0)/(_z*dz)
     return dtdy_srhoz
-    
+
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
@@ -968,6 +968,15 @@ def get_drhody_pt(p, t, y, z, hhe_eos, z_eos='aqua', dy=0.1, hg=True):
 
     return drhodt
 
+def get_drhodz_pt(p, t, y, z, hhe_eos, z_eos='aqua', dz=0.1, hg=True):
+    #y = cms.n_to_Y(x)
+    rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(p, t, y, z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+    drhodt = (rho1 - rho0)/(z*dz)
+
+    return drhodt
+
 def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True):
     # ds/dlogT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
@@ -981,7 +990,7 @@ def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True
         #T0 = get_t_srho(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
         T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
         T2 = get_t_srho(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
- 
+
     return (S2 - S1)/(T2 - T1)
 
 def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True):
