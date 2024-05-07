@@ -154,9 +154,10 @@ def get_t_srho(_s, _lgrho, _z):
         sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _z))
         return float(sol.x)
 
-    guess = ideal_xy.get_t_srho(_s, _lgrho, _z)
-    sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _z))
-    return sol.x
+    # guess = ideal_xy.get_t_srho(_s, _lgrho, _z)
+    # sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _z))
+    sol = np.array([get_t_srho(s, rho, z) for s, rho, z in zip(_s, _lgrho, _z)])
+    return sol
 
 ####### Inverted Tables #######
 
@@ -196,9 +197,9 @@ def get_u_sp(s, p, z):
 
 logp_res_rhot, s_res_rhot = np.load('%s/h_aqua/rhot_base.npy' % CURR_DIR)
 
-logrhovals_rhot = np.linspace(-5, 1.5, 100)
+logrhovals_rhot = np.linspace(-5, 2.0, 100)
 logtvals_rhot = np.arange(2.1, 5.1, 0.05)
-zvals_rhot = np.arange(0.05, 1.0, 0.05)
+zvals_rhot = np.arange(0.01, 1.0, 0.01)
 
 get_p_rgi_rhot = RGI((logrhovals_rhot, logtvals_rhot, zvals_rhot), logp_res_rhot, method='linear', \
             bounds_error=False, fill_value=None)
@@ -225,9 +226,9 @@ def get_u_rhot(rho, t, z):
 
 logp_res_srho, logt_res_srho = np.load('%s/h_aqua/srho_base.npy' % CURR_DIR)
 
-svals_srho = np.arange(5.0, 9.05, 0.05)
+svals_srho = np.arange(1.0, 9.05, 0.05)
 logrhovals_srho = np.linspace(-5, 2.0, 100)
-zvals_srho = np.arange(0.05, 1.0, 0.05)
+zvals_srho = np.arange(0.01, 1.0, 0.01)
 
 get_p_rgi_srho = RGI((svals_srho, logrhovals_srho, zvals_srho), logp_res_srho, method='linear', \
             bounds_error=False, fill_value=None)
