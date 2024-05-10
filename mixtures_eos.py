@@ -47,11 +47,13 @@ def n_to_Y(x):
     return (mhe * x)/(1 + 3.0026*x)
 
 def x_H(_y, _z, mz):
-    Ntot = (1-_y)*(1-_z)/mh + (_y*(1-_z)/mhe) + _z/mz
-    return (1-_y)*(1-_z)/mh/Ntot
+    yeff = _y#/(1 - _z)
+    Ntot = (1-yeff)*(1-_z)/mh + (yeff*(1-_z)/mhe) + _z/mz
+    return (1-yeff)*(1-_z)/mh/Ntot
 
 def x_Z(_y, _z, mz):
-    Ntot = (1-_y)*(1-_z)/mh + (_y*(1-_z)/mhe) + _z/mz
+    yeff = _y#/(1 - _z)
+    Ntot = (1-yeff)*(1-_z)/mh + (yeff*(1-_z)/mhe) + _z/mz
     return (_z/mz)/Ntot
 
 def guarded_log(x):
@@ -81,7 +83,7 @@ def get_smix_id_yz(Y, Z, mz):
 
 #### P, _lgt mixtures ####
 
-def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
+def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
     """
     This calculates the entropy for a metallicity mixture.
     The cms and mls EOSes already contain the HG23 non-ideal corrections
@@ -89,49 +91,49 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     for metal mixures, we subtract the H-He ideal entropy of mixing and
     add back the metal mixture entropy of mixing plus the non-ideal
     correction.
+
+    The _y_prime parameter here is the Y in a pure H-He EOS. Thereofre, it 
+    is Y/(1 - Z). So the y value that should be
+    used to calculate the entropy of mixing should be Y*(1 - Z).
     """
+    
+    _y = _y_prime*(1 - _z)
+
+    if _y_prime > 1.0 or _z > 1.0:
+        raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+
     if hhe_eos == 'cms':
         xy_eos = cms_eos
+        
+        smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
+        if hg:
+            s_nid_mix = xy_eos.smix_interp(_lgt, _lgp)*(1-_y_prime)*_y_prime - smix_id
+        else:
+            s_nid_mix = 0.0
+        s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y_prime, hg=False) - smix_id
     elif hhe_eos == 'cd':
         xy_eos = cd_eos
+        smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
+        s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y_prime) - smix_id
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+        smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
+        xy_eos = xy_eos.get_s_pt(_lgp, _lgt, _y_prime, hg=False) - smix_id
+        if hg:
+            s_nid_mix = xy_eos.smix_interp(_lgt, _lgp)*(1-_y_prime)*_y_prime - smix_id
+        else:
+            s_nid_mix = 0.0
     elif hhe_eos == 'mh13':
         xy_eos = mh13_eos
+        smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
+        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y_prime)
+        
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
+        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y_prime)
+        s_nid_mix = 0.0
     else:
         raise Exception('Only cms, mls, mh13, scvh (CMS19+HG23, MLS22+HG23, MH13, and SCvH95) allowed for now')
-
-    if hhe_eos == 'scvh':
-        s_nid_mix = 0.0
-        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
-
-    # elif hhe_eos == 'cd':
-    #     s_nid_mix = 0.0
-    #     s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y)
-    elif hhe_eos == 'mh13':
-        s_nid_mix = cms_eos.get_smix_nd(np.zeros(len(_lgp))+0.246575, _lgp, _lgt)
-        s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y)
-    else:
-        #if hg:
-        if hhe_eos == 'cms' or hhe_eos == 'mls':
-            if hg:
-                s_nid_mix = xy_eos.get_smix_nd(_y, _lgp, _lgt) # in cgs
-            else:
-                s_nid_mix = 0.0
-        elif hhe_eos == 'cd':
-            s_nid_mix = 0.0
-
-        if hhe_eos == 'mls':
-            s_h = xy_eos.get_s_h(_lgt, _lgp)
-            s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
-        elif hhe_eos == 'cms':
-            s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
-            s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
-        elif hhe_eos == 'cd':
-            s_h = 10 ** xy_eos.get_s_h(_lgt, _lgp) # in cgs
-            s_he = 10 ** xy_eos.get_s_he(_lgt, _lgp)
 
     if z_eos == 'aqua':
         mz = 18.015
@@ -180,29 +182,10 @@ def get_s_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
         raise Exception('X + Y + Z != 0')
 
     #qz = xh*mh + xhe*mh3 + xz*mz
+
+    # Y that goes into three-component entropy of mixing is Y/(X + Y + X)
     s_id_zmix = get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
-    if hhe_eos == 'scvh':
-        return (1 - _z)*s_xy + s_z * _z
-    elif hhe_eos == 'cd':
-        #return (1 - _z)*s_xy + s_z * _z - get_smix_id_y(y) + s_id_zmix
-        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_id_zmix
-    elif hhe_eos == 'mh13':
-        return (1 - _z)*s_xy + s_z * _z# + s_nid_mix*(1 - _z) - s_id_zmix*_z
-    elif hhe_eos == 'cms' or hhe_eos == 'mls':
-        #if hg:
-        if np.isscalar(_lgp):
-            return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
-
-        return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
-
-    # elif hhe_eos == 'mls':
-    #     #if hg:
-    #     if np.isscalar(_lgp):
-    #         return float((1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix)
-
-    #     return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z + s_nid_mix*(1 - _z) + s_id_zmix
-        # else:
-        #     return (1 - _y)* (1 - _z) * s_h + _y * (1 - _z) * s_he + s_z * _z #+ s_nid_mix*(1 - _z) - s_id_zmix
+    return s_xy*(1 - _z) + s_z * _z + s_id_zmix + s_nid_mix*(1 - _z)
 
 def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     """
@@ -210,25 +193,29 @@ def get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     The cms and mls EOSes already contain the HG23 non-ideal corrections
     to the density.
     """
+
+    _y = _y_prime*(1 - _z)
+
+    if _y_prime > 1.0 or _z > 1.0:
+        raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+
     if hhe_eos == 'cms':
         xy_eos = cms_eos
+        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime, hg=hg)
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
+        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime, hg=hg)
     elif hhe_eos == 'mh13':
         xy_eos = mh13_eos
+        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime)
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
+        rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y_prime)
     elif hhe_eos == 'cd':
         xy_eos = cd_eos
+        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime)
     else:
         raise Exception('Only cms, cd, mls, mh13, scvh (CMS19+HG23, CD21, MLS22+HG23, MH13, and SCvH95) allowed for now')
-
-    if hhe_eos == 'scvh':
-        rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y)
-    elif hhe_eos == 'cms' or hhe_eos == 'mls':
-        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y, hg=hg)
-    else:
-        rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y)
 
     # Calculating volume of mixing terms
     if z_eos is not None:
