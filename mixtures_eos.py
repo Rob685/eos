@@ -687,7 +687,7 @@ def get_sp_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
 ##### S, Rho #####
 
 svals_srho = np.arange(3.0, 9.1, 0.05)
-svals_srho_cms = np.arange(3.0, 9.1, 0.05)
+svals_srho_cms = np.arange(4.0, 9.05, 0.05)
 logrhovals_srho = np.linspace(-5.0, 2.0, 100)
 yvals_srho = np.arange(0.05, 0.95, 0.1)
 zvals_srho = np.arange(0, 1.0, 0.1)
@@ -711,7 +711,7 @@ logp_res_srho_mh13_aqua, logt_res_srho_mh13_aqua = np.load('%s/mh13/srho_base_z_
 
 get_p_rgi_srho_cms = RGI((svals_srho_cms, logrhovals_srho, yvals_srho_cms, zvals_srho_cms), logp_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_srho_cms = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cms_aqua, method='linear', \
+get_t_rgi_srho_cms = RGI((svals_srho_cms, logrhovals_srho, yvals_srho_cms, zvals_srho_cms), logt_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_srho_cms_nohg = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cms_nohg_aqua, method='linear', \
