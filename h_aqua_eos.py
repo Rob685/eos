@@ -72,12 +72,13 @@ def get_logu_h(lgp, lgt): # hydrogen internal energy
 def get_s_id(_z): # indeal entropy of mixing
     xz = Y_to_x(_z)
     xh = 1 - xz
-    return (guarded_log(xh) + guarded_log(xz))/erg_to_kbbar
+    q = mh*xh + mz*xz
+    return (guarded_log(xh) + guarded_log(xz)) / q
     
 def get_s_pt(lgp, lgt, z, sid=True): # entropy of mixutre
     s_h = get_s_h(lgp, lgt)
     s_z = aqua_eos.get_s_pt_tab(lgp, lgt)
-    if sid: return s_h*(1-z) + s_z*z + get_s_id(z)
+    if sid: return s_h*(1-z) + s_z*z + (get_s_id(z) / erg_to_kbbar)
     else: return s_h*(1-z) + s_z*z
     
 def get_rho_pt(lgp, lgt, z): # density of mixture

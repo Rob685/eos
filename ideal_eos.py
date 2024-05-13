@@ -14,7 +14,7 @@ Getters for partials of q1 WRT q2 leaving q3q4 constant as functions of q5q6:
 Ordering on quantities follows the ordering above
 '''
 import numpy as np
-from scipy.optimize import brenth, minimize
+from scipy.optimize import brenth, minimize, root_scalar, root
 from astropy import units as u
 from astropy.constants import k_B, m_p
 from astropy.constants import u as amu
@@ -35,8 +35,8 @@ from scipy.interpolate import RegularGridInterpolator as RGI
 
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
-kB = 1.38e-16
-mp = 1.67e-24
+kB = 1.380649e-16
+mp = 1.67262192369e-24
 #erg_to_kbbar = 1.2114751277768644e-08
 
 S_UNIT = 1 #kB / mp
@@ -173,7 +173,7 @@ class IdealHHeMix(object):
     """
     ideal eos with proton mass m
     """
-    def __init__(self, m_h=2, m_he=4):
+    def __init__(self, m_h=2.016, m_he=4.0026):
         super(IdealHHeMix, self).__init__()
         self.m_h = m_h
         self.m_he = m_he
@@ -234,6 +234,10 @@ class IdealHHeMix(object):
         def obj(logt):
             return self.get_rho_pt(logp, logt, y) / logrho - 1
         return brenth(obj, *TBOUNDS)
+
+        # def obj(logt):
+        #     return self.get_rho_pt(logp, logt, y) / logrho - 1
+        # return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
 
     def get_t_sp(self, s, logp, y):
         if not np.isscalar(y):
@@ -351,6 +355,10 @@ class EOSFiniteDs(object):
         logt2 = self.eos.get_t_rhop(logrho, logp, y * (1 + self.d))
         s1 = self.eos.get_s_pt(logp, logt1, y)
         s2 = self.eos.get_s_pt(logp, logt2, y * (1 + self.d))
+        return (s2 - s1) / (y * self.d)
+    def get_dsdy_pt(self, logp, logt, y):
+        s1 = self.eos.get_s_pt(logp, logt, y)
+        s2 = self.eos.get_s_pt(logp, logt, y * (1 + self.d))
         return (s2 - s1) / (y * self.d)
     def get_drhody_pt(self, logp, logt, y):
         rho1 = self.eos.get_rho_pt(logp, logt, y)
