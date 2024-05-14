@@ -92,19 +92,24 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
     add back the metal mixture entropy of mixing plus the non-ideal
     correction.
 
-    The _y_prime parameter here is the Y in a pure H-He EOS. Thereofre, it 
+    The _y_prime parameter here is the Y in a pure H-He EOS. Thereofre, it
     is Y/(1 - Z). So the y value that should be
     used to calculate the entropy of mixing should be Y*(1 - Z).
     """
-    
+
     _y = _y_prime*(1 - _z)
 
-    if _y_prime > 1.0 or _z > 1.0:
+    if (
+        (np.isscalar(_y_prime) and _y_prime > 1.0)
+        or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+        or (np.isscalar(_z) and _z > 1.0)
+        or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+    ):
         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
 
     if hhe_eos == 'cms':
         xy_eos = cms_eos
-        
+
         smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
         if hg:
             s_nid_mix = xy_eos.smix_interp(_lgt, _lgp)*(1-_y_prime)*_y_prime - smix_id
@@ -127,7 +132,7 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
         xy_eos = mh13_eos
         smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y_prime)
-        
+
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
         s_xy = xy_eos.get_s_pt_tab(_lgp, _lgt, _y_prime)
@@ -196,7 +201,12 @@ def get_rho_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
 
     _y = _y_prime*(1 - _z)
 
-    if np.any(_y_prime > 1.0) or np.any(_z > 1.0):
+    if (
+        (np.isscalar(_y_prime) and _y_prime > 1.0)
+        or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+        or (np.isscalar(_z) and _z > 1.0)
+        or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+    ):
         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
 
     if hhe_eos == 'cms':
@@ -334,7 +344,7 @@ def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
 
     sol = np.array([get_p_rhot(rho, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for rho, t, y, z in zip(_lgrho, _lgt, _y, _z)])
     return sol
-    
+
         # guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _y)
         # sol = root(err_p_rhot, guess, tol=XTOL, method='hybr', args=(_lgrho, _lgt, _y, _z, hhe_eos, z_eos, hg))
         # return sol.x
