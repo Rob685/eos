@@ -292,6 +292,12 @@ def err_t_rhop(_lgt, _lgrho, _lgp, _y, _z, hhe_eos, z_eos):
     logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)
     return (logrho_test/_lgrho) - 1
 
+def err_grad(s_trial, _lgp, _y, _z, hhe_eos, hg):
+    grad_a = get_nabla_ad(s_trial, _lgp, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    logt = get_t_sp_tab(s_trial, _lgp, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    grad_prof = np.gradient(logt)/np.gradient(_lgp)
+    return (grad_a/grad_prof) - 1
+
 ############################### inversion functions ###############################
 
 TBOUNDS = [2, 7]
@@ -830,6 +836,15 @@ def get_pt_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
 def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
     _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), get_t_srho_tab(_s, _lgrho , _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)
+
+def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
+    """This function returns the entropy value
+    required for nabla - nabla_a = 0 at
+    pressure and temperature profiles"""
+    guess = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg, z_eos=z_eos) * erg_to_kbbar
+    
+    sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z, hhe_eos, hg))
+    return sol.x
 
 ############################### Derivatives ###############################
 

@@ -283,7 +283,7 @@ def get_dsdz_rhop_srho(_s, _lgrho, _z, ds=0.01, dz=0.01):
 
     return dsdz_rhopy
 
-def get_dsdz_pt(_lgp, _lgt, _z, dz=0.01):
+def get_dsdz_pt(_lgp, _lgt, _z, dz=0.05):
     S0 = get_s_pt(_lgp, _lgt, _z)
     S1 = get_s_pt(_lgp, _lgt, _z*(1+dz))
     S2 = get_s_pt(_lgp, _lgt, _z*(1-dz))
