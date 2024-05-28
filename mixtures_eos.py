@@ -25,7 +25,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
 
 ideal_xy = ideal_eos.IdealHHeMix()
-ideal_z = ideal_eos.IdealEOS(m=40)
+ideal_z = ideal_eos.IdealEOS(m=18)
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -282,14 +282,21 @@ def err_p_rhot(_lgp, _lgrho, _lgt, _y, _z, hhe_eos, z_eos, hg):
     logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
     return (logrho_test/_lgrho) - 1
 
-def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, alg, z_eos, hg):
-    # logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, alg=alg, z_eos=z_eos)
-    # s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
-    s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
+def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
+    logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=z_eos)
+    s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
+    #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
     return (s_test/_s) - 1
 
+def err_p_srho(_lgp, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
+    logt_test = get_t_sp(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    #pdb.set_trace()
+    logrho_test = get_rho_pt(_lgp, logt_test, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    return (logrho_test/_lgrho) - 1
+
+
 def err_t_rhop(_lgt, _lgrho, _lgp, _y, _z, hhe_eos, z_eos):
-    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)
+    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     return (logrho_test/_lgrho) - 1
 
 def err_grad(s_trial, _lgp, _y, _z, hhe_eos, hg):
@@ -307,13 +314,13 @@ XTOL = 1e-16
 
 ###### S, P ######
 
-def get_t_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
+def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
     if np.any(_z) > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
     #if alg == 'root':
     if np.isscalar(_s):
         _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
-        guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+        guess = ideal_xy.get_t_sp(_s, _lgp, _y)# * _z*ideal_z.get_t_sp(_s, _lgp, 0)
         sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
         return float(sol.x)
     #guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
@@ -334,13 +341,13 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
     #     sol = np.array([get_t_sp(s_, p_, y_, z_, hhe_eos, z_eos=z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
     #     return sol
 
-def get_rhot_sp(_s, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
-    logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos, alg=alg, z_eos=z_eos)
+def get_rhot_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None):
+    logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
     return get_rho_pt(_lgp, logt, _y, _z, hhe_eos, z_eos=z_eos), logt
 
 ###### Rho, T ######
 
-def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
+def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     #if alg == 'root':
     if np.isscalar(_lgrho):
         _lgrho, _lgt, _y, _z = np.array([_lgrho]), np.array([_lgt]), np.array([_y]), np.array([_z])
@@ -368,12 +375,12 @@ def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
 
 ###### S, Rho ######
 
-def get_t_srho(_s, _lgrho, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
+def get_t_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos=None, hg=True):
     #if alg == 'root':
     if np.isscalar(_s):
         _s, _lgrho, _y, _z = np.array([_s]), np.array([_lgrho]), np.array([_y]), np.array([_z])
         guess = ideal_xy.get_t_srho(_s, _lgrho, _y)
-        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _y, _z, hhe_eos, alg, z_eos, hg))
+        sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _y, _z, hhe_eos, z_eos, hg))
         return float(sol.x)
 
     # guess = ideal_xy.get_t_srho(_s, _lgrho, _y)
@@ -393,29 +400,57 @@ def get_t_srho(_s, _lgrho, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
     #     sol = np.array([get_t_srho(s_, rho_, y_, z_) for s_, rho_, y_, z_ in zip(_s, _lgrho, _y, _z)])
     #     return sol
 
+# def get_p_srho(_s, _lgrho, _y, _z, hhe_eos, alg='root', z_eos=None, hg=True):
+#     logt_srho = get_t_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, alg='root', z_eos=z_eos, hg=hg)
+
+#     logp = get_p_rhot(_lgrho, logt_srho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+#     return logp
+
+def get_p_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos=None, hg=True):
+    #if alg == 'root':
+    if np.isscalar(_s):
+        _s, _lgrho, _y, _z = np.array([_s]), np.array([_lgrho]), np.array([_y]), np.array([_z])
+        guess = ideal_xy.get_p_srho(_s, _lgrho, _y)[0]
+        sol = root(err_p_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _y, _z, hhe_eos, z_eos, hg))
+        return float(sol.x)
+
+    # guess = ideal_xy.get_t_srho(_s, _lgrho, _y)
+    # sol = root(err_t_srho, guess, tol=1e-8, method='hybr', args=(_s, _lgrho, _y, _z, hhe_eos, alg, z_eos, hg))
+    # return sol.x
+    sol = np.array([get_p_srho(s, rho, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for s, rho, y, z in zip(_s, _lgrho, _y, _z)])
+    return sol
+
 ###### Rho, P ######
 
-def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos, alg='root', z_eos=None):
-    if alg == 'root':
-        if np.isscalar(_lgrho):
-            _lgrho, _lgp, _y, _z = np.array([_lgrho]), np.array([_lgp]), np.array([_y]), np.array([_z])
-            guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
-            sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
-            return float(sol.x)
-
+def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
+    #if alg == 'root':
+    if np.isscalar(_lgrho):
+        _lgrho, _lgp, _y, _z = np.array([_lgrho]), np.array([_lgp]), np.array([_y]), np.array([_z])
         guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
         sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
-        return sol.x
-    elif alg == 'brenth':
-        if np.isscalar(_lgrho):
-        #guess = 2.5
-            try:
-                sol = root_scalar(err_t_rhop, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
-                return sol.root
-            except:
-                raise
-        sol = np.array([get_t_rhop(rho_, p_, y_) for rho_, p_, y_ in zip(_lgrho, _lgp, _y)])
-        return sol
+        return float(sol.x)
+
+    sol = np.array([get_t_rhop(rho, p, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for rho, p, y, z in zip(_lgrho, _lgp, _y, _z)])
+    return sol
+
+def get_s_rhop(_lgrho, _lgp, _y, _z, hhe_eos):
+    logt_rhop = get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos='aqua')
+    return get_s_pt(_lgp, logt_rhop, _y, _z, hhe_eos=hhe_eos, z_eos='aqua')
+
+    #     guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
+    #     sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
+    #     return sol.x
+    # elif alg == 'brenth':
+    #     if np.isscalar(_lgrho):
+    #     #guess = 2.5
+    #         try:
+    #             sol = root_scalar(err_t_rhop, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
+    #             return sol.root
+    #         except:
+    #             raise
+    #     sol = np.array([get_t_rhop(rho_, p_, y_) for rho_, p_, y_ in zip(_lgrho, _lgp, _y)])
+    #     return sol
 
 ############################### Tabulated EOS Functions ###############################
 
@@ -900,6 +935,25 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
     #dsdy_rhopy = -dpdz_srhoy/dpds_rhoyz
 
     return dsdy_rhopz #+ dsdy_rhopy # should be able to add arbitrary components, this is temporary
+
+def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, hg=True):
+    S0 = _s/erg_to_kbbar
+    S1 = S0*(1+ds)
+
+    P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+    return (P1 - P0)/(S1 - S0)
+
+def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
+    # S0 = _s/erg_to_kbbar
+    # S1 = S0*(1+ds)
+
+    P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P1 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+    return (P1 - P0)/(_z * dz)
+
 
 def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.01, hg=True):
     S0 = _s/erg_to_kbbar

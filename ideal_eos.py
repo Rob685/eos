@@ -167,7 +167,7 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (0, 12)
+TBOUNDS = (1, 12)
 PBOUNDS = (0, 20)
 class IdealHHeMix(object):
     """
@@ -231,13 +231,13 @@ class IdealHHeMix(object):
             rets = [self.get_t_rhop(*el)
                     for el in zip(logrho, logp, y)]
             return np.array(rets)
-        def obj(logt):
-            return self.get_rho_pt(logp, logt, y) / logrho - 1
-        return brenth(obj, *TBOUNDS)
-
         # def obj(logt):
         #     return self.get_rho_pt(logp, logt, y) / logrho - 1
-        # return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
+        # return brenth(obj, *TBOUNDS)
+
+        def obj(logt):
+            return self.get_rho_pt(logp, logt, y) / logrho - 1
+        return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
 
     def get_t_sp(self, s, logp, y):
         if not np.isscalar(y):
