@@ -167,8 +167,8 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (1, 12)
-PBOUNDS = (0, 20)
+TBOUNDS = (0, 17)
+PBOUNDS = (0, 25)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m
@@ -244,9 +244,13 @@ class IdealHHeMix(object):
             rets = [self.get_t_sp(*el)
                     for el in zip(s, logp, y)]
             return np.array(rets)
+        # def obj(logt):
+        #     return self.get_s_pt(logp, logt, y) / s - 1
+        # return brenth(obj, *TBOUNDS)
+
         def obj(logt):
             return self.get_s_pt(logp, logt, y) / s - 1
-        return brenth(obj, *TBOUNDS)
+        return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
 
     def get_t_srho(self, s, logrho, y):
         if not np.isscalar(s):
@@ -284,8 +288,8 @@ class IdealHHeMix(object):
         def opt(v):
             logp, logt = v
             return (
-                (self.get_s_pt(logp, logt, y) / s - 1)**2
-                + (self.get_rho_pt(logp, logt, y) / logrho - 1)**2
+                (self.get_s_pt(logp, logt, y) / (s+1e-15) - 1)**2 # avoiding zero divisions
+                + (self.get_rho_pt(logp, logt, y) / (logrho+1e-15) - 1)**2
             )
 
         def print_res(v):
