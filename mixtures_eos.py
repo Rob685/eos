@@ -312,14 +312,14 @@ def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)*erg_to_kbbar
     #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
     #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
-    logp = get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
     s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
     return (s_test/_s) - 1
 
 def err_p_srho(_lgp, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
-    logt_test = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    logt_test = get_t_sp(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     logrho_test = get_rho_pt(_lgp, logt_test, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    return (logrho_test/(_lgrho+1e-30)) - 1
+    return (logrho_test/(_lgrho)) - 1
 
 def err_pt_srho(pt_arg, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     _lgp, _lgt = pt_arg
@@ -343,7 +343,7 @@ def err_grad(s_trial, _lgp, _y, _z, hhe_eos, hg, tab):
 
 ############################### inversion functions ###############################
 
-TBOUNDS = [2, 7]
+TBOUNDS = [0, 17]
 PBOUNDS = [0, 15]
 
 XTOL = 1e-16
@@ -356,16 +356,16 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
     #if alg == 'root':
     if np.isscalar(_s):
         _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
-        try:
-            guess = ideal_xy.get_t_sp(_s, _lgp, _y)# * _z*ideal_z.get_t_sp(_s, _lgp, 0)
-            sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
-            return float(sol.x)
-        except ValueError:
-            print('Did not converge!')
-            return -99999.0
-    #guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
-    #sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
-    #return sol.x
+        #try:
+        guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
+        return float(sol.x)
+        # except ValueError:
+        #     print('Did not converge!')
+        #     return -99999.0
+    # guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
+    # sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
+    # return sol.x
 
     sol = np.array([get_t_sp(s, p, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for s, p, y, z in zip(_s, _lgp, _y, _z)])
     return sol
