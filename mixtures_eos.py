@@ -8,6 +8,7 @@ from astropy.constants import u as amu
 import os
 from eos import ideal_eos, metals_eos, cms_eos, cd_eos, mls_eos, mh13_eos, scvh_eos
 import pdb
+from eos import smooth
 
 """
     This file provides access to H-He and H-He-Z mixtures.
@@ -81,30 +82,30 @@ def get_smix_id_yz(Y, Z, mz):
     q = mh*xh + mhe*xhe + mz*xz
     return -1*(guarded_log(xh) + guarded_log(xhe) + guarded_log(xz)) / q
 
-def gauss_smooth(data, base_sigma=5, base_window=5):
-    "Returns smoothed data array"
-    smoothed_data = np.zeros_like(data)
-    differences = np.abs(np.diff(data, prepend=data[0]))  # prepend to match the length
-    median_difference = np.median(differences)
+# def gauss_smooth(data, base_sigma=5, base_window=5):
+#     "Returns smoothed data array"
+#     smoothed_data = np.zeros_like(data)
+#     differences = np.abs(np.diff(data, prepend=data[0]))  # prepend to match the length
+#     median_difference = np.median(differences)
     
-    for i in range(len(data)):
-        # Adjust sigma based on local difference information
-        local_sigma = base_sigma * (1 + (median_difference - differences[i]) / (median_difference + 1e-6))
+#     for i in range(len(data)):
+#         # Adjust sigma based on local difference information
+#         local_sigma = base_sigma * (1 + (median_difference - differences[i]) / (median_difference + 1e-6))
         
-        # Determine the window size dynamically based on the position within the array
-        start_index = max(0, i - base_window // 2)
-        end_index = min(len(data), i + base_window // 2 + 1)
-        actual_window_size = end_index - start_index
+#         # Determine the window size dynamically based on the position within the array
+#         start_index = max(0, i - base_window // 2)
+#         end_index = min(len(data), i + base_window // 2 + 1)
+#         actual_window_size = end_index - start_index
         
-        # Generate the Gaussian kernel for the actual window size
-        x = np.linspace(-(actual_window_size // 2), actual_window_size // 2, actual_window_size)
-        gauss_kernel = np.exp(-0.5 * (x / local_sigma) ** 2)
-        gauss_kernel /= gauss_kernel.sum()  # Normalize the kernel
+#         # Generate the Gaussian kernel for the actual window size
+#         x = np.linspace(-(actual_window_size // 2), actual_window_size // 2, actual_window_size)
+#         gauss_kernel = np.exp(-0.5 * (x / local_sigma) ** 2)
+#         gauss_kernel /= gauss_kernel.sum()  # Normalize the kernel
         
-        # Apply the kernel to the data segment
-        smoothed_data[i] = np.dot(data[start_index:end_index], gauss_kernel)
+#         # Apply the kernel to the data segment
+#         smoothed_data[i] = np.dot(data[start_index:end_index], gauss_kernel)
 
-    return smoothed_data
+#     return smoothed_data
 
 #### P, _lgt mixtures ####
 
@@ -969,11 +970,11 @@ def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, s
     P1 = 10**get_p_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if smooth:
-        return gauss_smooth((P1 - P0)/(_y * dy), base_sigma=5, base_window=10)
+        return smooth.gauss_smooth((P1 - P0)/(_y * dy), base_sigma=5, base_window=10)
     else:
         return (P1 - P0)/(_y * dy)
 
-def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth=False):
+def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth=False, base_sigma=5, base_window=10):
 
     # if smooth:
     #     P0 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
@@ -983,12 +984,12 @@ def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, s
     P1 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if smooth:
-        return gauss_smooth((P1 - P0)/(_z * dz), base_sigma=5, base_window=10)
+        return smooth.gauss_smooth((P1 - P0)/(_z * dz), base_sigma=base_sigma, base_window=base_window)
     else:
         return (P1 - P0)/(_z * dz)
 
 def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.01, 
-                        hg=True, smooth=False):
+                        hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False):
 
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
@@ -997,26 +998,27 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
 
     #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
-    # if smooth:
-    #     return gauss_smooth(dsdy_rhopy, base_sigma=5, base_window=7)
-    # else:
-    return dsdy_rhopy 
+    if polyfit:
+        return smooth.joint_fit(dsdy_rhopy, deg=5, logrhoarr=_lgrho)
+    else:
+        return dsdy_rhopy
 
 
 def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.01, 
-                        hg=True, smooth=False):
+                        hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False):
 
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
     #dPdZ|{S, rho, Y}:
-    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dz=dz, hg=hg, smooth=smooth)
+    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dz=dz, hg=hg, smooth=smooth_gauss,\
+                                base_sigma=base_sigma, base_window=base_window)
 
     #dSdZ|{rho, P, Y} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
-    # if smooth:
-    #     return gauss_smooth(dsdz_rhopy, base_sigma=5, base_window=7)
-    # else:
-    return dsdz_rhopy
+    if polyfit:
+        return smooth.joint_fit(dsdz_rhopy, deg=5, logrhoarr=_lgrho)
+    else:
+     return dsdz_rhopy
 
 def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True):
     S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
