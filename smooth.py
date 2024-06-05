@@ -1,0 +1,58 @@
+import numpy as np
+
+
+def get_polyfit(arr, deg):
+
+# Identify discontinuity
+    differences = np.diff(arr)
+    threshold = 0.1  # Define a threshold to identify significant jumps
+    discontinuity_index = np.where(np.abs(differences) > threshold)[0]
+
+    # Compute polynomial fit excluding discontinuous region
+    if discontinuity_index.size > 0:
+        discontinuity_index = discontinuity_index[0]  # Take the first discontinuity index
+        x = np.arange(len(arr))
+        x_fit = np.delete(x, np.arange(discontinuity_index, discontinuity_index + 2))
+        y_fit = np.delete(arr, np.arange(discontinuity_index, discontinuity_index + 2))
+    else:
+        x = np.arange(len(arr))
+        x_fit = x
+        y_fit = arr
+
+    # Fit a polynomial
+    poly_coeff = np.polyfit(x_fit, y_fit, deg)
+    poly_fit = np.poly1d(poly_coeff)
+    
+    return poly_fit(x)
+
+def joint_fit(arr, deg, logrhoarr):
+    
+    fit2 = get_polyfit(arr[logrhoarr > 0.25], deg=deg)
+    fit1 = arr[logrhoarr < 0.25]
+
+    return np.concatenate([fit1, fit2])
+
+def gauss_smooth(data, base_sigma=5, base_window=10):
+    smoothed_data = np.zeros_like(data)
+    differences = np.abs(np.diff(data, prepend=data[0]))  # prepend to match the length
+    median_difference = np.median(differences)
+    
+    for i in range(len(data)):
+        # Adjust sigma based on local difference information
+        local_sigma = base_sigma * (1 + (median_difference - differences[i]) / (median_difference + 1e-6))
+        
+        # Determine the window size dynamically based on the position within the array
+        start_index = max(0, i - base_window // 2)
+        end_index = min(len(data), i + base_window // 2 + 1)
+        actual_window_size = end_index - start_index
+        
+        # Generate the Gaussian kernel for the actual window size
+        x = np.linspace(-(actual_window_size // 2), actual_window_size // 2, actual_window_size)
+        gauss_kernel = np.exp(-0.5 * (x / local_sigma) ** 2)
+        gauss_kernel /= gauss_kernel.sum()  # Normalize the kernel
+        #print(actual_window_size)
+        
+        # Apply the kernel to the data segment
+        smoothed_data[i] = np.dot(data[start_index:end_index], gauss_kernel)
+
+    return smoothed_data
