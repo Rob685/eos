@@ -110,6 +110,12 @@ def err_t_srho(_lgt, _s, _lgrho, _z):
     s_test = get_s_rhot_tab(_lgrho, _lgt, _z)*erg_to_kbbar
     return (s_test/_s) - 1
 
+def err_grad(s_trial, _lgp, _z):
+    grad_a = get_nabla_ad(s_trial, _lgp, _z)
+    logt = get_t_sp_tab(s_trial, _lgp, _z)
+    grad_prof = np.gradient(logt)/np.gradient(_lgp)
+    return (grad_a/grad_prof) - 1
+
 ###### inversion functions ######
 
 TBOUNDS = [2, 7]
@@ -255,6 +261,15 @@ def get_u_srho(s, rho, z):
     p, t = get_p_srho_tab(s, rho, z), get_t_srho_tab(s, rho, z)
     return get_u_pt(p, t, z)
 
+def get_s_ad(_lgp, _lgt, _z):
+    """This function returns the entropy value
+    required for nabla - nabla_a = 0 at
+    pressure and temperature profiles"""
+    guess = get_s_pt(_lgp, _lgt, _z) * erg_to_kbbar
+    
+    sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _z))
+    return sol.x
+
 ############################### Derivatives ###############################
 
 
@@ -283,12 +298,12 @@ def get_dsdz_rhop_srho(_s, _lgrho, _z, ds=0.01, dz=0.01):
 
     return dsdz_rhopy
 
-def get_dsdz_pt(_lgp, _lgt, _z, dz=0.05):
+def get_dsdz_pt(_lgp, _lgt, _z, dz=0.1):
     S0 = get_s_pt(_lgp, _lgt, _z)
     S1 = get_s_pt(_lgp, _lgt, _z*(1+dz))
-    S2 = get_s_pt(_lgp, _lgt, _z*(1-dz))
+   # S2 = get_s_pt(_lgp, _lgt, _z*(1-dz))
 
-    return (S1 - S2)/(2*_z*dz)
+    return (S1 - S0)/(_z*dz)
 
 def get_c_s(_s, _lgp, _z,  dp=0.1):
     P0 = 10**_lgp

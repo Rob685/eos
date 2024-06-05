@@ -27,8 +27,8 @@ def get_polyfit(arr, deg):
 
 def joint_fit(arr, deg, logrhoarr):
     
-    fit2 = get_polyfit(arr[logrhoarr > 0.25], deg=deg)
-    fit1 = arr[logrhoarr < 0.25]
+    fit2 = get_polyfit(arr[logrhoarr > 0], deg=deg)
+    fit1 = arr[logrhoarr < 0]
 
     return np.concatenate([fit1, fit2])
 
