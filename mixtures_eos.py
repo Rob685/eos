@@ -482,9 +482,17 @@ logpvals_sp_ice = np.arange(6, 14.1, 0.1)
 yvals_sp_ice = np.arange(0.05, 1.05, 0.1)
 zvals_sp_ice = np.arange(0, 1.1, 0.1)
 
+# CD sparse table for high-Z values meant for Uranus/Neptune sims
+svals_sp_cd_ice = np.arange(1.5, 8.6, 0.1)
+logpvals_sp_cd_ice = np.arange(6, 14.1, 0.1)
+yvals_sp_cd_ice = np.arange(0.05, 1.05, 0.1)
+zvals_sp_cd_ice = np.arange(0, 1.05, 0.05)
+
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
 
 logrho_res_sp_cms_ice, logt_res_sp_cms_ice = np.load('%s/cms/sp_base_z_aqua_cms_hg_lows_ice.npy' % CURR_DIR)
+
+logrho_res_sp_cd_ice, logt_res_sp_cd_ice = np.load('%s/cd/sp_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 
 #logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated_dense.npy' % CURR_DIR)
 
@@ -506,6 +514,11 @@ get_t_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp_cms, zvals
 get_rho_rgi_sp_ice = RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logrho_res_sp_cms_ice, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_sp_ice= RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logt_res_sp_cms_ice, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_rho_rgi_sp_cd_ice = RGI((svals_sp_cd_ice, logpvals_sp_cd_ice, yvals_sp_cd_ice, zvals_sp_cd_ice), logrho_res_sp_cd_ice, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp_cd_ice= RGI((svals_sp_cd_ice, logpvals_sp_cd_ice, yvals_sp_cd_ice, zvals_sp_cd_ice), logt_res_sp_cd_ice, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_rho_rgi_sp_cms_nohg = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_nohg_aqua, method='linear', \
@@ -552,6 +565,12 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
         else:
             return get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
 
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T)
+
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
             return float(get_rho_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T))
@@ -597,6 +616,12 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             return float(get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
         else:
             return get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
