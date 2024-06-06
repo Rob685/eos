@@ -167,8 +167,8 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (0, 17)
-PBOUNDS = (0, 25)
+TBOUNDS = (-100, 100)
+PBOUNDS = (-100, 100)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m

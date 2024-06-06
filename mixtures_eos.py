@@ -344,7 +344,7 @@ def err_grad(s_trial, _lgp, _y, _z, hhe_eos, hg, tab):
 
 ############################### inversion functions ###############################
 
-TBOUNDS = [2, 7]
+TBOUNDS = [0, 17]
 PBOUNDS = [0, 15]
 
 XTOL = 1e-16
@@ -357,16 +357,16 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
     #if alg == 'root':
     if np.isscalar(_s):
         _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
-        try:
-            guess = ideal_xy.get_t_sp(_s, _lgp, _y)# * _z*ideal_z.get_t_sp(_s, _lgp, 0)
-            sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
-            return float(sol.x)
-        except ValueError:
-            print('Did not converge!')
-            return -99999.0
-    #guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
-    #sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
-    #return sol.x
+        #try:
+        guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+        sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
+        return float(sol.x)
+        # except ValueError:
+        #     print('Did not converge!')
+        #     return -99999.0
+    # guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
+    # sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
+    # return sol.x
 
     sol = np.array([get_t_sp(s, p, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for s, p, y, z in zip(_s, _lgp, _y, _z)])
     return sol
@@ -456,6 +456,7 @@ def get_s_rhop(_lgrho, _lgp, _y, _z, hhe_eos):
 
 ###### S, P ######
 
+
 svals_sp_aqua = np.arange(3.0, 9.1, 0.1)
 # svals_sp_aqua_cms = np.arange(4.0, 9.1, 0.1)
 svals_sp_aqua_cms = np.arange(4.0, 9.05, 0.05)
@@ -475,7 +476,15 @@ yvals_sp_scvh = np.arange(0.15, 0.75, 0.05)
 yvals_sp_mh13 = np.arange(0.246575, 0.95, 0.1)
 #zvals_sp = np.arange(0, 1.0, 0.1)
 
+# CMS sparse table for high-Z values meant for Uranus/Neptune sims
+svals_sp_ice = np.arange(1.5, 8.1, 0.1)
+logpvals_sp_ice = np.arange(6, 14.1, 0.1)
+yvals_sp_ice = np.arange(0.05, 1.05, 0.1)
+zvals_sp_ice = np.arange(0, 1.1, 0.1)
+
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
+
+logrho_res_sp_cms_ice, logt_res_sp_cms_ice = np.load('%s/cms/sp_base_z_aqua_cms_hg_lows_ice.npy' % CURR_DIR)
 
 #logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated_dense.npy' % CURR_DIR)
 
@@ -492,6 +501,11 @@ logrho_res_sp_mh13_aqua, logt_res_sp_mh13_aqua = np.load('%s/mh13/sp_base_z_aqua
 get_rho_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp_cms, zvals_sp_cms), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp_cms, zvals_sp_cms), logt_res_sp_cms_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_rho_rgi_sp_ice = RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logrho_res_sp_cms_ice, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_sp_ice= RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logt_res_sp_cms_ice, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_rho_rgi_sp_cms_nohg = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cms_nohg_aqua, method='linear', \
@@ -532,6 +546,12 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             else:
                 return get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
 
+    elif hhe_eos == 'cms_ice':
+        if np.isscalar(_s):
+            return float(get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
+
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
             return float(get_rho_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T))
@@ -571,6 +591,12 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
                 return float(get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T))
             else:
                 return get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
+
+    elif hhe_eos == 'cms_ice':
+        if np.isscalar(_s):
+            return float(get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
+        else:
+            return get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
