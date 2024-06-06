@@ -974,7 +974,7 @@ def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, s
     else:
         return (P1 - P0)/(_y * dy)
 
-def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth=False, base_sigma=5, base_window=10):
+def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth_gauss=False, base_sigma=5, base_window=10):
 
     # if smooth:
     #     P0 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
@@ -983,7 +983,7 @@ def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, s
     P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P1 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    if smooth:
+    if smooth_gauss:
         return smooth.gauss_smooth((P1 - P0)/(_z * dz), base_sigma=base_sigma, base_window=base_window)
     else:
         return (P1 - P0)/(_z * dz)
@@ -999,7 +999,7 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
     #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
     if polyfit:
-        return smooth.joint_fit(dsdy_rhopy, deg=5, logrhoarr=_lgrho)
+        return smooth.joint_fit(dsdy_rhopy, logrhoarr=_lgrho)
     else:
         return dsdy_rhopy
 
@@ -1010,13 +1010,13 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
     #dPdZ|{S, rho, Y}:
-    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dz=dz, hg=hg, smooth=smooth_gauss,\
+    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dz=dz, hg=hg, smooth_gauss=smooth_gauss,\
                                 base_sigma=base_sigma, base_window=base_window)
 
     #dSdZ|{rho, P, Y} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
     if polyfit:
-        return smooth.joint_fit(dsdz_rhopy, deg=5, logrhoarr=_lgrho)
+        return smooth.joint_fit(dsdz_rhopy, logrhoarr=_lgrho)
     else:
      return dsdz_rhopy
 
