@@ -25,10 +25,10 @@ def get_polyfit(arr, deg):
     
     return poly_fit(x)
 
-def joint_fit(arr, deg, logrhoarr):
+def joint_fit(arr, logrhoarr, deg=7, logrho_thresh=-0.3):
     
-    fit2 = get_polyfit(arr[logrhoarr > 0], deg=deg)
-    fit1 = arr[logrhoarr < 0]
+    fit2 = get_polyfit(arr[logrhoarr >= logrho_thresh], deg=deg)
+    fit1 = get_polyfit(arr[logrhoarr < logrho_thresh], deg=deg)
 
     return np.concatenate([fit1, fit2])
 
