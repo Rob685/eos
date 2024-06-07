@@ -306,7 +306,7 @@ def err_t_sp(_lgt, _s, _lgp, _y, _z, hhe_eos, z_eos, hg):
     return (s_test/_s) - 1
 
 def err_p_rhot(_lgp, _lgrho, _lgt, _y, _z, hhe_eos, z_eos, hg):
-    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     return (logrho_test/_lgrho) - 1
 
 def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
@@ -314,13 +314,13 @@ def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
     #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
     logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
-    s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
+    s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
     return (s_test/_s) - 1
 
 def err_p_srho(_lgp, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     logt_test = get_t_sp(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     logrho_test = get_rho_pt(_lgp, logt_test, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    return (logrho_test/(_lgrho)) - 1
+    return (logrho_test/(_lgrho+1e-20)) - 1
 
 def err_pt_srho(pt_arg, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     _lgp, _lgt = pt_arg
@@ -354,37 +354,18 @@ XTOL = 1e-16
 def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
     if np.any(_z) > 0.0 and z_eos is None:
         raise Exception('You gotta chose a z_eos if you want metallicities!')
-    #if alg == 'root':
     if np.isscalar(_s):
         _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
-        #try:
         guess = ideal_xy.get_t_sp(_s, _lgp, _y)
         sol = root(err_t_sp, guess, tol=1e-8, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
         return float(sol.x)
-        # except ValueError:
-        #     print('Did not converge!')
-        #     return -99999.0
-    # guess = ideal_xy.get_t_sp(_s, _lgp, _y)#*(1 - _z) + _z*ideal_z.get_t_sp(_s, _lgp, 0) # just a guess...
-    # sol = root(err_t_sp, guess, tol=XTOL, method='hybr', args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
-    # return sol.x
 
     sol = np.array([get_t_sp(s, p, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for s, p, y, z in zip(_s, _lgp, _y, _z)])
     return sol
 
-
-    # elif alg == 'brenth':
-    #     if np.isscalar(_s):
-    #         try:
-    #             sol = root_scalar(err_t_sp, bracket=TBOUNDS, xtol=XTOL, method='brenth', args=(_s, _lgp, _y, _z, hhe_eos, z_eos)) # range should be 2, 5 but doesn'_lgt converge for higher _z unless it'_s lower
-    #             return sol.root
-    #         except:
-    #             raise
-    #     sol = np.array([get_t_sp(s_, p_, y_, z_, hhe_eos, z_eos=z_eos) for s_, p_, y_, z_ in zip(_s, _lgp, _y, _z)])
-    #     return sol
-
-def get_rhot_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None):
-    logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-    return get_rho_pt(_lgp, logt, _y, _z, hhe_eos, z_eos=z_eos), logt
+# def get_rhot_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=None):
+#     logt = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
+#     return get_rho_pt(_lgp, logt, _y, _z, hhe_eos, z_eos=z_eos), logt
 
 ###### Rho, T ######
 
@@ -668,6 +649,11 @@ yvals_rhot_cms = np.arange(0.05, 0.95, 0.05)
 zvals_rhot_cms = np.arange(0, 0.95, 0.05)
 #zvals_rhot_cms = np.arange(0, 0.91, 0.01) # dense grid
 
+logrhovals_rhot_cd_ice = np.linspace(-4.0, 2.0, 60)
+logtvals_rhot_cd_ice = np.arange(2, 5.05, 0.05)
+yvals_rhot_cd_ice = np.arange(0.05, 1.05, 0.1)
+zvals_rhot_cd_ice = np.arange(0, 1.05, 0.05)
+
 #logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_hg.npy' % CURR_DIR)
 logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
 # Dense grid cms+hg
@@ -676,6 +662,8 @@ logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_c
 logp_res_rhot_cms_nohg_aqua, s_res_rhot_cms_nohg_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
 logp_res_rhot_cd_aqua, s_res_rhot_cd_aqua = np.load('%s/cd/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+
+logp_res_rhot_cd_ice, s_res_rhot_cd_ice = np.load('%s/cd/rhot_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 
 logp_res_rhot_scvh_aqua, s_res_rhot_scvh_aqua = np.load('%s/scvh/rhot_base_z_aqua_extended_new.npy' % CURR_DIR)
 
@@ -696,6 +684,11 @@ get_s_rgi_rhot_cms_nohg = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals
 get_p_rgi_rhot_cd = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_s_rgi_rhot_cd = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cd_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_rhot_cd_ice = RGI((logrhovals_rhot_cd_ice, logtvals_rhot_cd_ice, yvals_rhot_cd_ice, zvals_rhot_cd_ice), logp_res_rhot_cd_ice, method='linear', \
+            bounds_error=False, fill_value=None)
+get_s_rgi_rhot_cd_ice = RGI((logrhovals_rhot_cd_ice, logtvals_rhot_cd_ice, yvals_rhot_cd_ice, zvals_rhot_cd_ice), s_res_rhot_cd_ice, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_rhot_scvh = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_scvh_aqua, method='linear', \
@@ -731,6 +724,12 @@ def get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             return float(get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T))
         else:
             return get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T)
+
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_lgrho):
+            return float(get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_lgrho):
@@ -772,6 +771,12 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
         else:
             return get_s_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T)
 
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_lgrho):
+            return float(get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T))
+        else:
+            return get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T)
+
     elif hhe_eos == 'scvh':
         if np.isscalar(_lgrho):
             return float(get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
@@ -794,7 +799,8 @@ def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
         raise Exception('Only cms, scvh, or mls available for now.')
 
 def get_sp_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
-    return get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=hg), get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=hg)
+    logp_rhot = get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    return get_s_pt(logp_rhot, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), logp_rhot
 
 ##### S, Rho #####
 
