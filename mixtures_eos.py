@@ -133,7 +133,7 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
     ):
         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
 
-    if hhe_eos == 'cms':
+    if hhe_eos == 'cms' or hhe_eos == 'cms_ice':
         xy_eos = cms_eos
 
         smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
@@ -142,7 +142,7 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
         else:
             s_nid_mix = 0.0
         s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y_prime, hg=False) - smix_id
-    elif hhe_eos == 'cd':
+    elif hhe_eos == 'cd' or hhe_eos == 'cd_ice':
         xy_eos = cd_eos
         smix_id = xy_eos.get_smix_id_y(_y_prime) / erg_to_kbbar
         s_xy = xy_eos.get_s_pt(_lgp, _lgt, _y_prime) - smix_id
@@ -236,7 +236,7 @@ def get_rho_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
     ):
         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
 
-    if hhe_eos == 'cms':
+    if hhe_eos == 'cms' or hhe_eos == 'cms_ice':
         xy_eos = cms_eos
         rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime, hg=hg)
     elif hhe_eos == 'mls':
@@ -248,7 +248,7 @@ def get_rho_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
     elif hhe_eos == 'scvh':
         xy_eos = scvh_eos
         rho_hhe = 10**xy_eos.get_rho_pt_tab(_lgp, _lgt, _y_prime)
-    elif hhe_eos == 'cd':
+    elif hhe_eos == 'cd' or hhe_eos == 'cd_ice':
         xy_eos = cd_eos
         rho_hhe = 10**xy_eos.get_rho_pt(_lgp, _lgt, _y_prime)
     else:
@@ -268,9 +268,9 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     The volume addition law is used for all EOSes. There are
     no non-ideal correction terms for the internal energy yet.
     """
-    if hhe_eos == 'cms':
+    if hhe_eos == 'cms' or hhe_eos == 'cms_ice':
         xy_eos = cms_eos
-    elif hhe_eos == 'cd':
+    elif hhe_eos == 'cd' or hhe_eos == 'cd_ice':
         xy_eos = cd_eos
     elif hhe_eos == 'mls':
         xy_eos = mls_eos
@@ -318,7 +318,7 @@ def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     return (s_test/_s) - 1
 
 def err_p_srho(_lgp, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
-    logt_test = get_t_sp(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    logt_test = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     logrho_test = get_rho_pt(_lgp, logt_test, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     return (logrho_test/(_lgrho+1e-20)) - 1
 
@@ -329,9 +329,9 @@ def err_pt_srho(pt_arg, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     #rho_sp = get_rho_sp_tab(s_pt, _lgp, _y, _z, hhe_eos='cms')
     return [float((s_pt / _s) - 1), float((rho_pt/_lgrho) - 1)]
 
-def err_t_rhop(_lgt, _lgrho, _lgp, _y, _z, hhe_eos, z_eos):
-    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
-    return (logrho_test/_lgrho) - 1
+def err_t_rhop(_lgt, _lgrho, _lgp, _y, _z, hhe_eos, z_eos, hg):
+    logrho_test = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    return (logrho_test/_lgrho+1e-20) - 1
 
 def err_grad(s_trial, _lgp, _y, _z, hhe_eos, hg, tab):
     grad_a = get_nabla_ad(s_trial, _lgp, _y, _z, hhe_eos=hhe_eos, hg=hg, tab=tab)
@@ -423,7 +423,7 @@ def get_t_rhop(_lgrho, _lgp, _y, _z, hhe_eos, z_eos=None, hg=True):
     if np.isscalar(_lgrho):
         _lgrho, _lgp, _y, _z = np.array([_lgrho]), np.array([_lgp]), np.array([_y]), np.array([_z])
         guess = ideal_xy.get_t_rhop(_lgrho, _lgp, _y)
-        sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos))
+        sol = root(err_t_rhop, guess, tol=1e-8, method='hybr', args=(_lgrho, _lgp, _y, _z, hhe_eos, z_eos, hg))
         return float(sol.x)
 
     sol = np.array([get_t_rhop(rho, p, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for rho, p, y, z in zip(_lgrho, _lgp, _y, _z)])
@@ -817,6 +817,12 @@ zvals_srho_cms = np.arange(0, 0.95, 0.05)
 #yvals_srho_cms = np.arange(0.05, 0.9, 0.05)
 #zvals_srho_cms = np.arange(0, 0.92, 0.02)
 
+# FOR ICE CD TABLES
+svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
+logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+yvals_srho_cd_ice = np.arange(0.05, 0.35, 0.01)
+zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
+
 
 
 logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
@@ -825,6 +831,8 @@ logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqu
 logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
 logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_extended.npy' % CURR_DIR)
+
+logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 
 logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended_new.npy' % CURR_DIR)
 
@@ -845,6 +853,11 @@ get_t_rgi_srho_cms_nohg = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_sr
 get_p_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 get_t_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cd_aqua, method='linear', \
+            bounds_error=False, fill_value=None)
+
+get_p_rgi_srho_cd_ice = RGI((svals_srho_cd_ice, logrhovals_srho_cd_ice, yvals_srho_cd_ice, zvals_srho_cd_ice), logp_res_srho_cd_ice, method='linear', \
+            bounds_error=False, fill_value=None)
+get_t_rgi_srho_cd_ice = RGI((svals_srho_cd_ice, logrhovals_srho_cd_ice, yvals_srho_cd_ice, zvals_srho_cd_ice), logt_res_srho_cd_ice, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_srho_scvh = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_scvh_aqua, method='linear', \
@@ -881,6 +894,12 @@ def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             return float(get_p_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T))
         else:
             return get_p_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T)
+
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_s):
+            return float(get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
@@ -919,6 +938,12 @@ def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
         else:
             return get_t_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T)
 
+    elif hhe_eos == 'cd_ice':
+        if np.isscalar(_s):
+            return float(get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T))
+        else:
+            return get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T)
+
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
             return float(get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
@@ -942,7 +967,7 @@ def get_pt_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
 
 def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True):
     _lgp, _lgt = get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), get_t_srho_tab(_s, _lgrho , _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)
+    return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
 
 def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True):
     """This function returns the entropy value
