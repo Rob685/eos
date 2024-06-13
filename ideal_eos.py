@@ -40,7 +40,7 @@ mp = 1.67262192369e-24
 #erg_to_kbbar = 1.2114751277768644e-08
 
 S_UNIT = 1 #kB / mp
-U_UNIT = kB / amu
+U_UNIT = kB / amu.to('g').value
 Rideal = 8.314e7
 
 class IdealEOS(object):
