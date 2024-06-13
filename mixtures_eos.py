@@ -980,23 +980,23 @@ def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True):
 
 ############################### Derivatives ###############################
 
-def get_dudy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True):
+def get_dudy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, smooth_gauss=False):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz))
-
     dudy_srhoz = (U1 - U0)/(_y*dy)
-    #dudz_srhoy = (U2 - U0)/(_z*dz)
-    return dudy_srhoz# + dudz_srhoy
+    if smooth_gauss:
+        return smooth.gauss_smooth(dudy_srhoz)
+    else:
+        return dudy_srhoz# + dudz_srhoy
 
-def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
+def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth_gauss=False):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z)
     U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-
-    #dudy_srhoz = (U1 - U0)/(_y*dy)
     dudz_srhoy = (U2 - U0)/(_z*dz)
-    return dudz_srhoy
+    if smooth_gauss:
+        return smooth.gauss_smooth(dudz_srhoy)
+    else:
+        return dudy_srhoz
 
 # du/ds_(rho, Y) = T test
 def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True):
