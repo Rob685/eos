@@ -864,10 +864,15 @@ zvals_srho_cms = np.arange(0, 0.95, 0.05)
 #zvals_srho_cms = np.arange(0, 0.92, 0.02)
 
 # FOR ICE CD TABLES
-svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
-logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
-yvals_srho_cd_ice = np.arange(0.05, 0.35, 0.01)
-zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
+# svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
+# logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+# yvals_srho_cd_ice = np.arange(0.05, 0.35, 0.01)
+# zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
+
+svals_srho = np.arange(1.5, 8.1, 0.1)
+logrhovals_srho = np.linspace(-3.0, 2.0, 60)
+yvals_srho= np.arange(0.05, 1.05, 0.1)
+zvals_srho = np.arange(0, 1.05, 0.05)
 
 
 
@@ -878,7 +883,8 @@ logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_
 
 logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
-logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
+#logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
+logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/eos/cd/srho_base_z_aqua_cd_lows_ice_dense_yextended.npy' % CURR_DIR)
 
 logp_res_srho_scvh_aqua, logt_res_srho_scvh_aqua = np.load('%s/scvh/srho_base_z_aqua_extended_new.npy' % CURR_DIR)
 
