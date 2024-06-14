@@ -25,12 +25,18 @@ def get_polyfit(arr, deg):
     
     return poly_fit(x)
 
-def joint_fit(arr, logrhoarr, deg=7, logrho_thresh=-0.3):
+def joint_fit(arr, logrhoarr, deg=5, logrho_thresh1=-0.3, logrho_thresh2=0.0):
     
-    fit2 = get_polyfit(arr[logrhoarr >= logrho_thresh], deg=deg)
-    fit1 = get_polyfit(arr[logrhoarr < logrho_thresh], deg=deg)
+    # fit3 = get_polyfit(arr[logrhoarr > logrho_thresh2], deg=3)
+    fit2 = get_polyfit(arr[(logrhoarr >= logrho_thresh1) & (logrhoarr <= logrho_thresh2)], deg=3)
+    # fit1 = get_polyfit(arr[logrhoarr < logrho_thresh1], deg=deg)
 
-    return np.concatenate([fit1, fit2])
+    # return np.concatenate([fit1, fit2, fit3])
+
+    #fit2 = get_polyfit(arr[logrhoarr >= logrho_thresh], deg=deg)
+    fit1 = get_polyfit(arr[logrhoarr < logrho_thresh1], deg=deg)
+
+    return np.concatenate([fit1, fit2, arr[logrhoarr > logrho_thresh2]])
 
 def gauss_smooth(data, base_sigma=5, base_window=10):
     smoothed_data = np.zeros_like(data)
