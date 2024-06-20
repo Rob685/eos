@@ -869,8 +869,13 @@ zvals_srho_cms = np.arange(0, 0.95, 0.05)
 # yvals_srho_cd_ice = np.arange(0.05, 0.35, 0.01)
 # zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
 
-svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
-logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+# svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
+# logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+# yvals_srho_cd_ice = np.arange(0.05, 1.05, 0.1)
+# zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
+
+svals_srho_cd_ice = np.arange(1.5, 8.6, 0.1)
+logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 70)
 yvals_srho_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
 
