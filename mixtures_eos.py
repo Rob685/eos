@@ -318,11 +318,11 @@ def err_p_rhot(_lgp, _lgrho, _lgt, _y, _z, hhe_eos, z_eos, hg):
     return (logrho_test/(_lgrho+1e-30)) - 1
 
 def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
-    #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)*erg_to_kbbar
+    s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)*erg_to_kbbar
     #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
     #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
-    logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
-    s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
+    #logp = get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
     return (s_test/_s) - 1
 
 def err_p_srho(_lgp, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
@@ -489,6 +489,12 @@ logpvals_sp_cd_ice = np.arange(6, 14.1, 0.1)
 yvals_sp_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_sp_cd_ice = np.arange(0, 1.05, 0.05)
 
+# CD new extended table for low and high S
+svals_sp_cd = np.arange(1.5, 10.1, 0.1)
+logpvals_sp_cd = np.arange(6, 14.1, 0.1)
+yvals_sp_cd = np.arange(0.02, 1.0, 0.05)
+zvals_sp_cd = np.arange(0.0, 1.05, 0.05) # dense grid of Z
+
 logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
 
 logrho_res_sp_cms_ice, logt_res_sp_cms_ice = np.load('%s/cms/sp_base_z_aqua_cms_hg_lows_ice.npy' % CURR_DIR)
@@ -499,7 +505,9 @@ logrho_res_sp_cd_ice, logt_res_sp_cd_ice = np.load('%s/cd/sp_base_z_aqua_cd_lows
 
 logrho_res_sp_cms_nohg_aqua, logt_res_sp_cms_nohg_aqua = np.load('%s/cms/sp_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
-logrho_res_sp_cd_aqua, logt_res_sp_cd_aqua = np.load('%s/cd/sp_base_z_aqua_extended.npy' % CURR_DIR)
+#logrho_res_sp_cd_aqua, logt_res_sp_cd_aqua = np.load('%s/cd/sp_base_z_aqua_extended.npy' % CURR_DIR)
+
+logrho_res_sp_cd_aqua, logt_res_sp_cd_aqua = np.load('%s/cd/sp_base_z_aqua_cd_lows_highs_extended.npy' % CURR_DIR)
 
 logrho_res_sp_scvh_aqua, logt_res_sp_scvh_aqua = np.load('%s/scvh/sp_base_z_aqua_extended_new.npy' % CURR_DIR)
 
@@ -527,9 +535,14 @@ get_rho_rgi_sp_cms_nohg = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zva
 get_t_rgi_sp_cms_nohg = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cms_nohg_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_rho_rgi_sp_cd = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cd_aqua, method='linear', \
+# get_rho_rgi_sp_cd = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logrho_res_sp_cd_aqua, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_sp_cd = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cd_aqua, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+get_rho_rgi_sp_cd = RGI((svals_sp_cd, logpvals_sp_cd, yvals_sp_cd, zvals_sp_cd), logrho_res_sp_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_cd = RGI((svals_sp_aqua_cd, logpvals_sp_aqua, yvals_sp, zvals_sp), logt_res_sp_cd_aqua, method='linear', \
+get_t_rgi_sp_cd = RGI((svals_sp_cd, logpvals_sp_cd, yvals_sp_cd, zvals_sp_cd), logt_res_sp_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_rho_rgi_sp_scvh = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_scvh, zvals_sp), logrho_res_sp_scvh_aqua, method='linear', \
@@ -683,10 +696,17 @@ yvals_rhot_cms = np.arange(0.05, 0.95, 0.05)
 zvals_rhot_cms = np.arange(0, 0.95, 0.05)
 #zvals_rhot_cms = np.arange(0, 0.91, 0.01) # dense grid
 
+# CD ICE grid
 logrhovals_rhot_cd_ice = np.linspace(-4.0, 2.0, 60)
 logtvals_rhot_cd_ice = np.arange(2, 5.05, 0.05)
 yvals_rhot_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_rhot_cd_ice = np.arange(0, 1.05, 0.05)
+
+# CD low and high S
+logrhovals_rhot_cd = np.linspace(-5.0, 2.0, 100)
+logtvals_rhot_cd = np.arange(2.1, 5.05, 0.05)
+yvals_rhot_cd = np.arange(0.02, 1.0, 0.05)
+zvals_rhot_cd = np.arange(0.0, 1.05, 0.05) # dense grid of Z
 
 #logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_hg.npy' % CURR_DIR)
 logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
@@ -695,7 +715,9 @@ logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_c
 
 logp_res_rhot_cms_nohg_aqua, s_res_rhot_cms_nohg_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
-logp_res_rhot_cd_aqua, s_res_rhot_cd_aqua = np.load('%s/cd/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+#logp_res_rhot_cd_aqua, s_res_rhot_cd_aqua = np.load('%s/cd/rhot_base_z_aqua_extended.npy' % CURR_DIR)
+
+logp_res_rhot_cd_aqua, s_res_rhot_cd_aqua = np.load('%s/cd/rhot_base_z_aqua_cd_lows_highs_extended.npy' % CURR_DIR)
 
 logp_res_rhot_cd_ice, s_res_rhot_cd_ice = np.load('%s/cd/rhot_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 
@@ -715,9 +737,9 @@ get_p_rgi_rhot_cms_nohg = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals
 get_s_rgi_rhot_cms_nohg = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cms_nohg_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_p_rgi_rhot_cd = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cd_aqua, method='linear', \
+get_p_rgi_rhot_cd = RGI((logrhovals_rhot_cd, logtvals_rhot_cd, yvals_rhot_cd, zvals_rhot_cd), logp_res_rhot_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_s_rgi_rhot_cd = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), s_res_rhot_cd_aqua, method='linear', \
+get_s_rgi_rhot_cd = RGI((logrhovals_rhot_cd, logtvals_rhot_cd, yvals_rhot_cd, zvals_rhot_cd), s_res_rhot_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_rhot_cd_ice = RGI((logrhovals_rhot_cd_ice, logtvals_rhot_cd_ice, yvals_rhot_cd_ice, zvals_rhot_cd_ice), logp_res_rhot_cd_ice, method='linear', \
@@ -869,8 +891,13 @@ zvals_srho_cms = np.arange(0, 0.95, 0.05)
 # yvals_srho_cd_ice = np.arange(0.05, 0.35, 0.01)
 # zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
 
-svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
-logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+# svals_srho_cd_ice = np.arange(1.5, 8.1, 0.1)
+# logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 60)
+# yvals_srho_cd_ice = np.arange(0.05, 1.05, 0.1)
+# zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
+
+svals_srho_cd_ice = np.arange(1.5, 8.6, 0.1)
+logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 70)
 yvals_srho_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
 
