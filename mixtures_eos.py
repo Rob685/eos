@@ -1064,7 +1064,7 @@ def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, s
     if smooth_gauss:
         return smooth.gauss_smooth(dudz_srhoy)
     else:
-        return dudy_srhoz
+        return dudz_srhoy
 
 # du/ds_(rho, Y) = T test
 def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True, tab=True):
