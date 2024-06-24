@@ -901,6 +901,12 @@ logrhovals_srho_cd_ice = np.linspace(-3.0, 2.0, 70)
 yvals_srho_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_srho_cd_ice = np.arange(0, 1.05, 0.05)
 
+# EXTENDED HIGH S AND LOW S GRIDS
+svals_srho_cd = np.arange(1.5, 10.1, 0.1)
+logrhovals_srho_cd = np.linspace(-4.0, 2.0, 75)
+yvals_srho_cd = np.arange(0.02, 1.0, 0.05)
+zvals_srho_cd = np.arange(0, 1.05, 0.05)
+
 
 
 logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
@@ -908,7 +914,8 @@ logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqu
 
 logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
-logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_extended.npy' % CURR_DIR)
+#logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_extended.npy' % CURR_DIR)
+logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_cd_lows_highs_extended.npy' % CURR_DIR)
 
 #logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense_yextended.npy' % CURR_DIR)
@@ -929,9 +936,14 @@ get_p_rgi_srho_cms_nohg = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_sr
 get_t_rgi_srho_cms_nohg = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cms_nohg_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_p_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cd_aqua, method='linear', \
+# get_p_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cd_aqua, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cd_aqua, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+get_p_rgi_srho_cd = RGI((svals_srho_cd, logrhovals_srho_cd, yvals_srho_cd, zvals_srho_cd), logp_res_srho_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_srho_cd = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logt_res_srho_cd_aqua, method='linear', \
+get_t_rgi_srho_cd = RGI((svals_srho_cd, logrhovals_srho_cd, yvals_srho_cd, zvals_srho_cd), logt_res_srho_cd_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_srho_cd_ice = RGI((svals_srho_cd_ice, logrhovals_srho_cd_ice, yvals_srho_cd_ice, zvals_srho_cd_ice), logp_res_srho_cd_ice, method='linear', \
