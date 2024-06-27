@@ -365,6 +365,7 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, multivariable=Fal
         if np.isscalar(_s):
             _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
             guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+            #guess = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
             sol = root(err_t_sp, guess, tol=1e-8, method=method, args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
             return float(sol.x)
 
@@ -484,22 +485,28 @@ yvals_sp_ice = np.arange(0.05, 1.05, 0.1)
 zvals_sp_ice = np.arange(0, 1.1, 0.1)
 
 # CD sparse table for high-Z values meant for Uranus/Neptune sims
-svals_sp_cd_ice = np.arange(1.5, 8.6, 0.1)
-logpvals_sp_cd_ice = np.arange(6, 14.1, 0.1)
-yvals_sp_cd_ice = np.arange(0.05, 1.05, 0.1)
-zvals_sp_cd_ice = np.arange(0, 1.05, 0.05)
+# svals_sp_cd_ice = np.arange(1.5, 8.6, 0.1)
+# logpvals_sp_cd_ice = np.arange(6, 14.1, 0.1)
+# yvals_sp_cd_ice = np.arange(0.05, 1.05, 0.1)
+# zvals_sp_cd_ice = np.arange(0, 1.05, 0.05)
 
-# CD new extended table for low and high S
+svals_sp_cd_ice = np.arange(0.5, 7.6, 0.1)
+logpvals_sp_cd_ice = np.arange(6, 13.6, 0.1)
+yvals_sp_cd_ice = np.arange(0.02, 0.85, 0.05)
+zvals_sp_cd_ice = np.arange(0.0, 1.05, 0.05)
+
+# CD & CMS19+HG23new extended table for low and high S
 svals_sp_cd = np.arange(1.5, 10.1, 0.1)
 logpvals_sp_cd = np.arange(6, 14.1, 0.1)
 yvals_sp_cd = np.arange(0.02, 1.0, 0.05)
 zvals_sp_cd = np.arange(0.0, 1.05, 0.05) # dense grid of Z
 
-logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
+# logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
 
-logrho_res_sp_cms_ice, logt_res_sp_cms_ice = np.load('%s/cms/sp_base_z_aqua_cms_hg_lows_ice.npy' % CURR_DIR)
+logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_lows_highs_extended.npy' % CURR_DIR)
 
-logrho_res_sp_cd_ice, logt_res_sp_cd_ice = np.load('%s/cd/sp_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
+#logrho_res_sp_cd_ice, logt_res_sp_cd_ice = np.load('%s/cd/sp_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
+logrho_res_sp_cd_ice, logt_res_sp_cd_ice = np.load('%s/cd/sp_base_z_aqua_cd_lows_cold.npy' % CURR_DIR)
 
 #logrho_res_sp_cms_aqua, logt_res_sp_cms_aqua = np.load('%s/cms/sp_base_z_aqua_cms_hg_updated_dense.npy' % CURR_DIR)
 
@@ -515,15 +522,15 @@ logrho_res_sp_mls_aqua, logt_res_sp_mls_aqua = np.load('%s/mls/sp_base_z_aqua_ex
 
 logrho_res_sp_mh13_aqua, logt_res_sp_mh13_aqua = np.load('%s/mh13/sp_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_rho_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp_cms, zvals_sp_cms), logrho_res_sp_cms_aqua, method='linear', \
+get_rho_rgi_sp_cms = RGI((svals_sp_cd, logpvals_sp_cd, yvals_sp_cd, zvals_sp_cd), logrho_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_sp_cms = RGI((svals_sp_aqua_cms, logpvals_sp_aqua, yvals_sp_cms, zvals_sp_cms), logt_res_sp_cms_aqua, method='linear', \
+get_t_rgi_sp_cms = RGI((svals_sp_cd, logpvals_sp_cd, yvals_sp_cd, zvals_sp_cd), logt_res_sp_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
-get_rho_rgi_sp_ice = RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logrho_res_sp_cms_ice, method='linear', \
-            bounds_error=False, fill_value=None)
-get_t_rgi_sp_ice= RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logt_res_sp_cms_ice, method='linear', \
-            bounds_error=False, fill_value=None)
+# get_rho_rgi_sp_ice = RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logrho_res_sp_cms_ice, method='linear', \
+#             bounds_error=False, fill_value=None)
+# get_t_rgi_sp_ice= RGI((svals_sp_ice, logpvals_sp_ice, yvals_sp_ice, zvals_sp_ice), logt_res_sp_cms_ice, method='linear', \
+#             bounds_error=False, fill_value=None)
 
 get_rho_rgi_sp_cd_ice = RGI((svals_sp_cd_ice, logpvals_sp_cd_ice, yvals_sp_cd_ice, zvals_sp_cd_ice), logrho_res_sp_cd_ice, method='linear', \
             bounds_error=False, fill_value=None)
@@ -573,11 +580,11 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             else:
                 return get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
 
-    elif hhe_eos == 'cms_ice':
-        if np.isscalar(_s):
-            return float(get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
+    # elif hhe_eos == 'cms_ice':
+    #     if np.isscalar(_s):
+    #         return float(get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
+    #     else:
+    #         return get_rho_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
@@ -631,11 +638,11 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True):
             else:
                 return get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
 
-    elif hhe_eos == 'cms_ice':
-        if np.isscalar(_s):
-            return float(get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
-        else:
-            return get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
+    # elif hhe_eos == 'cms_ice':
+    #     if np.isscalar(_s):
+    #         return float(get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T))
+    #     else:
+    #         return get_t_rgi_sp_ice(np.array([_s, _lgp, _y, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
@@ -702,7 +709,7 @@ logtvals_rhot_cd_ice = np.arange(2, 5.05, 0.05)
 yvals_rhot_cd_ice = np.arange(0.05, 1.05, 0.1)
 zvals_rhot_cd_ice = np.arange(0, 1.05, 0.05)
 
-# CD low and high S
+# CD & CMS19+HG23 low and high S
 logrhovals_rhot_cd = np.linspace(-5.0, 2.0, 100)
 logtvals_rhot_cd = np.arange(2.1, 5.05, 0.05)
 yvals_rhot_cd = np.arange(0.02, 1.0, 0.05)
@@ -711,7 +718,7 @@ zvals_rhot_cd = np.arange(0.0, 1.05, 0.05) # dense grid of Z
 #logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_hg.npy' % CURR_DIR)
 logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
 # Dense grid cms+hg
-#logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_cms_hg_updated_dense.npy' % CURR_DIR)
+logp_res_rhot_cms_aqua, s_res_rhot_cms_aqua = np.load('%s/cms/rhot_base_z_aqua_cms_lows_highs_extended.npy' % CURR_DIR)
 
 logp_res_rhot_cms_nohg_aqua, s_res_rhot_cms_nohg_aqua = np.load('%s/cms/rhot_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
@@ -727,9 +734,9 @@ logp_res_rhot_mls_aqua, s_res_rhot_mls_aqua = np.load('%s/mls/rhot_base_z_aqua_e
 
 logp_res_rhot_mh13_aqua, s_res_rhot_mh13_aqua = np.load('%s/mh13/rhot_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_p_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot_cms, zvals_rhot_cms), logp_res_rhot_cms_aqua, method='linear', \
+get_p_rgi_rhot_cms = RGI((logrhovals_rhot_cd, logtvals_rhot_cd, yvals_rhot_cd, zvals_rhot_cd), logp_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_s_rgi_rhot_cms = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot_cms, zvals_rhot_cms), s_res_rhot_cms_aqua, method='linear', \
+get_s_rgi_rhot_cms = RGI((logrhovals_rhot_cd, logtvals_rhot_cd, yvals_rhot_cd, zvals_rhot_cd), s_res_rhot_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_rhot_cms_nohg = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rhot), logp_res_rhot_cms_nohg_aqua, method='linear', \
@@ -909,8 +916,8 @@ zvals_srho_cd = np.arange(0, 1.05, 0.05)
 
 
 
-logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
-#logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated_dense.npy' % CURR_DIR)
+# logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
+logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_lows_highs_extended.npy' % CURR_DIR)
 
 logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
@@ -926,9 +933,9 @@ logp_res_srho_mls_aqua, logt_res_srho_mls_aqua = np.load('%s/mls/srho_base_z_aqu
 
 logp_res_srho_mh13_aqua, logt_res_srho_mh13_aqua = np.load('%s/mh13/srho_base_z_aqua_extended.npy' % CURR_DIR)
 
-get_p_rgi_srho_cms = RGI((svals_srho_cms, logrhovals_srho, yvals_srho_cms, zvals_srho_cms), logp_res_srho_cms_aqua, method='linear', \
+get_p_rgi_srho_cms = RGI((svals_srho_cd, logrhovals_srho_cd, yvals_srho_cd, zvals_srho_cd), logp_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
-get_t_rgi_srho_cms = RGI((svals_srho_cms, logrhovals_srho, yvals_srho_cms, zvals_srho_cms), logt_res_srho_cms_aqua, method='linear', \
+get_t_rgi_srho_cms = RGI((svals_srho_cd, logrhovals_srho_cd, yvals_srho_cd, zvals_srho_cd), logt_res_srho_cms_aqua, method='linear', \
             bounds_error=False, fill_value=None)
 
 get_p_rgi_srho_cms_nohg = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho), logp_res_srho_cms_nohg_aqua, method='linear', \
