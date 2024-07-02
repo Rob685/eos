@@ -319,9 +319,10 @@ def err_p_rhot(_lgp, _lgrho, _lgt, _y, _z, hhe_eos, z_eos, hg):
 
 def err_t_srho(_lgt, _s, _lgrho, _y, _z, hhe_eos, z_eos, hg):
     s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)*erg_to_kbbar
+    #s_test = get_s_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)*erg_to_kbbar
     #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos, z_eos=z_eos)*erg_to_kbbar
     #s_test = get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)*erg_to_kbbar
-    #logp = get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
+    #logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg)
     #s_test = get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)*erg_to_kbbar
     return (s_test/_s) - 1
 
@@ -364,8 +365,10 @@ def get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, multivariable=Fal
     if not multivariable:
         if np.isscalar(_s):
             _s, _lgp, _y, _z = np.array([_s]), np.array([_lgp]), np.array([_y]), np.array([_z])
-            guess = ideal_xy.get_t_sp(_s, _lgp, _y)
-            #guess = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+            try:
+                guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+            except:
+                guess = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
             sol = root(err_t_sp, guess, tol=1e-8, method=method, args=(_s, _lgp, _y, _z, hhe_eos, z_eos, hg))
             return float(sol.x)
 
@@ -400,6 +403,10 @@ def get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
 
     sol = np.array([get_p_rhot(rho, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg) for rho, t, y, z in zip(_lgrho, _lgt, _y, _z)])
     return sol
+
+def get_s_rhot(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True):
+    logp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=True)
+    return get_s_pt(logp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
 
 ###### S, Rho ######
@@ -917,7 +924,8 @@ zvals_srho_cd = np.arange(0, 1.05, 0.05)
 
 
 # logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_hg_updated.npy' % CURR_DIR)
-logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_lows_highs_extended.npy' % CURR_DIR)
+#logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_lows_highs_extended.npy' % CURR_DIR)
+logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqua_cms_lows_highs_extended_pbased.npy' % CURR_DIR)
 
 logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
