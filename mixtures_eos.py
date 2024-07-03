@@ -930,7 +930,9 @@ logp_res_srho_cms_aqua, logt_res_srho_cms_aqua = np.load('%s/cms/srho_base_z_aqu
 logp_res_srho_cms_nohg_aqua, logt_res_srho_cms_nohg_aqua = np.load('%s/cms/srho_base_z_aqua_extended_nohg.npy' % CURR_DIR)
 
 #logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_extended.npy' % CURR_DIR)
-logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_cd_lows_highs_extended.npy' % CURR_DIR)
+#logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_cd_lows_highs_extended.npy' % CURR_DIR)
+
+logp_res_srho_cd_aqua, logt_res_srho_cd_aqua = np.load('%s/cd/srho_base_z_aqua_cd_lows_highs_extended_pbased.npy' % CURR_DIR)
 
 #logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense.npy' % CURR_DIR)
 logp_res_srho_cd_ice, logt_res_srho_cd_ice = np.load('%s/cd/srho_base_z_aqua_cd_lows_ice_dense_yextended.npy' % CURR_DIR)
