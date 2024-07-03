@@ -1355,9 +1355,9 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, h
     T2 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if order == 2:
-        return (T2 - T1)/(2*_z*dz)
+        return (T2 - T1)/(2*_z*dy)
     elif order == 1:
-        return (T2 - T0)/(_z*dz)
+        return (T2 - T0)/(_z*dy)
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
