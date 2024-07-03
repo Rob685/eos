@@ -1104,103 +1104,137 @@ def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True):
 
 ############################### Derivatives ###############################
 
-def get_dudy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, smooth_gauss=False):
+def get_dudy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True, smooth_gauss=False):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    dudy_srhoz = (U1 - U0)/(_y*dy)
+    U1 = 10**get_u_srho_tab(_s, _lgrho, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U2 = 10**get_u_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+    if order == 2:
+        dudy_srhoz = (U2 - U1)/(2*_y*dy)
+    elif order == 1:
+        dudy_srhoz = (U2 - U0)/(_y*dy)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
     if smooth_gauss:
         return smooth.gauss_smooth(dudy_srhoz)
     else:
         return dudy_srhoz# + dudz_srhoy
 
-def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth_gauss=False):
+def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, smooth_gauss=False):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    U1 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    dudz_srhoy = (U2 - U0)/(_z*dz)
+
+    if order == 2:
+        dudz_srhoy = (U2 - U1)/(2*_z*dz)
+    elif order == 1:
+        dudz_srhoy = (U2 - U0)/(_z*dz)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
     if smooth_gauss:
         return smooth.gauss_smooth(dudz_srhoy)
     else:
-        return dudz_srhoy
+        return dudz_srhoy# + dudz_srhoy
 
 # du/ds_(rho, Y) = T test
-def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True, tab=True):
-    S1 = _s/erg_to_kbbar
-    S2 = S1*(1+ds)
-    U0 = 10**get_u_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
-    U1 = 10**get_u_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
-    return (U1 - U0)/(S1*ds)
-
-def get_dudrho_sy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho=0.1, hg=True, tab=True):
-    R1 = 10**_lgrho
-    R2 = R1*(1+drho)
-    #rho1 = np.log10((10**rho)*(1+drho))
-    U0 = 10**get_u_srho_tab(_s, np.log10(R1), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
-    U1 = 10**get_u_srho_tab(_s, np.log10(R2), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
-    #return (U1 - U0)/(R1*drho)
-    return (U1 - U0)/((1/R1) - (1/R2))
-
-# def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.01, hg=True):
-#     S0 = _s/erg_to_kbbar
-#     S1 = S0*(1+ds)
-
-#     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-#     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-#     P2 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-#     #P3 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z*(1+dz))
-
-#     dpds_rhoyz = (P1 - P0)/(S1 - S0)
-#     dpdy_srhoz = (P2 - P0)/(_y*dy)
-#     #dpdz_srhoy = (P3 - P0)/(_z*dz)
-
-#     dsdy_rhopz = -dpdy_srhoz/dpds_rhoyz
-#     #dsdy_rhopy = -dpdz_srhoy/dpds_rhoyz
-
-#     return dsdy_rhopz 
-
-def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, hg=True):
+def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.1, hg=True, tab=True):
     S0 = _s/erg_to_kbbar
-    S1 = S0*(1+ds)
+    S1 = S0*(1-ds)
+    S2 = S0*(1+ds)
+
+    U0 = 10**get_u_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+    U1 = 10**get_u_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+    U2 = 10**get_u_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+
+    if order == 2:
+        return (U2 - U1)/(S2 - S1)
+    elif order == 1:
+        return (U2 - U0)/(S2 - S0)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
+def get_dudrho_sy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, drho=0.1, hg=True, tab=True):
+    R0 = 10**_lgrho
+    R1 = R0*(1-drho)
+    R2 = R0*(1+drho)
+    #rho1 = np.log10((10**rho)*(1+drho))
+    U0 = 10**get_u_srho_tab(_s, np.log10(R0), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+    U1 = 10**get_u_srho_tab(_s, np.log10(R1), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+    U2 = 10**get_u_srho_tab(_s, np.log10(R2), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, tab=tab)
+
+    if order == 2:
+        return (U2 - U1)/((1/R1) - (1/R2))
+    elif order == 1:
+        return (U2 - U0)/((1/R0) - (1/R2))
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
+# DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
+def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, hg=True):
+    S0 = _s/erg_to_kbbar
+    S1 = S0*(1-ds)
+    S2 = S0*(1+ds)
 
     P0 = 10**get_p_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P1 = 10**get_p_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P2 = 10**get_p_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (P1 - P0)/(S1 - S0)
+    if order == 2:
+        return (P2 - P1)/(S2 - S1) # constant P, T, Z
+    elif order == 1:
+        return (P2 - P0)/(S2 - S0)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, smooth=False):
+def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True, smooth_gauss=False):
 
     # if smooth:
     #     P0 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
     #     P1 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
     # else:
     P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    P1 = 10**get_p_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P1 = 10**get_p_srho_tab(_s, _lgrho, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P2 = 10**get_p_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    if smooth:
-        return smooth.gauss_smooth((P1 - P0)/(_y * dy), base_sigma=5, base_window=10)
+    if order == 2:
+        dpdy_srho = (P2 - P1)/(2*_y*dy)
+    elif order == 1:
+        dpdy_srho = (P2 - P0)/(_y*dy)
     else:
-        return (P1 - P0)/(_y * dy)
-
-def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth_gauss=False, base_sigma=5, base_window=10):
-
-    # if smooth:
-    #     P0 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
-    #     P1 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
-    #else:
-    P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    P1 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
     if smooth_gauss:
-        return smooth.gauss_smooth((P1 - P0)/(_z * dz), base_sigma=base_sigma, base_window=base_window)
+        return smooth.gauss_smooth(dpdy_srho, base_sigma=base_sigma, base_window=base_window)
     else:
-        return (P1 - P0)/(_z * dz)
+        return dpdy_srho
 
-def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.01, 
+def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, smooth_gauss=False, base_sigma=5, base_window=10):
+
+
+    P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P1 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    P2 = 10**get_p_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+    if order == 2:
+        dpdz_srho = (P2 - P1)/(2*_z*dz)
+    elif order == 1:
+        dpdz_srho = (P2 - P0)/(_z*dz)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
+    if smooth_gauss:
+        return smooth.gauss_smooth(dpdz_srho, base_sigma=base_sigma, base_window=base_window)
+    else:
+        return dpdz_srho
+
+def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dy=0.01, 
                         hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False):
-
     #dPdS|{rho, Y, Z}:
-    dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
+    dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, ds=ds, hg=hg)
     #dPdZ|{S, rho, Y}:
-    dpdy_srho = get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dy=dy, hg=hg, smooth=smooth)
+    dpdy_srho = get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, dy=dy, hg=hg, smooth_gauss=smooth_gauss)
 
     #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
@@ -1210,13 +1244,12 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
         return dsdy_rhopy
 
 
-def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.01, 
+def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dz=0.01, 
                         hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False):
-
     #dPdS|{rho, Y, Z}:
-    dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
+    dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, ds=ds, hg=hg)
     #dPdZ|{S, rho, Y}:
-    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dz=dz, hg=hg, smooth_gauss=smooth_gauss,\
+    dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, dz=dz, hg=hg, smooth_gauss=smooth_gauss,\
                                 base_sigma=base_sigma, base_window=base_window)
 
     #dSdZ|{rho, P, Y} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
@@ -1226,105 +1259,145 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dz=0.
     else:
      return dsdz_rhopy
 
-def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True):
+# DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
+def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True):
     S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz))
+    S1 = get_s_pt(_lgp, _lgt, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S2 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
-    #dsdz_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
+    if order == 2:
+        return (S2 - S1)/(2*_y*dy) # constant P, T, Z
+    elif order == 1:
+        return (S2 - S0)/(_y*dy)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-    return dsdy_ptz# + dsdz_pty
-
-def get_dsdz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
+def get_dsdz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True):
     S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #S1 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z)
+    S1 = get_s_pt(_lgp, _lgt, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    #dsdy_ptz = (S1 - S0)/(_y*dy) # constant P, T, Z
-    dsdz_pty = (S2 - S0)/(_z*dz) # constant P, T, Y
+    if order == 2:
+        return (S2 - S1)/(2*_z*dz) # constant P, T, Z
+    elif order == 1:
+        return (S2 - S0)/(_z*dz)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-    return dsdz_pty
 
-def get_c_s(_s, _lgp, _y, _z,hhe_eos, z_eos='aqua',  dp=0.1, hg=True):
+def get_c_s(_s, _lgp, _y, _z,hhe_eos, z_eos='aqua', order=1, dp=0.1, hg=True):
     P0 = 10**_lgp
-    P1 = P0*(1+dp)
+    P1 = P0*(1-dp)
+    P2 = P0*(1+dp)
     R0 = get_rho_sp_tab(_s, np.log10(P0), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
     R1 = get_rho_sp_tab(_s, np.log10(P1), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    R2 = get_rho_sp_tab(_s, np.log10(P2), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
 
-    return np.sqrt((P1 - P0)/(10**R1 - 10**R0))
+    if order == 2:
+        return np.sqrt((P2 - P1)/(10**R2 - 10**R1))
+    elif order == 1:
+        return np.sqrt((P2 - P0)/(10**R2 - 10**R0))
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_dtdrho_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho=0.01, hg=True):
+def get_dtdrho_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, drho=0.01, hg=True):
     R0 = 10**_lgrho
-    R1 = R0*(1+drho)
+    R1 = R0*(1-drho)
+    R2 = R0*(1+drho)
+
     T0 = 10**get_t_srho_tab(_s, np.log10(R0), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
     T1 = 10**get_t_srho_tab(_s, np.log10(R1), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    T2 = 10**get_t_srho_tab(_s, np.log10(R2), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (T1 - T0)/(R1 - R0)
+    if order == 2:
+        return (T2 - T1)/(R2 - R1)
+    elif order == 1:
+        return (T2 - T0)/(R2 - R0)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, hg=True):
+def get_dtds_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, hg=True):
     S0 = _s/erg_to_kbbar
-    S1 = S0*(1+ds)
+    S1 = S0*(1-ds)
+    S2 = S0*(1+ds)
+
     T0 = 10**get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     T1 = 10**get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    T2 = 10**get_t_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (T1 - T0)/(S1 - S0)
+    if order == 2:
+        return (T2 - T1)/(S2 - S1)
+    elif order == 1:
+        return (T2 - T0)/(S2 - S0)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_dtds_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, hg=True):
+def get_dtds_sp(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, hg=True):
     S0 = _s/erg_to_kbbar
-    S1 = S0*(1+ds)
+    S1 = S0*(1-ds)
+    S2 = S0*(1+ds)
+
     T0 = 10**get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     T1 = 10**get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    T2 = 10**get_t_sp_tab(S2*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (T1 - T0)/(S1 - S0)
+    if order == 2:
+        return (T2 - T1)/(S2 - S1)
+    elif order == 1:
+        return (T2 - T0)/(S2 - S0)
 
-def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True):
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
+
+def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True):
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    T1 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #T2 = 10**get_t_srho(_s, _lgrho, _y, _z*(1+dz))
+    T1 = 10**get_t_srho_tab(_s, _lgrho, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    T2 = 10**get_t_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    dtdy_srhoz = (T1 - T0)/(_y*dy)
-    #dtdz_srhoy = (T2 - T0)/(_z*dz)
-    return dtdy_srhoz
+    if order == 2:
+        return (T2 - T1)/(2*_z*dz)
+    elif order == 1:
+        return (T2 - T0)/(_z*dz)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
 
-def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True):
+def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True):
+
     T0 = 10**get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    #T1 = 10**get_t_srho(_s, _lgrho, _y*(1+dy), _z)
+
+    T1 = 10**get_t_srho_tab(_s, _lgrho, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     T2 = 10**get_t_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    #dtdy_srhoz = (T1 - T0)/(_y*dy)
-    dtdz_srhoy = (T2 - T0)/(_z*dz)
-    return dtdz_srhoy
+    if order == 2:
+        return (T2 - T1)/(2*_z*dz)
+    elif order == 1:
+        return (T2 - T0)/(_z*dz)
+    else:
+        raise Exception('Only order = 1 or order = 2 allowed!')
 
 def get_drhodt_py(p, t, y, z, hhe_eos, z_eos='aqua', dt=0.1, hg=True):
-    #y = cms.n_to_Y(x)
+
     rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     rho1 = get_rho_pt(p, t*(1+dt), y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    drhodt = (rho1 - rho0)/(t*dt)
-
-    return drhodt
+    return (rho1 - rho0)/(t*dt)
 
 def get_drhody_pt(p, t, y, z, hhe_eos, z_eos='aqua', dy=0.1, hg=True):
-    #y = cms.n_to_Y(x)
+
     rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     rho1 = get_rho_pt(p, t, y*(1+dy), z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    drhodt = (rho1 - rho0)/(y*dy)
-
-    return drhodt
+    return (rho1 - rho0)/(y*dy)
 
 def get_drhodz_pt(p, t, y, z, hhe_eos, z_eos='aqua', dz=0.1, hg=True):
-    #y = cms.n_to_Y(x)
+
     rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     rho1 = get_rho_pt(p, t, y, z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    drhodt = (rho1 - rho0)/(z*dz)
+    return (rho1 - rho0)/(z*dz)
 
-    return drhodt
-
-def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True):
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, smooth_gauss=False, base_sigma=5, base_window=10):
     # ds/dlogT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1-ds)
@@ -1338,7 +1411,11 @@ def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True
         T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
         T2 = get_t_srho(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (S2 - S1)/(T2 - T1)
+    cv = (S2 - S1)/(T2 - T1)
+    if smooth_gauss:
+        return smooth.gauss_smooth(cv, base_sigma=base_sigma, base_window=base_window)
+    else:
+        return cv
 
 def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True):
     # ds/dlogT_{P, Y}
@@ -1378,8 +1455,9 @@ def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01, tab=True, hg=
 
 def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho = 0.01, hg=True):
     T0 = get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
-    T1 = get_t_srho_tab(_s, _lgrho*(1+drho), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
-    return (T1 - T0)/(_lgrho*drho)
+    T1 = get_t_srho_tab(_s, _lgrho*(1-drho), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    T2 = get_t_srho_tab(_s, _lgrho*(1+drho), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    return (T2 - T1)/(2*_lgrho*drho)
 
 def get_K(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01, hg=True):
     P0 = 10**_lgp
