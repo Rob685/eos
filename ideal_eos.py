@@ -33,6 +33,7 @@ from scipy.interpolate import RegularGridInterpolator as RGI
     
 """
 
+TOL=1e-12
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/amu)
 
 kB = 1.380649e-16
@@ -167,8 +168,8 @@ def get_smix(y, m_h, m_he):
         f_h * m_h + f_he * m_he)
     return smix
 
-TBOUNDS = (-100, 100)
-PBOUNDS = (-100, 100)
+TBOUNDS = (1, 6)
+PBOUNDS = (5, 20)
 class IdealHHeMix(object):
     """
     ideal eos with proton mass m
@@ -209,7 +210,11 @@ class IdealHHeMix(object):
             return np.array(rets)
         def obj(logt):
             return self.get_s_pt(logp, logt, y) / s - 1
-        opt_logt = brenth(obj, *TBOUNDS)
+        try:
+            opt_logt = brenth(obj, *TBOUNDS, xtol=TOL)
+        except:
+            print("get_rho_sp", s, logp)
+            raise
         return self.get_rho_pt(logp, opt_logt, y)
 
     ## P getters
@@ -220,7 +225,7 @@ class IdealHHeMix(object):
             return np.array(rets)
         def obj(logp):
             return self.get_rho_pt(logp, logt, y) / logrho - 1
-        return brenth(obj, *PBOUNDS)
+        return brenth(obj, *PBOUNDS, xtol=TOL)
 
     def get_p_srho(self, s, logrho, y):
         return self.get_pt_srho(s, logrho, y)[0]
@@ -237,7 +242,7 @@ class IdealHHeMix(object):
 
         def obj(logt):
             return self.get_rho_pt(logp, logt, y) / logrho - 1
-        return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
+        return root_scalar(obj, method='brenth', bracket=TBOUNDS, xtol=TOL).root
 
     def get_t_sp(self, s, logp, y):
         if not np.isscalar(y):
@@ -250,13 +255,10 @@ class IdealHHeMix(object):
 
         def obj(logt):
             return self.get_s_pt(logp, logt, y) / s - 1
-        return root_scalar(obj, method='brenth', bracket=TBOUNDS).root
+        return root_scalar(obj, method='brenth', bracket=TBOUNDS, xtol=TOL).root
 
     def get_t_srho(self, s, logrho, y):
-        if not np.isscalar(s):
-            return self.get_pt_srho(s, logrho, y)[:,1]
-        else:
-            return self.get_pt_srho(s, logrho, y)[1]
+        return self.get_pt_srho(s, logrho, y)[1]
 
     ## U getters
     def get_u_pt(self, logp, logt, y):
@@ -284,7 +286,7 @@ class IdealHHeMix(object):
         # 2D inversion...
         if not np.isscalar(s):
             return np.array([self.get_pt_srho(*el)
-                             for el in zip(s, logrho, y)])
+                             for el in zip(s, logrho, y)]).T
         def opt(v):
             logp, logt = v
             return (
@@ -297,9 +299,9 @@ class IdealHHeMix(object):
             print(
                 (self.get_s_pt(logp, logt, y) / s - 1)**2,
                 (self.get_rho_pt(logp, logt, y) / logrho - 1)**2)
-        sol = minimize(opt, [8, 3],
+        sol = minimize(opt, [7, 2],
                        bounds=(PBOUNDS, TBOUNDS),
-                       method='nelder-mead')
+                       method='nelder-mead', tol=TOL)
         # print_res(sol.x)
         return sol.x
 

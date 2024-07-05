@@ -1054,11 +1054,11 @@ def get_dudy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, s
 def get_dudz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=0.01, hg=True, smooth_gauss=False):
     U0 = 10**get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     U2 = 10**get_u_srho_tab(_s, _lgrho, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    dudz_srhoy = (U2 - U0)/(_z*dz)
+    dudz_srhoz = (U2 - U0)/(_z*dz)
     if smooth_gauss:
-        return smooth.gauss_smooth(dudz_srhoy)
+        return smooth.gauss_smooth(dudz_srhoz)
     else:
-        return dudy_srhoz
+        return dudz_srhoz
 
 # du/ds_(rho, Y) = T test
 def get_duds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua',ds=0.1, hg=True, tab=True):
@@ -1104,7 +1104,7 @@ def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, hg=Tr
 
     return (P1 - P0)/(S1 - S0)
 
-def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, smooth=False):
+def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, smooth_gauss=False):
 
     # if smooth:
     #     P0 = 10**gauss_smooth(get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg), base_sigma=5, base_window=5)
@@ -1113,7 +1113,7 @@ def get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=0.01, hg=True, s
     P0 = 10**get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     P1 = 10**get_p_srho_tab(_s, _lgrho, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    if smooth:
+    if smooth_gauss:
         return smooth.gauss_smooth((P1 - P0)/(_y * dy), base_sigma=5, base_window=10)
     else:
         return (P1 - P0)/(_y * dy)
@@ -1138,7 +1138,7 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.01, dy=0.
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, ds=ds, hg=hg)
     #dPdZ|{S, rho, Y}:
-    dpdy_srho = get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dy=dy, hg=hg, smooth=smooth)
+    dpdy_srho = get_dpdy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, dy=dy, hg=hg, smooth_gauss=smooth_gauss)
 
     #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
     dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
@@ -1344,14 +1344,14 @@ def get_brunt(s, lgp, lgrho, y, z, g):
     '''
     N_sq = 0 * lgrho
     rho_bar = 10**((lgrho[ :-1] + lgrho[1: ])/ 2)
-    p_bar = 10**((lgp[ :-1] + lgp[1: ])/ 2)
+    lgp_bar = (lgp[ :-1] + lgp[1: ])/ 2
     s_bar = (s[ :-1] + s[1: ])/ 2
     y_bar = (y[ :-1] + y[1: ])/ 2
     z_bar = (z[ :-1] + z[1: ])/ 2
     g_bar = (g[ :-1] + g[1: ]) / 2
-    N_sq[1: ] = g_bar**2 * rho_bar / p_bar * (
+    N_sq[1: ] = g_bar**2 * rho_bar / 10**lgp_bar * (
         (lgrho[1: ] - lgrho[ :-1]) / (lgp[1: ] - lgp[ :-1])
-        - 1 / get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos='cms', z_eos='aqua'))
+        - 1 / get_gamma1(s_bar, lgp_bar, y_bar, z_bar, hhe_eos='cms', z_eos='aqua'))
     N_sq[0] = N_sq[1] # doesn't matter
     return N_sq
 
