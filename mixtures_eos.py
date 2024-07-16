@@ -1257,7 +1257,7 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.
     if polyfit:
         return smooth.joint_fit(dsdz_rhopy, logrhoarr=_lgrho)
     else:
-     return dsdz_rhopy
+        return dsdz_rhopy
 
 # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
 def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True):
