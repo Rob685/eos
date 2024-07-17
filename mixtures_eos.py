@@ -1297,25 +1297,29 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.
 # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
 def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
-    S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S1 = get_s_pt(_lgp, _lgt, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S2 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
+    S0 = get_s_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S1 = get_s_pt(_lgp, _lgt, _y_call*(1 - dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S2 = get_s_pt(_lgp, _lgt, _y_call*(1 + dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if order == 2:
-        return (S2 - S1)/(2*_y*dy) # constant P, T, Z
+        return (S2 - S1)/(2*_y_call*dy) # constant P, T, Z
     elif order == 1:
-        return (S2 - S0)/(_y*dy)
+        return (S2 - S0)/(_y_call*dy)
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
 def get_dsdz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S1 = get_s_pt(_lgp, _lgt, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S0 = get_s_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S1 = get_s_pt(_lgp, _lgt, _y_call, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S2 = get_s_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if order == 2:
         return (S2 - S1)/(2*_z*dz) # constant P, T, Z
@@ -1419,30 +1423,36 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
 def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=True):
 
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt*(1+dt), _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt*(1+dt), _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     return (rho1 - rho0)/(_lgt*dt)
 
 def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
 
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt, _y_call*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (rho1 - rho0)/(y*dy)
+    return (rho1 - rho0)/(_y_call*dy)
 
 def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_tot=True):
 
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     return (rho1 - rho0)/(z*dz)
 
