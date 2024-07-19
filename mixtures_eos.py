@@ -579,18 +579,21 @@ get_t_rgi_sp_mh13 = RGI((svals_sp_aqua, logpvals_sp_aqua, yvals_sp_mh13, zvals_s
 
 def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
+
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_s):
-                return float(get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
+                return float(get_rho_rgi_sp_cms(np.array([_s, _lgp, _y_call, _z]).T))
             else:
-                return get_rho_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T)
+                return get_rho_rgi_sp_cms(np.array([_s, _lgp, _y_call, _z]).T)
         else:
             if np.isscalar(_s):
-                return float(get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T))
+                return float(get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y_call, _z]).T))
             else:
-                return get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
+                return get_rho_rgi_sp_cms_nohg(np.array([_s, _lgp, _y_call, _z]).T)
 
     # elif hhe_eos == 'cms_ice':
     #     if np.isscalar(_s):
@@ -600,57 +603,60 @@ def get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
-            return float(get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T)
+            return get_rho_rgi_sp_cd_ice(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
-            return float(get_rho_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_rho_rgi_sp_cd(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_rho_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T)
+            return get_rho_rgi_sp_cd(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
-            return float(get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
+            return get_rho_rgi_sp_scvh(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_s):
-            return float(get_rho_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_rho_rgi_sp_mls(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_rho_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T)
+            return get_rho_rgi_sp_mls(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_s):
-            return float(get_rho_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_rho_rgi_sp_mh13(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_rho_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T)
+            return get_rho_rgi_sp_mh13(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_rho_sp(_s, _lgp, _y))
+            return float(ideal_xy.get_rho_sp(_s, _lgp, _y_call))
         else:
-            return ideal_xy.get_rho_sp(_s, _lgp, _y)
+            return ideal_xy.get_rho_sp(_s, _lgp, _y_call)
 
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
 
 def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
+
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_s):
-                return float(get_t_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T))
+                return float(get_t_rgi_sp_cms(np.array([_s, _lgp, _y_call, _z]).T))
             else:
-                return get_t_rgi_sp_cms(np.array([_s, _lgp, _y, _z]).T)
+                return get_t_rgi_sp_cms(np.array([_s, _lgp, _y_call, _z]).T)
         else:
             if np.isscalar(_s):
-                return float(get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T))
+                return float(get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y_call, _z]).T))
             else:
-                return get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y, _z]).T)
+                return get_t_rgi_sp_cms_nohg(np.array([_s, _lgp, _y_call, _z]).T)
 
     # elif hhe_eos == 'cms_ice':
     #     if np.isscalar(_s):
@@ -660,45 +666,45 @@ def get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
-            return float(get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y, _z]).T)
+            return get_t_rgi_sp_cd_ice(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
-            return float(get_t_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_t_rgi_sp_cd(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_t_rgi_sp_cd(np.array([_s, _lgp, _y, _z]).T)
+            return get_t_rgi_sp_cd(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
-            return float(get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_t_rgi_sp_scvh(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_t_rgi_sp_scvh(np.array([_s, _lgp, _y, _z]).T)
+            return get_t_rgi_sp_scvh(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_s):
-            return float(get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_t_rgi_sp_mls(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_t_rgi_sp_mls(np.array([_s, _lgp, _y, _z]).T)
+            return get_t_rgi_sp_mls(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_s):
-            return float(get_t_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T))
+            return float(get_t_rgi_sp_mh13(np.array([_s, _lgp, _y_call, _z]).T))
         else:
-            return get_t_rgi_sp_mh13(np.array([_s, _lgp, _y, _z]).T)
+            return get_t_rgi_sp_mh13(np.array([_s, _lgp, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_t_sp(_s, _lgp, _y))
+            return float(ideal_xy.get_t_sp(_s, _lgp, _y_call))
         else:
-            return ideal_xy.get_t_sp(_s, _lgp, _y)
+            return ideal_xy.get_t_sp(_s, _lgp, _y_call)
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
 
 def get_rhot_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True, y_tot=True):
     if tab:
-        rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=True), get_t_sp_tab(_s, _lgp , _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        rho, t = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot), get_t_sp_tab(_s, _lgp , _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     else:
         t = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
         rho = get_rho_pt(_lgp, t, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
@@ -783,110 +789,114 @@ get_s_rgi_rhot_mh13 = RGI((logrhovals_rhot, logtvals_rhot, yvals_rhot, zvals_rho
 
 def get_p_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_lgrho):
-                return float(get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T))
+                return float(get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y_call, _z]).T))
             else:
-                return get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T)
+                return get_p_rgi_rhot_cms(np.array([_lgrho, _lgt, _y_call, _z]).T)
         else:
             if np.isscalar(_lgrho):
-                return float(get_p_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y, _z]).T))
+                return float(get_p_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y_call, _z]).T))
             else:
-                return get_p_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y, _z]).T)
+                return get_p_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_lgrho):
-            return float(get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_p_rgi_rhot_cd(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_lgrho):
-            return float(get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_p_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_lgrho):
-            return float(get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_p_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_lgrho):
-            return float(get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_p_rgi_rhot_mls(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_lgrho):
-            return float(get_p_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_p_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_p_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_p_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_p_rhot(_lgrho, _lgt, _y))
+            return float(ideal_xy.get_p_rhot(_lgrho, _lgt, _y_call))
         else:
-            return ideal_xy.get_p_rhot(_lgrho, _lgt, _y)
+            return ideal_xy.get_p_rhot(_lgrho, _lgt, _y_call)
 
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
 
 def get_s_rhot_tab(_lgrho, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_lgrho):
-                return float(get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T))
+                return float(get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y_call, _z]).T))
             else:
-                return get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y, _z]).T)
+                return get_s_rgi_rhot_cms(np.array([_lgrho, _lgt, _y_call, _z]).T)
         else:
             if np.isscalar(_lgrho):
-                return float(get_s_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y, _z]).T))
+                return float(get_s_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y_call, _z]).T))
             else:
-                return get_s_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y, _z]).T)
+                return get_s_rgi_rhot_cms_nohg(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_lgrho):
-            return float(get_s_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_s_rgi_rhot_cd(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_s_rgi_rhot_cd(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_s_rgi_rhot_cd(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_lgrho):
-            return float(get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_s_rgi_rhot_cd_ice(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_lgrho):
-            return float(get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_s_rgi_rhot_scvh(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_lgrho):
-            return float(get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_s_rgi_rhot_mls(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_lgrho):
-            return float(get_s_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y, _z]).T))
+            return float(get_s_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y_call, _z]).T))
         else:
-            return get_s_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y, _z]).T)
+            return get_s_rgi_rhot_mh13(np.array([_lgrho, _lgt, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_s_rhot(_lgrho, _lgt, _y))
+            return float(ideal_xy.get_s_rhot(_lgrho, _lgt, _y_call))
         else:
-            return ideal_xy.get_s_rhot(_lgrho, _lgt, _y)
+            return ideal_xy.get_s_rhot(_lgrho, _lgt, _y_call)
 
     else:
         raise Exception('Only cms, scvh, or mls available for now.')
@@ -996,108 +1006,112 @@ get_t_rgi_srho_mh13 = RGI((svals_srho, logrhovals_srho, yvals_srho, zvals_srho),
 
 def get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_s):
-                return float(get_p_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T))
+                return float(get_p_rgi_srho_cms(np.array([_s, _lgrho, _y_call, _z]).T))
             else:
-                return get_p_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T)
+                return get_p_rgi_srho_cms(np.array([_s, _lgrho, _y_call, _z]).T)
 
         else:
             if np.isscalar(_s):
-                return float(get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T))
+                return float(get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y_call, _z]).T))
             else:
-                return get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T)
+                return get_p_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
-            return float(get_p_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_p_rgi_srho_cd(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_p_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T)
+            return get_p_rgi_srho_cd(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
-            return float(get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T)
+            return get_p_rgi_srho_cd_ice(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
-            return float(get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
+            return get_p_rgi_srho_scvh(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_s):
-            return float(get_p_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_p_rgi_srho_mls(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_p_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T)
+            return get_p_rgi_srho_mls(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_s):
-            return float(get_p_rgi_srho_mh13(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_p_rgi_srho_mh13(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_p_rgi_srho_mh13(np.array([_s, _lgrho, _y, _z]).T)
+            return get_p_rgi_srho_mh13(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_p_srho(_s, _lgrho, _y))
+            return float(ideal_xy.get_p_srho(_s, _lgrho, _y_call))
         else:
-            return ideal_xy.get_p_srho(_s, _lgrho, _y)
+            return ideal_xy.get_p_srho(_s, _lgrho, _y_call)
 
 def get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
     if hhe_eos == 'cms':
         if hg:
             if np.isscalar(_s):
-                return float(get_t_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T))
+                return float(get_t_rgi_srho_cms(np.array([_s, _lgrho, _y_call, _z]).T))
             else:
-                return get_t_rgi_srho_cms(np.array([_s, _lgrho, _y, _z]).T)
+                return get_t_rgi_srho_cms(np.array([_s, _lgrho, _y_call, _z]).T)
         else:
             if np.isscalar(_s):
-                return float(get_t_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T))
+                return float(get_t_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y_call, _z]).T))
             else:
-                return get_t_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y, _z]).T)
+                return get_t_rgi_srho_cms_nohg(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'cd':
         if np.isscalar(_s):
-            return float(get_t_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_t_rgi_srho_cd(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_t_rgi_srho_cd(np.array([_s, _lgrho, _y, _z]).T)
+            return get_t_rgi_srho_cd(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'cd_ice':
         if np.isscalar(_s):
-            return float(get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y, _z]).T)
+            return get_t_rgi_srho_cd_ice(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'scvh':
         if np.isscalar(_s):
-            return float(get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y, _z]).T)
+            return get_t_rgi_srho_scvh(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'mls':
         if np.isscalar(_s):
-            return float(get_t_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_t_rgi_srho_mls(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_t_rgi_srho_mls(np.array([_s, _lgrho, _y, _z]).T)
+            return get_t_rgi_srho_mls(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'mh13':
         if np.isscalar(_s):
-            return float(get_t_rgi_srho_mh13(np.array([_s, _lgrho, _y, _z]).T))
+            return float(get_t_rgi_srho_mh13(np.array([_s, _lgrho, _y_call, _z]).T))
         else:
-            return get_t_rgi_srho_mh13(np.array([_s, _lgrho, _y, _z]).T)
+            return get_t_rgi_srho_mh13(np.array([_s, _lgrho, _y_call, _z]).T)
 
     elif hhe_eos == 'ideal':
         if np.isscalar(_s):
-            return float(ideal_xy.get_t_srho(_s, _lgrho, _y))
+            return float(ideal_xy.get_t_srho(_s, _lgrho, _y_call))
         else:
-            return ideal_xy.get_t_srho(_s, _lgrho, _y)
+            return ideal_xy.get_t_srho(_s, _lgrho, _y_call)
 
 def get_pt_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True, y_tot=True):
     return get_p_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg), get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
@@ -1110,10 +1124,14 @@ def get_u_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True,
         _lgp = get_p_rhot(_lgrho, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
     return get_u_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos)
 
-def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True):
+def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True, y_tot=True):
     """This function returns the entropy value
     required for nabla - nabla_a = 0 at
     pressure and temperature profiles"""
+
+    if y_tot:
+        _y /= (1 - _z)
+
     guess = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg, z_eos=z_eos) * erg_to_kbbar
     
     sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z, hhe_eos, hg, tab))
@@ -1282,25 +1300,29 @@ def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.
 # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
 def get_dsdy_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
-    S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S1 = get_s_pt(_lgp, _lgt, _y*(1-dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S2 = get_s_pt(_lgp, _lgt, _y*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
+    S0 = get_s_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S1 = get_s_pt(_lgp, _lgt, _y_call*(1 - dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S2 = get_s_pt(_lgp, _lgt, _y_call*(1 + dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if order == 2:
-        return (S2 - S1)/(2*_y*dy) # constant P, T, Z
+        return (S2 - S1)/(2*_y_call*dy) # constant P, T, Z
     elif order == 1:
-        return (S2 - S0)/(_y*dy)
+        return (S2 - S0)/(_y_call*dy)
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
 def get_dsdz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, y_tot=True):
     if y_tot:
-        _y /= (1 - _z)
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    S0 = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S1 = get_s_pt(_lgp, _lgt, _y, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    S2 = get_s_pt(_lgp, _lgt, _y, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S0 = get_s_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S1 = get_s_pt(_lgp, _lgt, _y_call, _z*(1-dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    S2 = get_s_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     if order == 2:
         return (S2 - S1)/(2*_z*dz) # constant P, T, Z
@@ -1401,24 +1423,39 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_drhodt_py(p, t, y, z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=True):
+def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=True):
 
-    rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    rho1 = get_rho_pt(p, t*(1+dt), y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    if y_tot:
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-    return (rho1 - rho0)/(t*dt)
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt*(1+dt), _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-def get_drhody_pt(p, t, y, z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
+    return (rho1 - rho0)/(_lgt*dt)
 
-    rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    rho1 = get_rho_pt(p, t, y*(1+dy), z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
 
-    return (rho1 - rho0)/(y*dy)
+    if y_tot:
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
 
-def get_drhodz_pt(p, t, y, z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_tot=True):
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt, _y_call*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    rho0 = get_rho_pt(p, t, y, z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    rho1 = get_rho_pt(p, t, y, z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    return (rho1 - rho0)/(_y_call*dy)
+
+def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_tot=True):
+
+    if y_tot:
+        _y_call = _y / (1 - _z)
+    else:
+        _y_call = _y
+
+    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    rho1 = get_rho_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
     return (rho1 - rho0)/(z*dz)
 
@@ -1502,6 +1539,7 @@ def get_alpha(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=
 
     if y_tot:
         _y /= (1 - _z)
+
     T0 = 10**_lgt
     T1 = T0*(1+dt)
     R0 = 10**get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua')
