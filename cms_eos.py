@@ -85,12 +85,13 @@ def grid_data(df):
 cms_hdata = grid_data(cms_reader('TABLE_H_TP_v1'))
 cms_hedata = grid_data(cms_reader('TABLE_HE_TP_v1'))
 
-data_hc = pd.read_csv('%s/cms/HG23_Vmix_Smix.csv' % CURR_DIR, delimiter=',')
+data_hc = pd.read_csv('%s/cms/HG23_Vmix_Smix_Umix.csv' % CURR_DIR, delimiter=',')
 data_hc = data_hc[(data_hc['LOGT'] <= 5.0) & (data_hc['LOGT'] != 2.8)]
 data_hc = data_hc.rename(columns={'LOGT':'logt', 'LOGP':'logp'}).sort_values(by=['logt', 'logp'])
 
 grid_hc = grid_data(data_hc)
 svals_hc = grid_hc['Smix']
+uvals_hc = grid_hc['Umix']
 
 logpvals_hc = grid_hc['logp'][0]
 logtvals_hc = grid_hc['logt'][:,0]
@@ -100,11 +101,14 @@ logtvals_hc = grid_hc['logt'][:,0]
 
 smix_interp_rgi = RGI((logtvals_hc, logpvals_hc), grid_hc['Smix'], method='linear', bounds_error=False, fill_value=None) # Smix will be in cgs... not log cgs.
 vmix_interp_rgi = RGI((logtvals_hc, logpvals_hc), grid_hc['Vmix'], method='linear', bounds_error=False, fill_value=None)
+umix_interp_rgi = RGI((logtvals_hc, logpvals_hc), grid_hc['Umix'], method='linear', bounds_error=False, fill_value=None)
 
 def smix_interp(lgt, lgp):
     return smix_interp_rgi(np.array([lgt, lgp]).T)
 def vmix_interp(lgt, lgp):
     return vmix_interp_rgi(np.array([lgt, lgp]).T)
+def umix_interp(lgt, lgp):
+    return umix_interp_rgi(np.array([lgt, lgp]).T)
 
 # interpolations
 
@@ -220,10 +224,14 @@ def get_rho_pt(lgp, lgt, y, z=0.0, hg=True):
         vmix = 0.0
     return np.log10(1/(((1 - y) / rho_h) + (y / rho_he) + vmix*(1 - y)*y))
 
-def get_u_pt(lgp, lgt, y, z=0.0):
+def get_u_pt(lgp, lgt, y, z=0.0, hg=True):
     u_h = 10**get_logu_h(lgt, lgp) # MJ/kg to erg/g
     u_he = 10**get_logu_he(lgt, lgp)
-    return np.log10((1 - y)*u_h + y*u_he)
+    if hg:
+        umix = umix_interp(lgt, lgp)*(1 - y)*y
+    else:
+        umix = 0.0
+    return np.log10((1 - y)*u_h + y*u_he + umix)
 
 ###### inverted tables ######
 

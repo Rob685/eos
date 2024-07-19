@@ -268,7 +268,7 @@ def get_rho_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
         _z = 0.0
     return np.log10(1/((1 - _z)/rho_hhe + _z/rho_z))
 
-def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
+def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None, hg=True):
     """
     This calculates the log10 of the specific internal energy.
     The volume addition law is used for all EOSes. There are
@@ -300,6 +300,9 @@ def get_u_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos=None):
     #     return np.log10((1 - _z)*u_xy + _z*u_z)
     if hhe_eos == 'mh13':
         u_xy = xy_eos.get_u_pt_tab(_lgp, _lgt, _y)
+        return np.log10((1 - _z)*u_xy + _z*u_z)
+    elif hhe_eos == 'cms' or hhe_eos=='cms_ice':
+        u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y, hg=hg)
         return np.log10((1 - _z)*u_xy + _z*u_z)
     else:
         u_xy = 10**xy_eos.get_u_pt(_lgp, _lgt, _y)
