@@ -238,12 +238,12 @@ def get_c_v(s, rho, eos, f_ppv, f_fe, ds=0.05):
  
     return (S1 - S2)/(T1 - T2)
 
-def get_c_p(s, p, eos, ds=0.1):
+def get_c_p(s, p, eos, f_ppv, f_fe, ds=0.1):
     # ds/dlogT_{P, Y}
     S0 = s/erg_to_kbbar
     S1 = S0*(1+ds)
 
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, eos)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, eos)
+    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, eos, f_ppv=f_ppv, f_fe=f_fe)
+    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, eos, f_ppv=f_ppv, f_fe=f_fe)
 
     return (S1 - S0)/(T1 - T0)

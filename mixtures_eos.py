@@ -1423,7 +1423,7 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=True):
+def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.05, hg=True, y_tot=True):
 
     if y_tot:
         _y_call = _y / (1 - _z)
