@@ -1,5 +1,5 @@
 import numpy as np
-import const
+from eos import const
 from scipy.interpolate import RegularGridInterpolator, splrep, splev
 from scipy.interpolate import RectBivariateSpline as rbs
 from scipy.optimize import brentq
@@ -20,7 +20,7 @@ erg_to_kbbar = 1.202723550011625e-08
 
     This is necessary because the entropy of mixing calculations in this file are different from our precomputed
     tables used in scvh_eos.py, but those tables do not have the interal energy of mixtures.
-    
+
 """
 
 class eos:
