@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
-from eos import ideal_eos, aqua_eos, ppv_eos, serpentine_eos, fe_eos, zmix_eos
+from eos import ideal_eos, aqua_eos, ppv_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
 import os
 
 from astropy import units as u
@@ -25,6 +25,11 @@ from astropy.constants import u as amu
 mp = amu.to('g') # grams
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 
+# For Forsterite EOS units
+MJ_to_erg_S = (u.MJ/u.kg/u.K).to('erg/(K * g)')
+MJ_to_erg_U = (u.MJ/u.kg).to('erg/g')
+MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
+
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 ideal_water = ideal_eos.IdealEOS(m=18) # default for ideal eos is water for now
@@ -38,6 +43,8 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_rho_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_pt_tab(p, t)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_rho_pt_tab((10**p)*1e-10, t)
     elif eos == 'iron':
         return fe_eos.get_rho_pt_tab(p, t)
     elif eos == 'ideal':
@@ -54,6 +61,8 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_s_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_s_pt_tab(p, t)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_s_pt_tab((10**p)*1e-10, t) * MJ_to_erg_S
     elif eos == 'iron':
         return fe_eos.get_s_pt_tab(p, t)
     elif eos == 'ideal':
@@ -70,6 +79,8 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_u_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_u_pt_tab(p, t)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_u_pt_tab((10**p)*1e-10, t) * MJ_to_erg_U
     elif eos == 'iron':
         return fe_eos.get_u_pt_tab(p, t)
     elif eos == 'ideal':
@@ -88,6 +99,8 @@ def get_p_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_p_rhot_tab(rho, t)
     # elif eos == 'serpentine':
     #     #return serpentine_eos.get_p_rhot_tab(rho, t)
+    elif eos == 'fo':
+        return np.log10(aneos_forsterite_eos.get_p_rhot_tab(rho, t)*1e10)
     elif eos == 'iron':
         return fe_eos.get_p_rhot_tab(rho, t)
     elif eos == 'ideal':
@@ -106,6 +119,8 @@ def get_s_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_s_rhot_tab(rho, t)
     # elif eos == 'serpentine':
     #     #return serpentine_eos.get_p_rhot_tab(rho, t)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_s_rhot_tab(rho, t) * MJ_to_erg_S
     elif eos == 'iron':
         return fe_eos.get_s_rhot_tab(rho, t)
     elif eos == 'ideal':
@@ -125,6 +140,8 @@ def get_t_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_t_sp_tab(s, p)
     elif eos == 'serpentine':
         return serpentine_eos.get_t_sp_tab(s, p)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_t_sp_tab(s/MJ_to_kbbar, (10**p)*1e-10)
     elif eos == 'iron':
         return fe_eos.get_t_sp_tab(s, p)
     elif eos == 'ideal':
@@ -142,6 +159,8 @@ def get_rho_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
         return ppv_eos.get_rho_sp_tab(s, p)
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_sp_tab(s, p)
+    elif eos == 'fo':
+        return aneos_forsterite_eos.get_rho_sp_tab(s/MJ_to_kbbar, (10**p)*1e-10)
     elif eos == 'iron':
         return fe_eos.get_rho_sp_tab(s, p)
     elif eos == 'ideal':

@@ -47,7 +47,12 @@ def get_p_rhot_tab(logrho, logt):
 def get_s_rhot_tab(logrho, logt):
     if np.isscalar(logrho):
         return float(rgi_s(np.array([logt, logrho]).T))
-    return rgi_s(np.array([logt, logrho]).T) # returns in cgs units
+    return rgi_s(np.array([logt, logrho]).T) # returns in MJ/kg/K units
+
+def get_u_rhot_tab(logrho, logt):
+    if np.isscalar(logrho):
+        return float(rgi_u(np.array([logt, logrho]).T))
+    return rgi_u(np.array([logt, logrho]).T) # returns in MJ/kg units
 
 def err_rho_pt(logrho, p_val, logtval):
     logp_ = get_p_rhot_tab(logrho, logtval)
@@ -92,6 +97,13 @@ def get_s_pt_tab(p_GPa, logt, tab=True):
         return get_s_rhot_tab(get_rho_pt_tab(p_GPa, logt), logt)
     else:
         return get_s_rhot_tab(get_rho_pt(p_GPa, logt), logt) # RETURNS IN MJ/kg/K
+
+def get_u_pt_tab(p_GPa, logt, tab=True):
+    #p_GPa = 10**(logp-10) 
+    if tab:
+        return get_u_rhot_tab(get_rho_pt_tab(p_GPa, logt), logt)
+    else:
+        return get_u_rhot_tab(get_rho_pt(p_GPa, logt), logt) # RETURNS IN MJ/kg/K
     
 def err_t_sp(logt, s_val, logp_val):
     s_ = get_s_pt_tab(logp_val, logt)
