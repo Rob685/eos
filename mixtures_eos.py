@@ -26,7 +26,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 pd.options.mode.chained_assignment = None
 
 ideal_xy = ideal_eos.IdealHHeMix()
-ideal_z = ideal_eos.IdealEOS(m=18)
+ideal_z = ideal_eos.IdealEOS(m=150)
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -194,7 +194,7 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='iron')
     elif z_eos == 'ideal':
-        mz = 18
+        mz = 150 # olivine mean molecular weight
         xz = x_Z(_y, _z, mz)
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='ideal')
