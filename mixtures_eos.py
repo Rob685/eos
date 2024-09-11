@@ -188,6 +188,11 @@ def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
         xz = x_Z(_y, _z, mz)
         xh = x_H(_y, _z, mz)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='serpentine')
+    elif z_eos == 'fo':
+        mz = 140.69
+        xz = x_Z(_y, _z, mz)
+        xh = x_H(_y, _z, mz)
+        s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='serpentine')
     elif z_eos == 'iron':
         mz = 56
         xz = x_Z(_y, _z, mz)
