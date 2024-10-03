@@ -87,21 +87,21 @@ def get_smix_id_yz(Y, Z, mz):
 #     smoothed_data = np.zeros_like(data)
 #     differences = np.abs(np.diff(data, prepend=data[0]))  # prepend to match the length
 #     median_difference = np.median(differences)
-    
+
 #     for i in range(len(data)):
 #         # Adjust sigma based on local difference information
 #         local_sigma = base_sigma * (1 + (median_difference - differences[i]) / (median_difference + 1e-6))
-        
+
 #         # Determine the window size dynamically based on the position within the array
 #         start_index = max(0, i - base_window // 2)
 #         end_index = min(len(data), i + base_window // 2 + 1)
 #         actual_window_size = end_index - start_index
-        
+
 #         # Generate the Gaussian kernel for the actual window size
 #         x = np.linspace(-(actual_window_size // 2), actual_window_size // 2, actual_window_size)
 #         gauss_kernel = np.exp(-0.5 * (x / local_sigma) ** 2)
 #         gauss_kernel /= gauss_kernel.sum()  # Normalize the kernel
-        
+
 #         # Apply the kernel to the data segment
 #         smoothed_data[i] = np.dot(data[start_index:end_index], gauss_kernel)
 
@@ -1138,7 +1138,7 @@ def get_s_ad(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', hg=True, tab=True, y_tot
         _y /= (1 - _z)
 
     guess = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg, z_eos=z_eos) * erg_to_kbbar
-    
+
     sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z, hhe_eos, hg, tab))
     return sol.x
 
@@ -1272,7 +1272,7 @@ def get_dpdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
     else:
         return dpdz_srho
 
-def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dy=0.01, 
+def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dy=0.01,
                         hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False, y_tot=True):
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, ds=ds, hg=hg, y_tot=y_tot)
@@ -1287,7 +1287,7 @@ def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.
         return dsdy_rhopy
 
 
-def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dz=0.01, 
+def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, ds=0.01, dz=0.01,
                         hg=True, smooth_gauss=False, base_sigma=5, base_window=10, polyfit=False, y_tot=True):
     #dPdS|{rho, Y, Z}:
     dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, hhe_eos=hhe_eos, order=order, ds=ds, hg=hg, y_tot=y_tot)
@@ -1462,7 +1462,7 @@ def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_
     rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
     rho1 = get_rho_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (rho1 - rho0)/(z*dz)
+    return (rho1 - rho0)/(_z*dz)
 
 def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, smooth_gauss=False, base_sigma=5, base_window=10, y_tot=True):
     # ds/dlogT_{_lgrho, Y}
