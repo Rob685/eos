@@ -1440,6 +1440,14 @@ def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.05, hg=True, y
 
     return (rho1 - rho0)/(_lgt*dt)
 
+def get_drhods_py(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, hg=True, y_tot=True):
+    # (dlnrho / dS)_PY, where S is in cgs units (but input `_s` is in kbbar)
+    lgrho2 = get_rho_sp_tab(_s + ds, _lgp, _y, _z,
+        hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgrho1 = get_rho_sp_tab(_s, _lgp, _y, _z,
+        hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    return ((lgrho2 - lgrho1) * np.log(10)) / (ds / erg_to_kbbar)
+
 def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
 
     if y_tot:
@@ -1465,7 +1473,7 @@ def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_
     return (rho1 - rho0)/(_z*dz)
 
 def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, smooth_gauss=False, base_sigma=5, base_window=10, y_tot=True):
-    # ds/dlogT_{_lgrho, Y}
+    # ds/dlnT_{_lgrho, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1-ds)
     S2 = S0*(1+ds)
@@ -1478,14 +1486,14 @@ def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True
         T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
         T2 = get_t_srho(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    cv = (S2 - S1)/(T2 - T1)
+    cv = (S2 - S1)/((T2 - T1) * np.log(10))
     if smooth_gauss:
         return smooth.gauss_smooth(cv, base_sigma=base_sigma, base_window=base_window)
     else:
         return cv
 
 def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, y_tot=True):
-    # ds/dlogT_{P, Y}
+    # ds/dlnT_{P, Y}
     S0 = _s/erg_to_kbbar
     S1 = S0*(1-ds)
     S2 = S0*(1+ds)
@@ -1498,10 +1506,10 @@ def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, 
         T1 = get_t_sp(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
         T2 = get_t_sp(S2*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (S2 - S1)/(T2 - T1)
+    return (S2 - S1)/((T2 - T1) * np.log(10))
 
 def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01, hg=True, y_tot=True):
-    # dlogP/dlogrho_S, Y, Z
+    # dlnP/dlnrho_S, Y, Z = dlogP/dlogrho_S, Y, Z
     #if tab:
     R0 = get_rho_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     R1 = get_rho_sp_tab(_s, _lgp*(1-dp), _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
@@ -1550,24 +1558,6 @@ def get_alpha(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.1, hg=True, y_tot=
     R0 = 10**get_rho_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua')
     R1 = 10**get_rho_pt(_lgp, np.log10(T1), _y, _z, hhe_eos, z_eos='aqua')
     return R0*((1/R1 - 1/R0)/(T1 - T0))
-
-def get_brunt(s, lgp, lgrho, y, z, g):
-    '''
-    first-order right derivatives b/c that's what the code sees in the
-    hydrostatic.py module
-    '''
-    N_sq = 0 * lgrho
-    rho_bar = 10**((lgrho[ :-1] + lgrho[1: ])/ 2)
-    p_bar = 10**((lgp[ :-1] + lgp[1: ])/ 2)
-    s_bar = (s[ :-1] + s[1: ])/ 2
-    y_bar = (y[ :-1] + y[1: ])/ 2
-    z_bar = (z[ :-1] + z[1: ])/ 2
-    g_bar = (g[ :-1] + g[1: ]) / 2
-    N_sq[1: ] = g_bar**2 * rho_bar / p_bar * (
-        (lgrho[1: ] - lgrho[ :-1]) / (lgp[1: ] - lgp[ :-1])
-        - 1 / get_gamma1(s_bar, p_bar, y_bar, z_bar, hhe_eos='cms', z_eos='aqua'))
-    N_sq[0] = N_sq[1] # doesn't matter
-    return N_sq
 
 def hhe_thermo_consist(s, p, y, hhe_eos):
     if hhe_eos == 'cms':
