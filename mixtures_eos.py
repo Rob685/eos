@@ -1440,6 +1440,14 @@ def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.05, hg=True, y
 
     return (rho1 - rho0)/(_lgt*dt)
 
+def get_drhods_py(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, hg=True, y_tot=True):
+    # (dlnrho / dS)_PY, where S is in cgs units (but input `_s` is in kbbar)
+    lgrho2 = eos.get_rho_sp_tab(_s + ds, _lgp, _y, _z,
+        hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgrho1 = eos.get_rho_sp_tab(_s + ds, _lgp, _y, _z,
+        hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    return ((rho2 - rho1) * np.log(10)) / (ds * kbbar_to_erg)
+
 def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
 
     if y_tot:
