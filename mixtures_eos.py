@@ -1421,17 +1421,17 @@ def get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, hg=
 
     return ((lgp2 - lgp1) * np.log(10))/(2 * dy)
 
-def get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dz=1e-4, hg=True, y_tot=True):
+def get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dz=1e-3, hg=True, y_tot=True):
     # this is Chi_Z
     lgp1 = get_p_rhot_tab(_lgrho, _lgt, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     lgp2 = get_p_rhot_tab(_lgrho, _lgt, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
 
     return ((lgp2 - lgp1) * np.log(10))/(2 * dz)
 
-def get_logp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dt=1e-2, hg=True, y_tot=True):
+def get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dt=1e-2, hg=True, y_tot=True):
     # this is Chi_T
-    lgp1 = get_p_rhot_tab(_lgrho, _lgt - dt, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    lgp2 = get_p_rhot_tab(_lgrho, _lgt + dt, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgp1 = get_p_rhot_tab(_lgrho, _lgt - dt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgp2 = get_p_rhot_tab(_lgrho, _lgt + dt, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
 
     return (lgp2 - lgp1)/(2 * dt)
 
@@ -1449,7 +1449,7 @@ def get_dlogt_dz_rhop_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dz=1e-3
     # This is Chi_Z/Chi_T
     # To be used in the Bz term of Ledoux condition
 
-    Chi_Z = get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dy=dz, hg=hg, y_tot=y_tot)
+    Chi_Z = get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dz=dz, hg=hg, y_tot=y_tot)
     Chi_T = get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dt=dt, hg=hg, y_tot=y_tot)
 
 
