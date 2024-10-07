@@ -1442,17 +1442,18 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.05, hg=True, y_tot=True):
+
+def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.01, hg=True, y_tot=True):
 
     if y_tot:
         _y_call = _y / (1 - _z)
     else:
         _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt*(1+dt), _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho1 = get_rho_pt(_lgp, _lgt - dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho2 = get_rho_pt(_lgp, _lgt + dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (rho1 - rho0)/(_lgt*dt)
+    return (lgrho2 - lgrho1)/(2 * dt)
 
 def get_drhods_py(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, hg=True, y_tot=True):
     # (dlnrho / dS)_PY, where S is in cgs units (but input `_s` is in kbbar)

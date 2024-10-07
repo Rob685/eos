@@ -246,23 +246,18 @@ def get_dtds_srho(s, rho, eos, ds=0.01):
 
     return (T1 - T0)/(S1 - S0)
 
-def get_c_v(s, rho, eos, f_ppv, f_fe, ds=0.05):
+def get_c_v(s, rho, eos, f_ppv, f_fe, ds=1e-3):
     # ds/dlogT_{rho, Y}
-    S0 = s/erg_to_kbbar
-    S1 = S0*(1+ds)
-    S2 = S0*(1-ds)
 
-    T2 = get_t_srho_tab(S2*erg_to_kbbar, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
-    T1 = get_t_srho_tab(S1*erg_to_kbbar, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+    lgt2 = get_t_srho_tab(s - ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+    lgt1 = get_t_srho_tab(s + ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
  
-    return (S1 - S2)/(T1 - T2)
+    return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * np.log(10))
 
-def get_c_p(s, p, eos, f_ppv, f_fe, ds=0.1):
+def get_c_p(s, p, eos, f_ppv, f_fe, ds=1e-3):
     # ds/dlogT_{P, Y}
-    S0 = s/erg_to_kbbar
-    S1 = S0*(1+ds)
 
-    T0 = get_t_sp_tab(S0*erg_to_kbbar, p, eos, f_ppv=f_ppv, f_fe=f_fe)
-    T1 = get_t_sp_tab(S1*erg_to_kbbar, p, eos, f_ppv=f_ppv, f_fe=f_fe)
-
-    return (S1 - S0)/(T1 - T0)
+    lgt2 = get_t_sp_tab(s - ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+    lgt1 = get_t_sp_tab(s + ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+ 
+    return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * np.log(10))
