@@ -249,8 +249,8 @@ def get_dtds_srho(s, rho, eos, ds=0.01):
 def get_c_v(s, rho, eos, f_ppv, f_fe, ds=1e-3):
     # ds/dlogT_{rho, Y}
 
-    lgt2 = get_t_srho_tab(s - ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
-    lgt1 = get_t_srho_tab(s + ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+    lgt2 = get_t_srho_tab(s + ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
+    lgt1 = get_t_srho_tab(s - ds, rho, eos, f_ppv=f_ppv, f_fe=f_fe)
  
     return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * np.log(10))
 
