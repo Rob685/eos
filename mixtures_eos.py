@@ -1555,16 +1555,14 @@ def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01, hg=True, y_to
 
     return (2*_lgp*dp)/(R2 - R1)
 
-def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=0.01, tab=True, hg=True, y_tot=True):
+def get_nabla_ad(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp=1e-2, tab=True, hg=True, y_tot=True):
     if tab:
-        T0 = get_t_sp_tab(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-        T1 = get_t_sp_tab(_s, _lgp*(1-dp), _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-        T2 = get_t_sp_tab(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt1 = get_t_sp_tab(_s, _lgp - dp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt2 = get_t_sp_tab(_s, _lgp + dp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     else:
-        T0 = get_t_sp(_s, _lgp, _y, _z, hhe_eos, z_eos=z_eos)
-        T1 = get_t_sp(_s, _lgp*(1-dp), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
-        T2 = get_t_sp(_s, _lgp*(1+dp), _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
-    return (T2 - T1)/(_lgp*2*dp)
+        lgt1 = get_t_sp(_s, _lgp - dp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+        lgt2 = get_t_sp(_s, _lgp + dp, _y, _z, hhe_eos, z_eos=z_eos, hg=hg)
+    return (lgt2 - lgt1)/(2 * dp)
 
 def get_gruneisen(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', drho = 0.01, hg=True, y_tot=True):
     T0 = get_t_srho_tab(_s, _lgrho, _y, _z, hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
