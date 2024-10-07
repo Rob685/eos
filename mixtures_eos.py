@@ -1413,19 +1413,47 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, h
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
-def get_dlogt_dy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, hg=True, y_tot=True):
-    # This is -Chi_Y/Chi_T
-    lgt1 = get_t_srho_tab(_s, _lgrho, _y + dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    lgt2 = get_t_srho_tab(_s, _lgrho, _y - dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
 
-    return ((lgt2 - lgt1) * np.log(10)) / (2 * dy)
+def get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, hg=True, y_tot=True):
+    # this is Chi_Y
+    lgp1 = get_p_rhot_tab(_lgrho, _lgt, _y - dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgp2 = get_p_rhot_tab(_lgrho, _lgt, _y + dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
 
-def get_dlogt_dz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=1e-3, hg=True, y_tot=True):
-    # This is -Chi_Z/Chi_T
-    lgt1 = get_t_srho_tab(_s, _lgrho, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-    lgt2 = get_t_srho_tab(_s, _lgrho, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    return ((lgp2 - lgp1) * np.log(10))/(2 * dy)
 
-    return ((lgt2 - lgt1) * np.log(10)) / (2 * dz)
+def get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dz=1e-4, hg=True, y_tot=True):
+    # this is Chi_Z
+    lgp1 = get_p_rhot_tab(_lgrho, _lgt, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgp2 = get_p_rhot_tab(_lgrho, _lgt, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+
+    return ((lgp2 - lgp1) * np.log(10))/(2 * dz)
+
+def get_logp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dt=1e-2, hg=True, y_tot=True):
+    # this is Chi_T
+    lgp1 = get_p_rhot_tab(_lgrho, _lgt - dt, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgp2 = get_p_rhot_tab(_lgrho, _lgt + dt, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+
+    return (lgp2 - lgp1)/(2 * dt)
+
+def get_dlogt_dy_rhop_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, dt=1e-2, hg=True, y_tot=True):
+    # This is Chi_Y/Chi_T
+    # To be used in the By term of Ledoux condition
+
+    Chi_Y = get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dy=dy, hg=hg, y_tot=y_tot)
+    Chi_T = get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dt=dt, hg=hg, y_tot=y_tot)
+
+
+    return Chi_Y/Chi_T
+
+def get_dlogt_dz_rhop_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos='aqua', dz=1e-3, dt=1e-2, hg=True, y_tot=True):
+    # This is Chi_Z/Chi_T
+    # To be used in the Bz term of Ledoux condition
+
+    Chi_Z = get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dy=dz, hg=hg, y_tot=y_tot)
+    Chi_T = get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, hhe_eos, z_eos=z_eos, dt=dt, hg=hg, y_tot=y_tot)
+
+
+    return Chi_Z/Chi_T
 
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, y_tot=True):
@@ -1443,8 +1471,8 @@ def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, h
         raise Exception('Only order = 1 or order = 2 allowed!')
 
 
-def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=0.01, hg=True, y_tot=True):
-
+def get_drhodt_py(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dt=1e-3, hg=True, y_tot=True):
+    # Chi_T/Chi_rho
     if y_tot:
         _y_call = _y / (1 - _z)
     else:
