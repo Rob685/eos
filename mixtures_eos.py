@@ -1413,6 +1413,20 @@ def get_dtdy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dy=0.01, h
     else:
         raise Exception('Only order = 1 or order = 2 allowed!')
 
+def get_dlogt_dy_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, hg=True, y_tot=True):
+    # This is -Chi_Y/Chi_T
+    lgt1 = get_t_srho_tab(_s, _lgrho, _y + dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgt2 = get_t_srho_tab(_s, _lgrho, _y - dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+
+    return ((lgt2 - lgt1) * np.log(10)) / (2 * dy)
+
+def get_dlogt_dz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', dz=1e-3, hg=True, y_tot=True):
+    # This is -Chi_Z/Chi_T
+    lgt1 = get_t_srho_tab(_s, _lgrho, _y, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+    lgt2 = get_t_srho_tab(_s, _lgrho, _y, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+
+    return ((lgt2 - lgt1) * np.log(10)) / (2 * dz)
+
 
 def get_dtdz_srho(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', order=1, dz=0.01, hg=True, y_tot=True):
 
@@ -1448,65 +1462,60 @@ def get_drhods_py(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, hg=True, y_t
         hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     return ((lgrho2 - lgrho1) * np.log(10)) / (ds / erg_to_kbbar)
 
-def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=0.1, hg=True, y_tot=True):
+def get_drhody_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dy=1e-3, hg=True, y_tot=True):
 
     if y_tot:
         _y_call = _y / (1 - _z)
     else:
         _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt, _y_call*(1+dy), _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho2 = get_rho_pt(_lgp, _lgt, _y_call + dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho1 = get_rho_pt(_lgp, _lgt, _y_call - dy, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (rho1 - rho0)/(_y_call*dy)
+    return ((lgrho2 - lgrho1) * np.log(10))/(dy)
 
-def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=0.1, hg=True, y_tot=True):
+def get_drhodz_pt(_lgp, _lgt, _y, _z, hhe_eos, z_eos='aqua', dz=1e-4, hg=True, y_tot=True):
 
     if y_tot:
         _y_call = _y / (1 - _z)
     else:
         _y_call = _y
 
-    rho0 = get_rho_pt(_lgp, _lgt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-    rho1 = get_rho_pt(_lgp, _lgt, _y_call, _z*(1+dz), hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho2 = get_rho_pt(_lgp, _lgt, _y_call, _z + dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+    lgrho1 = get_rho_pt(_lgp, _lgt, _y_call, _z - dz, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (rho1 - rho0)/(_z*dz)
+    return ((lgrho2 - lgrho1) * np.log(10))/(dz)
 
-def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, smooth_gauss=False, base_sigma=5, base_window=10, y_tot=True):
+def get_c_v(_s, _lgrho, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, tab=True, hg=True, smooth_gauss=False, base_sigma=5, base_window=10, y_tot=True):
     # ds/dlnT_{_lgrho, Y}
-    S0 = _s/erg_to_kbbar
-    S1 = S0*(1-ds)
-    S2 = S0*(1+ds)
+
     if tab:
         #T0 = get_t_srho_tab(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T1 = get_t_srho_tab(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-        T2 = get_t_srho_tab(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt1 = get_t_srho_tab(_s - ds, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt2 = get_t_srho_tab(_s + ds, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     else:
         #T0 = get_t_srho(S0*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T1 = get_t_srho(S1*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T2 = get_t_srho(S2*erg_to_kbbar, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgt1 = get_t_srho(_s - ds, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgt2 = get_t_srho(_s + ds, _lgrho, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    cv = (S2 - S1)/((T2 - T1) * np.log(10))
+    cv = (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * np.log(10))
     if smooth_gauss:
         return smooth.gauss_smooth(cv, base_sigma=base_sigma, base_window=base_window)
     else:
         return cv
 
-def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=0.1, tab=True, hg=True, y_tot=True):
+def get_c_p(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', ds=1e-3, tab=True, hg=True, y_tot=True):
     # ds/dlnT_{P, Y}
-    S0 = _s/erg_to_kbbar
-    S1 = S0*(1-ds)
-    S2 = S0*(1+ds)
     if tab:
         #T0 = get_t_sp_tab(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T1 = get_t_sp_tab(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-        T2 = get_t_sp_tab(S2*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt1 = get_t_sp_tab(_s - ds, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgt2 = get_t_sp_tab(_s + ds, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
     else:
         #T0 = get_t_sp(S0*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T1 = get_t_sp(S1*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        T2 = get_t_sp(S2*erg_to_kbbar, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgt1 = get_t_sp(_s - ds, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgt2 = get_t_sp(_s + ds, _lgp, _y, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
 
-    return (S2 - S1)/((T2 - T1) * np.log(10))
+    return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * np.log(10))
 
 def get_gamma1(_s, _lgp, _y, _z, hhe_eos, z_eos='aqua', dp = 0.01, hg=True, y_tot=True):
     # dlnP/dlnrho_S, Y, Z = dlogP/dlogrho_S, Y, Z
