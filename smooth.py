@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def get_polyfit(arr, deg):
+def get_polyfit(arr, deg=10):
 
 # Identify discontinuity
     differences = np.diff(arr)
@@ -25,10 +25,10 @@ def get_polyfit(arr, deg):
     
     return poly_fit(x)
 
-def joint_fit(arr, logrhoarr, deg=5, logrho_thresh1=-0.3, logrho_thresh2=0.0):
+def joint_fit(arr, logrhoarr, deg=5, logrho_thresh1=-3, logrho_thresh2=0.0):
     
     # fit3 = get_polyfit(arr[logrhoarr > logrho_thresh2], deg=3)
-    fit2 = get_polyfit(arr[(logrhoarr >= logrho_thresh1) & (logrhoarr <= logrho_thresh2)], deg=3)
+    fit2 = get_polyfit(arr[(logrhoarr >= logrho_thresh1) & (logrhoarr <= logrho_thresh2)], deg=5)
     # fit1 = get_polyfit(arr[logrhoarr < logrho_thresh1], deg=deg)
 
     # return np.concatenate([fit1, fit2, fit3])
