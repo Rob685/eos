@@ -573,7 +573,7 @@ class mixtures:
         _z = np.atleast_1d(_z)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
-        _s, _lgrho _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
+        _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
 
         # Prepare output arrays
         shape = _s.shape
@@ -584,7 +584,8 @@ class mixtures:
         # Initial guesses for log temperature and log pressure
         if ideal_guess:
             # Use the ideal EOS for the initial guesses
-            guess_lgp, guess_lgt = ideal_xy.get_pt_srho(_s, _lgrho, _y)
+            #pdb.set_trace()
+            guess_lgp, guess_lgt = ideal_xy.get_pt_srho(_s, _lgrho, _y).T
         else:
             if arr_guess is None:
                 raise ValueError("arr_guess must be provided when ideal_guess is False.")
@@ -596,8 +597,8 @@ class mixtures:
         s_flat = _s.flatten()
         y_flat = _y.flatten()
         z_flat = _z.flatten()
-        guess_lgt_flat = guess_lgt.flatten()
         guess_lgp_flat = guess_lgp.flatten()
+        guess_lgt_flat = guess_lgt.flatten()
 
         # Iterate over each element
         for idx in range(len(s_flat)):
@@ -612,22 +613,29 @@ class mixtures:
                 lgp, lgt = vars
                 s_calc = self.get_s_pt(lgp, lgt, y_i, z_i) * const.erg_to_kbbar
                 lgrho_calc = self.get_logrho_pt(lgp, lgt, y_i, z_i)
+                
+                # Convert s_calc and lgrho_calc to scalars if they are arrays
+                if isinstance(s_calc, np.ndarray):
+                    s_calc = s_calc.item()
+                if isinstance(lgrho_calc, np.ndarray):
+                    lgrho_calc = lgrho_calc.item()
+                
                 err1 = (s_calc/s_i) - 1
                 err2 = (lgrho_calc/lgrho_i) - 1
-                return [err1, err2]
+                return np.array([err1, err2]) 
 
             try:
                 sol = root(
                     equations, [guess_lgp_i, guess_lgt_i], method='hybr', tol=1e-8
                 )
                 if sol.success:
-                    logt_values.flat[idx], logp_values.flat[idx] = sol.x
+                    logp_values.flat[idx], logt_values.flat[idx] = sol.x
                     converged.flat[idx] = True
                 else:
-                    logt_values.flat[idx], logp_values.flat[idx] = np.nan, np.nan
+                    logp_values.flat[idx], logt_values.flat[idx] = np.nan, np.nan
                     converged.flat[idx] = False
             except Exception as e:
-                logt_values.flat[idx], logp_values.flat[idx] = np.nan, np.nan
+                logp_values.flat[idx], logt_values.flat[idx] = np.nan, np.nan
                 converged.flat[idx] = False
 
         # Reshape output arrays to original shape
