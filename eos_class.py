@@ -1164,6 +1164,48 @@ class mixtures:
 
         return np.array([res1_list]), np.array([res2_list])
 
+    ################################################ Derivatives ################################################
+
+    ########### Convection Derivatives ###########
+
+    # Specific heat at constant pressure
+    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3, tab=True):
+        func = self.get_logt_sp_tab if tab else self.get_logt_sp
+        lgt1 = func(_s - ds, _lgp, _y, _z)
+        lgt2 = func(_s + ds, _lgp, _y, _z)
+        return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * log10_to_loge)
+
+    # Adiabatic temperature gradient
+    def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2, tab=True):
+        func = self.get_logt_sp_tab if tab else self.get_logt_sp
+        lgt1 = func(_s, _lgp - dp, _y, _z)
+        lgt2 = func(_s, _lgp + dp, _y, _z)
+        return (lgt2 - lgt1)/(2 * dp)
+
+    # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
+    def get_dsdy_pt(self, _lgp, _lgt, _y, _z, dy=1e-3, tab=True):
+        s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z)
+        s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z)
+        return (s2 - s1)/(2 * dy)
+
+    def get_dsdz_pt(self, _lgp, _lgt, _y, _z, dz=1e-3, tab=True):
+        s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz)
+        s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz)
+        return (s2 - s1)/(2 * dz)
+
+    # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
+    def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=1e-3, tab=True):
+        func = self.get_s_rhop_tab if tab else self.get_s_rhop
+        s1 = func(_lgrho, _lgp, _y - dy, _z)
+        s2 = func(_lgrho, _lgp, _y + dy, _z)
+        return (s2 - s1)/(2 * dy)
+
+    def get_dsdz_rhop(self, _lgrho, _lgp, _y, _z, dz=1e-3, tab=True):
+        func = self.get_s_rhop_tab if tab else self.get_s_rhop
+        s1 = func(_lgrho, _lgp, _y, _z - dz)
+        s2 = func(_lgrho, _lgp, _y, _z + dz)
+        return (s2 - s1)/(2 * dz)
+
 
     ########### useful mixture functions from mixtures_eos.py ###########
 
@@ -1220,47 +1262,47 @@ class mixtures:
     #     sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z, hhe_eos, hg, tab))
     #     return sol.x
 
-class derivatives(mixtures):
-    def __init__(self, hhe_eos, z_eos, hg=True, tab=True):
-        super().__init__(hhe_eos, z_eos, hg)
-        self.tab = tab
+# class derivatives(mixtures):
+#     def __init__(self, hhe_eos, z_eos, hg=True, tab=True):
+#         super().__init__(hhe_eos, z_eos, hg)
+#         self.tab = tab
 
-    ########### Convection Derivatives ###########
+#     ########### Convection Derivatives ###########
 
-    # Specific heat at constant pressure
-    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3):
-        func = self.get_logt_sp_tab if self.tab else self.get_logt_sp
-        lgt1 = func(_s - ds, _lgp, _y, _z)
-        lgt2 = func(_s + ds, _lgp, _y, _z)
-        return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * log10_to_loge)
+#     # Specific heat at constant pressure
+#     def get_cp(self, _s, _lgp, _y, _z, ds=1e-3, tab=True):
+#         func = self.get_logt_sp_tab if tab else self.get_logt_sp
+#         lgt1 = func(_s - ds, _lgp, _y, _z)
+#         lgt2 = func(_s + ds, _lgp, _y, _z)
+#         return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * log10_to_loge)
 
-    # Adiabatic temperature gradient
-    def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2):
-        func = self.get_logt_sp_tab if self.tab else self.get_logt_sp
-        lgt1 = func(_s, _lgp - dp, _y, _z)
-        lgt2 = func(_s, _lgp + dp, _y, _z)
-        return (lgt2 - lgt1)/(2 * dp)
+#     # Adiabatic temperature gradient
+#     def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2, tab=True):
+#         func = self.get_logt_sp_tab if tab else self.get_logt_sp
+#         lgt1 = func(_s, _lgp - dp, _y, _z)
+#         lgt2 = func(_s, _lgp + dp, _y, _z)
+#         return (lgt2 - lgt1)/(2 * dp)
 
-    # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
-    def get_dsdy_pt(self, _lgp, _lgt, _y, _z, dy=1e-3):
-        s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z)
-        s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z)
-        return (s2 - s1)/(2 * dy)
+#     # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
+#     def get_dsdy_pt(self, _lgp, _lgt, _y, _z, dy=1e-3, tab=True):
+#         s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z)
+#         s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z)
+#         return (s2 - s1)/(2 * dy)
 
-    def get_dsdz_pt(self, _lgp, _lgt, _y, _z, dz=1e-3):
-        s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz)
-        s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz)
-        return (s2 - s1)/(2 * dz)
+#     def get_dsdz_pt(self, _lgp, _lgt, _y, _z, dz=1e-3, tab=True):
+#         s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz)
+#         s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz)
+#         return (s2 - s1)/(2 * dz)
 
-    # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
-    def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=1e-3):
-        func = self.get_s_rhop_tab if self.tab else self.get_s_rhop
-        s1 = func(_lgrho, _lgp, _y - dy, _z)
-        s2 = func(_lgrho, _lgp, _y + dy, _z)
-        return (s2 - s1)/(2 * dy)
+#     # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
+#     def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=1e-3, tab=True):
+#         func = self.get_s_rhop_tab if tab else self.get_s_rhop
+#         s1 = func(_lgrho, _lgp, _y - dy, _z)
+#         s2 = func(_lgrho, _lgp, _y + dy, _z)
+#         return (s2 - s1)/(2 * dy)
 
-    def get_dsdz_rhop(self, _lgrho, _lgp, _y, _z, dz=1e-3):
-        func = self.get_s_rhop_tab if self.tab else self.get_s_rhop
-        s1 = func(_lgrho, _lgp, _y, _z - dz)
-        s2 = func(_lgrho, _lgp, _y, _z + dz)
-        return (s2 - s1)/(2 * dz)
+#     def get_dsdz_rhop(self, _lgrho, _lgp, _y, _z, dz=1e-3, tab=True):
+#         func = self.get_s_rhop_tab if tab else self.get_s_rhop
+#         s1 = func(_lgrho, _lgp, _y, _z - dz)
+#         s2 = func(_lgrho, _lgp, _y, _z + dz)
+#         return (s2 - s1)/(2 * dz)
