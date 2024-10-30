@@ -7,31 +7,49 @@ from tqdm import tqdm
 from numba import njit
 from eos import ideal_eos
 from scipy.optimize import root, newton, brentq, brenth
+from astropy.constants import k_B
+from astropy.constants import u as amu
+from astropy import units as u
 
 ideal_xy = ideal_eos.IdealHHeMix()
 
+mh = 1
+mhe = 4.0026
+
+##### useful unit conversions #####
+
+mp = amu.to('g') # grams
+kb = k_B.to('erg/K') # ergs/K
+erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
+MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
+dyn_to_bar = (u.dyne/(u.cm)**2).to('bar')
+erg_to_MJ = (u.erg/u.Kelvin/u.gram).to(u.MJ/u.Kelvin/u.kg)
+MJ_to_erg = (u.MJ/u.kg).to('erg/g')
+
 class mixtures:
-    def __init__(self, hhe_eos, z_eos, hg=False):
+    def __init__(self, hhe_eos, z_eos, hg=True):
     
         if hhe_eos == 'cms':
             if hg:
                 self.pt_data = np.load('eos/cms/{}_hg_{}_pt.npz'.format(hhe_eos, z_eos))
                 self.rhot_data = np.load('eos/cms/{}_hg_{}_rhot.npz'.format(hhe_eos, z_eos))
                 self.sp_data = np.load('eos/cms/{}_hg_{}_sp.npz'.format(hhe_eos, z_eos))
+                self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
             else:
                 self.pt_data = np.load('eos/cms/{}_{}_pt.npz'.format(hhe_eos, z_eos))
         else:
             self.pt_data = np.load('eos/{}/{}_{}_pt.npz'.format(hhe_eos, hhe_eos, z_eos))
     
         # 1-D independent grids
-        self.logpvals = self.pt_data['logpvals'] # these are shared
-        self.logtvals = self.pt_data['logtvals']
+        self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
+        self.logtvals = self.pt_data['logtvals'] # log10 K
 
-        self.logrhovals = self.rhot_data['logrhovals']
-        self.svals = self.sp_data['s_vals']
+        self.logrhovals = self.rhot_data['logrhovals'] # log10 g/cc
+        self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+        self.svals = self.sp_data['s_vals'] # kb/baryon
 
-        self.yvals_pt = self.pt_data['yvals']
-        self.zvals_pt = self.pt_data['zvals']
+        self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
+        self.zvals_pt = self.pt_data['zvals'] # mass fraction
 
         self.yvals_rhot = self.rhot_data['yvals']
         self.zvals_rhot = self.rhot_data['zvals']
@@ -39,9 +57,13 @@ class mixtures:
         self.yvals_sp = self.sp_data['yvals']
         self.zvals_sp = self.sp_data['zvals']
 
+        self.yvals_rhop = self.rhop_data['yvals']
+        self.zvals_rhop = self.rhop_data['zvals']
+
         # 4-D dependent grids
-        self.s_pt_tab = self.pt_data['s_pt']
-        self.logrho_pt_tab = self.pt_data['logrho_pt']
+        self.s_pt_tab = self.pt_data['s_pt'] # erg/g/K
+        self.logrho_pt_tab = self.pt_data['logrho_pt'] # log10 g/cc
+        self.logu_pt_tab = self.pt_data['logu_pt'] # log10 erg/g
 
         self.s_rhot_tab = self.rhot_data['s_rhot']
         self.logp_rhot_tab = self.rhot_data['logp_rhot']
@@ -49,11 +71,15 @@ class mixtures:
         self.logt_sp_tab = self.sp_data['logt_sp']
         self.logrho_sp_tab = self.sp_data['logrho_sp']
 
+        self.s_rhop_tab = self.rhop_data['s_rhop']
+        self.logt_rhop_tab = self.rhop_data['logt_rhop']
+
         # RGI interpolation functions
         rgi_args = {'method': 'linear', 'bounds_error': False, 'fill_value': None}
 
         self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.s_pt_tab, **rgi_args)
         self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
+        self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
         self.s_rhot_rgi = RGI((self.logrhovals, self.logtvals, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
         self.logp_rhot_rgi = RGI((self.logrhovals, self.logtvals, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
@@ -61,44 +87,104 @@ class mixtures:
         self.logt_sp_rgi = RGI((self.svals, self.logpvals, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
         self.logrho_sp_rgi = RGI((self.svals, self.logpvals, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
 
+        self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
+        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab[0], **rgi_args)
+
+    ####### EOS table calls #######
+
     # logp, logt tables
     def get_s_pt(self, _lgp, _lgt, _y, _z):
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.s_pt_rgi(pts)
+        result = self.s_pt_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
     def get_logrho_pt(self, _lgp, _lgt, _y, _z):
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.logrho_pt_rgi(pts)
+        result = self.logrho_pt_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
+
+    def get_logu_pt(self, _lgp, _lgt, _y, _z):
+        args = (_lgp, _lgt, _y, _z)
+        v_args = [np.atleast_1d(arg) for arg in args]
+        pts = np.column_stack(v_args)
+        result = self.logu_pt_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
     # logrho, logt tables
     def get_s_rhot_tab(self, _lgrho, _lgt, _y, _z):
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.s_rhot_rgi(pts)
+        result = self.s_rhot_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
     def get_logp_rhot_tab(self, _lgrho, _lgt, _y, _z):
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.logp_rhot_rgi(pts)
+        result =  self.logp_rhot_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
     # S, logp tables
     def get_logt_sp_tab(self, _s, _lgp, _y, _z):
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.logt_sp_rgi(pts)
+        result =  self.logt_sp_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
     def get_logrho_sp_tab(self, _s, _lgp, _y, _z):
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
-        return self.logrho_sp_rgi(pts)
+        result =  self.logrho_sp_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
+
+    # logrho, logp tables
+    def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z):
+        args = (_lgrho, _lgp, _y, _z)
+        v_args = [np.atleast_1d(arg) for arg in args]
+        pts = np.column_stack(v_args)
+        result =  self.s_rhop_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
+
+    def get_logt_rhop_tab(self, _lgrho, _lgp, _y, _z):
+        args = (_lgrho, _lgp, _y, _z)
+        v_args = [np.atleast_1d(arg) for arg in args]
+        pts = np.column_stack(v_args)
+        result =  self.logt_rhop_rgi(pts)
+        if all(np.isscalar(arg) for arg in args):
+            return result.item()
+        else:
+            return result
 
 
     ### Inversion Functions ###
@@ -134,8 +220,6 @@ class mixtures:
             if arr_guess is None:
                 raise ValueError("arr_guess must be provided when ideal_guess is False.")
             guess = arr_guess
-        # sol = root(err, guess, tol=1e-10)
-        # return sol.x
 
     # Define a function to compute root and capture convergence
         def root_func(s_i, lgp_i, y_i, z_i, guess_i):
@@ -378,45 +462,6 @@ class mixtures:
         logp = self.get_logp_rhot(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
         return self.get_s_pt(logp, _lgt, _y, _z)
 
-    # def get_logt_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None):
-
-    #     """
-    #     Compute the temperature given entropy, pressure, helium abundance, and metallicity.
-    
-    #     Parameters:
-    #         _s (array_like): Entropy values.
-    #         _lgrho (array_like): Log10 density values.
-    #         _y (array_like): Helium mass fraction values.
-    #         _z (array_like): Heavy metal mass fraction values.
-    #         ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
-    #         logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
-    
-    #     Returns:
-    #         ndarray: Computed temperature values.
-    #     """
-        
-    #     _s = np.atleast_1d(_s)
-    #     _lgrho = np.atleast_1d(_lgrho)
-    #     _y = np.atleast_1d(_y)
-    #     _z = np.atleast_1d(_z)
-
-    #     # Ensure inputs are numpy arrays and broadcasted to the same shape
-    #     _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
-
-    #     def err(_lgt):
-    #         # Error function for logt(S, logp)
-    #         s_test = self.get_s_rhot(_lgrho, _lgt, _y, _z) * const.erg_to_kbbar
-    #         return (s_test/_s) - 1
-
-    #     if ideal_guess:
-    #         guess = ideal_xy.get_t_srho(_s, _lgrho, _y)
-    #     else:
-    #         if logt_guess is None:
-    #             raise ValueError("logt_guess must be provided when ideal_guess is False.")
-    #         guess = arr_guess
-    #     sol = root(err, guess, tol=1e-10)
-    #     return sol.x
-
     def get_logp_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton'):
 
         """
@@ -626,7 +671,7 @@ class mixtures:
 
             try:
                 sol = root(
-                    equations, [guess_lgp_i, guess_lgt_i], method='hybr', tol=1e-8
+                    equations, [guess_lgp_i, guess_lgt_i], method='hybr', tol=1e-6
                 )
                 if sol.success:
                     logp_values.flat[idx], logt_values.flat[idx] = sol.x
@@ -970,6 +1015,7 @@ class mixtures:
                 res1_y = []
                 res2_y = []
                 prev_res1_temp = None  # Initialize previous res1_temp to None
+                prev_res2_temp = None # For double inversion
                 for y_ in y_arr:
                     a_const = np.full_like(z_arr, a_)
                     b_const = np.full_like(z_arr, b_)
@@ -1014,20 +1060,31 @@ class mixtures:
                     elif basis == 'srho':
                         if prev_res1_temp is None:
 
-                            res1_temp, conv = self.get_logp_srho(
-                                a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                            res1_temp, res2_temp, conv = self.get_logp_logt_srho(
+                                a_const, b_const, y_const, z_arr, ideal_guess=True
                                 )
                         else:
-                            res1_temp, conv = self.get_logp_srho(
-                                a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                            res1_temp, res2_temp, conv = self.get_logp_logt_srho(
+                                a_const, b_const, y_const, z_arr, ideal_guess=False, arr_guess=[prev_res1_temp, prev_res2_temp]
                                 )
 
-                        res1 = self.interpolate_non_converged_temperatures_1d(
-                            z_arr, res1_temp, conv, interp_kind='quadratic'
-                        )
+                        try:
 
-                        res2 = self.get_t_sp(a_const, res1, y_const, z_arr, method=inversion_method)
+                            res1 = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                            )
+
+                            res2 = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res2_temp, conv, interp_kind='quadratic'
+                            )
+
+                        except:
+                            print(a_const[0], b_const[0], y_const[0], z_arr)
+                            raise
+
                         prev_res1_temp = res1
+                        prev_res2_temp = res2
+
                     elif basis == 'rhop':
                         if prev_res1_temp is None:
 
@@ -1038,9 +1095,27 @@ class mixtures:
                             res1_temp, conv = self.get_logt_rhop(
                                 a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
                             )
-                        res1 = self.interpolate_non_converged_temperatures_1d(
-                            z_arr, res1_temp, conv, interp_kind='quadratic'
-                        )
+
+                        try:
+                            res1 = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                            )
+                        except:
+                            if prev_res1_temp is not None:
+                                res1_temp, conv = self.get_logt_rhop(
+                                            a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+                                try:
+                                    res1 = self.interpolate_non_converged_temperatures_1d(
+                                        z_arr, res1_temp, conv, interp_kind='quadratic'
+                                    )
+                                except:
+                                    print(a_const[0], b_const[0], y_const[0], z_arr)
+                                    raise
+                            else:
+                                print(a_const[0], b_const[0], y_const[0], z_arr)
+                                raise
+
 
                         res2 = self.get_s_pt(b_const, res1_temp, y_const, z_arr)
                         prev_res1_temp = res1  # Update prev_res1_temp for the next iteration
@@ -1056,3 +1131,54 @@ class mixtures:
             res2_list.append(res2_b)
 
         return np.array([res1_list]), np.array([res2_list])
+
+
+    ########### useful mixture functions from mixtures_eos.py ###########
+
+    def Y_to_n(self, _y):
+        ''' Change between mass and number fraction OF HELIUM'''
+        return ((_y/mhe)/(((1 - _y)/mh) + (_y/mhe)))
+
+    def n_to_Y(self, x):
+        ''' Change between number and mass fraction OF HELIUM'''
+        return (mhe * x)/(1 + 3.0026*x)
+
+    def x_H(self, _y, _z, mz):
+        yeff = _y#/(1 - _z)
+        Ntot = (1-yeff)*(1-_z)/mh + (yeff*(1-_z)/mhe) + _z/mz
+        return (1-yeff)*(1-_z)/mh/Ntot
+
+    def x_Z(self, _y, _z, mz):
+        yeff = _y#/(1 - _z)
+        Ntot = (1-yeff)*(1-_z)/mh + (yeff*(1-_z)/mhe) + _z/mz
+        return (_z/mz)/Ntot
+
+    def guarded_log(self, x):
+        ''' Used to calculate ideal enetropy of mixing: xlogx'''
+        if np.isscalar(x):
+            if x == 0:
+                return 0
+            elif x  < 0:
+                raise ValueError('Number fraction went negative.')
+            return x * np.log(x)
+        return np.array([self.guarded_log(x_) for x_ in x])
+
+    def get_smix_id_y(self, Y):
+        #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
+        xhe = self.Y_to_n(Y)
+        xh = 1 - xhe
+        q = mh*xh + mhe*xhe
+        return -1*(self.guarded_log(xh) + self.guarded_log(xhe)) / q
+
+    def get_smix_id_yz(self, Y, Z, mz):
+        #smix_hg23 = smix_interp.ev(lgt, lgp)*(1 - Y)*Y
+        xh = self.x_H(Y, Z, mz)
+        xz = self.x_Z(Y, Z, mz)
+        xhe = 1 - xh - xz
+        q = mh*xh + mhe*xhe + mz*xz
+        return -1*(self.guarded_log(xh) + self.guarded_log(xhe) + self.guarded_log(xz)) / q
+
+class derivatives(mixtures):
+    def __init__(self, hhe_eos, z_eos, hg=True):
+        super().__init__(hhe_eos, z_eos, hg)
+
