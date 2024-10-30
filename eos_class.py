@@ -31,14 +31,14 @@ class mixtures:
     
         if hhe_eos == 'cms':
             if hg:
-                self.pt_data = np.load('eos/cms/{}_hg_{}_pt.npz'.format(hhe_eos, z_eos))
+                self.pt_data = np.load('eos/cms/{}_hg_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
                 self.rhot_data = np.load('eos/cms/{}_hg_{}_rhot.npz'.format(hhe_eos, z_eos))
                 self.sp_data = np.load('eos/cms/{}_hg_{}_sp.npz'.format(hhe_eos, z_eos))
                 self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
             else:
-                self.pt_data = np.load('eos/cms/{}_{}_pt.npz'.format(hhe_eos, z_eos))
+                self.pt_data = np.load('eos/cms/{}_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
         else:
-            self.pt_data = np.load('eos/{}/{}_{}_pt.npz'.format(hhe_eos, hhe_eos, z_eos))
+            self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
     
         # 1-D independent grids
         self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
