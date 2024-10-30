@@ -26,6 +26,8 @@ dyn_to_bar = (u.dyne/(u.cm)**2).to('bar')
 erg_to_MJ = (u.erg/u.Kelvin/u.gram).to(u.MJ/u.Kelvin/u.kg)
 MJ_to_erg = (u.MJ/u.kg).to('erg/g')
 
+log10_to_loge = np.log(10)
+
 class mixtures:
     def __init__(self, hhe_eos, z_eos, hg=True):
     
@@ -93,7 +95,10 @@ class mixtures:
     ####### EOS table calls #######
 
     # logp, logt tables
-    def get_s_pt(self, _lgp, _lgt, _y, _z):
+    def get_s_pt(self, _lgp, _lgt, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -103,7 +108,10 @@ class mixtures:
         else:
             return result
 
-    def get_logrho_pt(self, _lgp, _lgt, _y, _z):
+    def get_logrho_pt(self, _lgp, _lgt, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -113,7 +121,10 @@ class mixtures:
         else:
             return result
 
-    def get_logu_pt(self, _lgp, _lgt, _y, _z):
+    def get_logu_pt(self, _lgp, _lgt, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+        
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -124,7 +135,10 @@ class mixtures:
             return result
 
     # logrho, logt tables
-    def get_s_rhot_tab(self, _lgrho, _lgt, _y, _z):
+    def get_s_rhot_tab(self, _lgrho, _lgt, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -134,7 +148,10 @@ class mixtures:
         else:
             return result
 
-    def get_logp_rhot_tab(self, _lgrho, _lgt, _y, _z):
+    def get_logp_rhot_tab(self, _lgrho, _lgt, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -145,7 +162,10 @@ class mixtures:
             return result
 
     # S, logp tables
-    def get_logt_sp_tab(self, _s, _lgp, _y, _z):
+    def get_logt_sp_tab(self, _s, _lgp, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -155,7 +175,10 @@ class mixtures:
         else:
             return result
 
-    def get_logrho_sp_tab(self, _s, _lgp, _y, _z):
+    def get_logrho_sp_tab(self, _s, _lgp, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -166,7 +189,10 @@ class mixtures:
             return result
 
     # logrho, logp tables
-    def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z):
+    def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgrho, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -176,7 +202,10 @@ class mixtures:
         else:
             return result
 
-    def get_logt_rhop_tab(self, _lgrho, _lgp, _y, _z):
+    def get_logt_rhop_tab(self, _lgrho, _lgp, _y, _z, y_prime=False):
+
+        _y = _y if y_prime else _y / (1 - _z)
+
         args = (_lgrho, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
         pts = np.column_stack(v_args)
@@ -225,7 +254,7 @@ class mixtures:
         def root_func(s_i, lgp_i, y_i, z_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt(lgp_i, _lgt, y_i, z_i) * const.erg_to_kbbar
+                s_test = self.get_s_pt(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -656,7 +685,7 @@ class mixtures:
 
             def equations(vars):
                 lgp, lgt = vars
-                s_calc = self.get_s_pt(lgp, lgt, y_i, z_i) * const.erg_to_kbbar
+                s_calc = self.get_s_pt(lgp, lgt, y_i, z_i) * erg_to_kbbar
                 lgrho_calc = self.get_logrho_pt(lgp, lgt, y_i, z_i)
                 
                 # Convert s_calc and lgrho_calc to scalars if they are arrays
@@ -826,7 +855,10 @@ class mixtures:
         temperatures, converged = vectorized_root_func(_lgrho, _lgp, _y, _z, guess)
 
         return temperatures, converged
-
+        
+    def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None):
+        logt = self.get_logt_rhop(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+        return self.get_s_pt(_lgp, logt, _y, _z)
     # def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
 
     #     """
@@ -1178,7 +1210,57 @@ class mixtures:
         q = mh*xh + mhe*xhe + mz*xz
         return -1*(self.guarded_log(xh) + self.guarded_log(xhe) + self.guarded_log(xz)) / q
 
-class derivatives(mixtures):
-    def __init__(self, hhe_eos, z_eos, hg=True):
-        super().__init__(hhe_eos, z_eos, hg)
+    # def get_s_ad(_lgp, _lgt, _y, _z):
+    #     """This function returns the entropy value
+    #     required for nabla - nabla_a = 0 at
+    #     pressure and temperature profiles"""
 
+    #     guess = get_s_pt(_lgp, _lgt, _y, _z, hhe_eos=hhe_eos, hg=hg, z_eos=z_eos) * erg_to_kbbar
+
+    #     sol = root(err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z, hhe_eos, hg, tab))
+    #     return sol.x
+
+class derivatives(mixtures):
+    def __init__(self, hhe_eos, z_eos, hg=True, tab=True):
+        super().__init__(hhe_eos, z_eos, hg)
+        self.tab = tab
+
+    ########### Convection Derivatives ###########
+
+    # Specific heat at constant pressure
+    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3):
+        func = self.get_logt_sp_tab if self.tab else self.get_logt_sp
+        lgt1 = func(_s - ds, _lgp, _y, _z)
+        lgt2 = func(_s + ds, _lgp, _y, _z)
+        return (2 * ds / erg_to_kbbar)/((lgt2 - lgt1) * log10_to_loge)
+
+    # Adiabatic temperature gradient
+    def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2):
+        func = self.get_logt_sp_tab if self.tab else self.get_logt_sp
+        lgt1 = func(_s, _lgp - dp, _y, _z)
+        lgt2 = func(_s, _lgp + dp, _y, _z)
+        return (lgt2 - lgt1)/(2 * dp)
+
+    # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
+    def get_dsdy_pt(self, _lgp, _lgt, _y, _z, dy=1e-3):
+        s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z)
+        s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z)
+        return (s2 - s1)/(2 * dy)
+
+    def get_dsdz_pt(self, _lgp, _lgt, _y, _z, dz=1e-3):
+        s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz)
+        s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz)
+        return (s2 - s1)/(2 * dz)
+
+    # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
+    def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=1e-3):
+        func = self.get_s_rhop_tab if self.tab else self.get_s_rhop
+        s1 = func(_lgrho, _lgp, _y - dy, _z)
+        s2 = func(_lgrho, _lgp, _y + dy, _z)
+        return (s2 - s1)/(2 * dy)
+
+    def get_dsdz_rhop(self, _lgrho, _lgp, _y, _z, dz=1e-3):
+        func = self.get_s_rhop_tab if self.tab else self.get_s_rhop
+        s1 = func(_lgrho, _lgp, _y, _z - dz)
+        s2 = func(_lgrho, _lgp, _y, _z + dz)
+        return (s2 - s1)/(2 * dz)
