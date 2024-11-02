@@ -223,7 +223,7 @@ class IdealHHeMix(object):
         return brenth(obj, *PBOUNDS)
 
     def get_p_srho(self, s, logrho, y):
-        return self.get_pt_srho(s, logrho, y)[0]
+        return self.get_pt_srho(s, logrho, y)[:,0]
 
     ## T getters
     def get_t_rhop(self, logrho, logp, y):
