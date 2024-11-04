@@ -1574,7 +1574,62 @@ class mixtures(hhe):
         lgrho2 = func(_s, _lgp+dp, _y, _z)
         return (2*dp)/(lgrho2 - lgrho1)
 
-     #### Triple Product Rule Derivatives ###*
+    # Brunt coefficient when computing in drho space
+    def get_dlogrho_ds_py(self, _s, _lgp, _y, _z, ds=0.1, tab=True):
+        func = self.get_logrho_sp_tab if tab else self.get_logrho_sp
+        lgrho2 = func(_s + ds, _lgp, _y, _z,
+            hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgrho1 = func(_s - ds, _lgp, _y, _z,
+            hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        return ((lgrho2 - lgrho1) * log10_to_loge) / (2 * ds / erg_to_kbbar)
+
+    # Chi_T/Chi_rho
+    # aka "delta" in MLT flux
+    def get_dlogrho_dlogt_py(self, _lgp, _lgt, _y, _z, dt=1e-3):
+        
+        lgrho1 = self.get_logrho_pt_tab(_lgp, _lgt - dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgrho2 = self.get_logrho_pt_tab(_lgp, _lgt + dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+
+        return (lgrho2 - lgrho1)/(2 * dt)
+
+    def get_dlogp_dy_rhot(self, _lgrho, _lgt,  _y, _z, dy=1e-2):
+        # Chi_Y
+        lgp1 = self.get_logp_rhot_tab(_lgrho, _lgt, _y - dy, _z)
+        lgp2 = self.get_logp_rhot_tab(_lgrho, _lgt, _y + dy, _z)
+
+        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dy)
+
+    def get_dlogp_dz_rhot(self, _lgrho, _lgt,  _y, _z, dz=1e-2):
+        # Chi_Z
+        lgp1 = self.get_logp_rhot_tab(_lgrho, _lgt, _y, _z - dz)
+        lgp2 = self.get_logp_rhot_tab(_lgrho, _lgt, _y, _z + dz)
+
+        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dy)
+
+    def get_dlogp_dlogt_rhoy_rhot(self, _lgrho, _lgt,  _y, _z, dt=1e-2):
+        # Chi_T
+        lgp1 = self.get_logp_rhot_tab(_lgrho, _lgt - dt, _y, _z)
+        lgp2 = self.get_logp_rhot_tab(_lgrho, _lgt + dt, _y, _z)
+
+        return (lgp2 - lgp1)/(2 * dt)
+
+    # Chi_Y/Chi_T
+    def get_dlogt_dy_rhop_rhot(self, _lgrho, _lgt,  _y, _z, dy=1e-2, dt=1e-2):
+
+        Chi_Y = self.get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, dy=dy)
+        Chi_T = self.get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, dt=dt)
+
+        return Chi_Y/Chi_T
+
+    # Chi_Z/Chi_T
+    def get_dlogt_dz_rhop_rhot(self, _lgrho, _lgt,  _y, _z, dz=1e-3, dt=1e-2):
+
+        Chi_Z = self.get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, dz=dz)
+        Chi_T = self.get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, dt=dt)
+
+        return Chi_Z/Chi_T
+
+    #### Triple Product Rule Derivatives ###*
 
 
     def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=0.1, tab=True):
@@ -1614,6 +1669,7 @@ class mixtures(hhe):
 
         return (p2 - p1) / (2 * dz)
 
+    # Triple product rule dsdx_rhop version
     def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.1, dy=1e-2, tab=True):
 
         #dPdS|{rho, Y, Z}:
@@ -1643,19 +1699,36 @@ class mixtures(hhe):
 
     ########### Chemical Potential Terms ###########
 
-    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-3, tab=True):
+    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, tab=True):
 
         u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, tab=tab)
         u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, tab=tab)
 
         return (u2 - u1)/(2 * dy)
 
-    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-3, tab=True):
+    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, tab=True):
 
         u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, tab=tab)
         u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, tab=tab)
 
         return (u2 - u1)/(2 * dy)
+
+    ########### Conductive Flux Terms ###########
+
+    def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, tab=True):
+        func = self.get_logt_srho_tab if tab else self.get_logt_srho
+        t1 = 10**self.func(_s, _lgrho, _y - dy, _z)
+        t2 = 10**self.func(_s, _lgrho, _y + dy, _z)
+
+        return (t2 - t1)/(2 * dy)
+
+    def get_dtdz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, tab=True):
+        func = self.get_logt_srho_tab if tab else self.get_logt_srho
+        t1 = 10**self.func(_s, _lgrho, _y, _z - dz)
+        t2 = 10**self.func(_s, _lgrho, _y, _z + dz)
+
+        return (t2 - t1)/(2 * dy)
+    
 
 
 
