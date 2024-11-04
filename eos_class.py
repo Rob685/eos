@@ -165,8 +165,8 @@ class mixtures(hhe):
                 self.pt_data = np.load('eos/cms/{}_hg_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
                 self.rhot_data = np.load('eos/cms/{}_hg_{}_rhot.npz'.format(hhe_eos, z_eos))
                 self.sp_data = np.load('eos/cms/{}_hg_{}_sp.npz'.format(hhe_eos, z_eos))
-                # self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
-                # self.srho_data = np.load('eos/cms/{}_hg_{}_srho_2D.npz'.format(hhe_eos, z_eos))
+                self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
+                self.srho_data = np.load('eos/cms/{}_hg_{}_srho_2D.npz'.format(hhe_eos, z_eos))
             else:
                 self.pt_data = np.load('eos/cms/{}_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
         else:
@@ -174,26 +174,27 @@ class mixtures(hhe):
     
         # 1-D independent grids
         self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
-        self.logtvals = self.pt_data['logtvals'] # log10 K
-        self.logtvals_rhot = self.rhot_data['logtvals']
+        # self.logpvals_sp = self.sp_data['logpvals']
+        # self.logpvals_rhop = self.rhop_data['logpvals']
 
-        self.logrhovals = self.rhot_data['logrhovals'] # log10 g/cc
+        self.logtvals = self.pt_data['logtvals'] # log10 K
+        #self.logtvals_rhot = self.rhot_data['logtvals']
+
+        # self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
         # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
         # self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
 
-        self.svals = self.sp_data['s_vals'] # kb/baryon
-        self.logpvals_sp = self.sp_data['logpvals']
+        # self.svals_sp = self.sp_data['s_vals'] # kb/baryon
         # self.svals_srho = self.srho_data['s_vals'] # kb/baryon
-
 
         self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
         self.zvals_pt = self.pt_data['zvals'] # mass fraction
 
-        self.yvals_rhot = self.rhot_data['yvals']
-        self.zvals_rhot = self.rhot_data['zvals']
+        # self.yvals_rhot = self.rhot_data['yvals']
+        # self.zvals_rhot = self.rhot_data['zvals']
 
-        self.yvals_sp = self.sp_data['yvals']
-        self.zvals_sp = self.sp_data['zvals']
+        # self.yvals_sp = self.sp_data['yvals']
+        # self.zvals_sp = self.sp_data['zvals']
 
         # self.yvals_rhop = self.rhop_data['yvals']
         # self.zvals_rhop = self.rhop_data['zvals']
@@ -206,13 +207,13 @@ class mixtures(hhe):
         self.logrho_pt_tab = self.pt_data['logrho_pt'] # log10 g/cc
         self.logu_pt_tab = self.pt_data['logu_pt'] # log10 erg/g
 
-        self.s_rhot_tab = self.rhot_data['s_rhot']
-        self.logp_rhot_tab = self.rhot_data['logp_rhot']
+        # self.s_rhot_tab = self.rhot_data['s_rhot']
+        # self.logp_rhot_tab = self.rhot_data['logp_rhot']
 
-        self.logt_sp_tab = self.sp_data['logt_sp']
-        self.logrho_sp_tab = self.sp_data['logrho_sp']
+        # self.logt_sp_tab = self.sp_data['logt_sp']
+        # self.logrho_sp_tab = self.sp_data['logrho_sp']
 
-        # self.s_rhop_tab = self.rhop_data['s_rhop']
+        # #self.s_rhop_tab = self.rhop_data['s_rhop']
         # self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
         # self.logp_srho_tab = self.srho_data['logp_srho']
@@ -225,14 +226,14 @@ class mixtures(hhe):
         self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
         self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
-        self.s_rhot_rgi = RGI((self.logrhovals, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
-        self.logp_rhot_rgi = RGI((self.logrhovals, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
+        # self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
+        # self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
 
-        self.logt_sp_rgi = RGI((self.svals, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
-        self.logrho_sp_rgi = RGI((self.svals, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
+        # self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
+        # self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
 
-        # self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
-        # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab[0], **rgi_args)
+        # #self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
+        # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab[0], **rgi_args)
 
         # self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab[0], **rgi_args)
         # self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab[0], **rgi_args)
@@ -308,6 +309,9 @@ class mixtures(hhe):
             or ((not np.isscalar(_z)) and np.any(_z > 1.0))
         ):
             raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+
+        # if not self.y_prime:
+        #     raise Exception('You must initialize the class with y_prime=True to use the volume addition law.')
 
         smix_xy_ideal =  self.get_smix_id_y(_y_prime)
         smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hg else 0.0
@@ -462,18 +466,6 @@ class mixtures(hhe):
             return result
 
     # logrho, logp tables
-    def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z):
-
-        _y = _y if self.y_prime else _y / (1 - _z)
-
-        args = (_lgrho, _lgp, _y, _z)
-        v_args = [np.atleast_1d(arg) for arg in args]
-        pts = np.column_stack(v_args)
-        result =  self.s_rhop_rgi(pts)
-        if all(np.isscalar(arg) for arg in args):
-            return result.item()
-        else:
-            return result
 
     def get_logt_rhop_tab(self, _lgrho, _lgp, _y, _z):
 
@@ -487,6 +479,20 @@ class mixtures(hhe):
             return result.item()
         else:
             return result
+
+    def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z):
+
+        _y = _y if self.y_prime else _y / (1 - _z)
+
+        args = (_lgrho, _lgp, _y, _z)
+        # v_args = [np.atleast_1d(arg) for arg in args]
+        # pts = np.column_stack(v_args)
+        # result =  self.s_rhop_rgi(pts)
+        # if all(np.isscalar(arg) for arg in args):
+        #     return result.item()
+        # else:
+        #     return result
+        return self.get_s_pt_tab(_lgp, self.get_logt_rhop_tab(*args), _y, _z)
 
     # S, logrho tables
     def get_logp_srho_tab(self, _s, _lgrho, _y, _z):
@@ -794,7 +800,7 @@ class mixtures(hhe):
 
     def get_s_rhot(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None):
         logp = self.get_logp_rhot(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
-        return self.get_s_pt(logp, _lgt, _y, _z)
+        return self.get_s_pt_tab(logp, _lgt, _y, _z)
 
     def get_logp_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton'):
 
@@ -1062,6 +1068,12 @@ class mixtures(hhe):
         return logp_values, logt_values, converged
 
 
+    def get_logt_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None):
+        logp, convp = self.get_logp_srho(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+        logt, convt = self.get_logt_sp(_s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+        return logt, convt
+
+
     def get_logt_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
@@ -1202,7 +1214,7 @@ class mixtures(hhe):
         
     def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
         logt, conv = self.get_logt_rhop(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        return self.get_s_pt(_lgp, logt, _y, _z)
+        return self.get_s_pt_tab(_lgp, logt, _y, _z)
     # def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
 
     #     """
@@ -1613,11 +1625,33 @@ class mixtures(hhe):
     ########### Convection Derivatives ###########
 
     # Specific heat at constant pressure
-    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3):
-        func = self.get_logt_sp_tab if self.tab else self.get_logt_sp
-        lgt1 = func(_s - ds, _lgp, _y, _z)
-        lgt2 = func(_s + ds, _lgp, _y, _z)
-        return (2 * ds / self.erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
+    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3, tab=True):
+        func = self.get_logt_sp_tab if tab else self.get_logt_sp
+        ds = _s*0.1 if ds is None else ds
+
+        if tab:
+            lgt1 = func(_s - ds, _lgp, _y, _z)
+            lgt2 = func(_s + ds, _lgp, _y, _z)
+        else:
+            lgt1, conv1 = func(_s - ds, _lgp, _y, _z)
+            lgt2, conv2 = func(_s + ds, _lgp, _y, _z)
+
+        return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
+
+    # Specific heat at constant volume
+    def get_cv(self, _s, _lgrho, _y, _z, ds=1e-3, tab=True):
+        func = self.get_logt_srho_tab if tab else self.get_logt_srho
+        ds = _s*0.1 if ds is None else ds
+
+        if tab:
+            lgt1 = func(_s - ds, _lgrho, _y, _z)
+            lgt2 = func(_s + ds, _lgrho, _y, _z)
+
+        else:
+            lgt1, conv1 = func(_s - ds, _lgrho, _y, _z)
+            lgt2, conv2 = func(_s + ds, _lgrho, _y, _z)
+
+        return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
 
     # Adiabatic temperature gradient
     def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2, tab=True):
@@ -1628,26 +1662,30 @@ class mixtures(hhe):
 
     # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
     def get_dsdy_pt(self, _lgp, _lgt, _y, _z, dy=1e-3, tab=True):
+        func = self.get_s_pt_tab if tab else self.get_s_pt
+        dy = _y*0.1 if dy is None else dy
         s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z)
         s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z)
         return (s2 - s1)/(2 * dy)
 
     def get_dsdz_pt(self, _lgp, _lgt, _y, _z, dz=1e-3, tab=True):
-        s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz)
-        s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz)
+        func = self.get_s_pt_tab if tab else self.get_s_pt
+        dz = _z*1e-1 if dz is None else dz
+        s1 = self.func(_lgp, _lgt, _y, _z - dz)
+        s2 = self.func(_lgp, _lgt, _y, _z + dz)
         return (s2 - s1)/(2 * dz)
 
     # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
     def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=None, tab=True):
         func = self.get_s_rhop_tab if tab else self.get_s_rhop
-        dy = _y*1e-2 if dy is None else dy
+        dy = _y*0.1 if dy is None else dy
         s1 = func(_lgrho, _lgp, _y - dy, _z)
         s2 = func(_lgrho, _lgp, _y + dy, _z)
         return (s2 - s1)/(2 * dy)
 
     def get_dsdz_rhop(self, _lgrho, _lgp, _y, _z, dz=None, tab=True):
         func = self.get_s_rhop_tab if tab else self.get_s_rhop
-        dz = _z*1e-2 if dz is None else dz
+        dz = _z*1e-1 if dz is None else dz
         s1 = func(_lgrho, _lgp, _y, _z - dz)
         s2 = func(_lgrho, _lgp, _y, _z + dz)
         return (s2 - s1)/(2 * dz)
