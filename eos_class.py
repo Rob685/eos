@@ -521,6 +521,18 @@ class mixtures(hhe):
         else:
             return result
 
+    def get_logu_srho(self, _s, _lgrho, _y, _z, tab=True):
+
+        _y = _y if self.y_prime else _y / (1 - _z)
+
+        args = (_s, _lgrho, _y, _z)
+        if tab:
+            logp, logt = get_logp_srho_tab(*args), get_logt_srho_tab(*args)
+        else:
+            logp, logt = get_logp_logt_srho(*args, method='nelder-mead')
+        return get_logu_pt_tab(logp, logt, _y, _z)
+
+
 
     ### Inversion Functions ###
 
@@ -1215,141 +1227,6 @@ class mixtures(hhe):
     def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
         logt, conv = self.get_logt_rhop(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_s_pt_tab(_lgp, logt, _y, _z)
-    # def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
-
-    #     """
-    #     Compute the temperature given entropy, pressure, helium abundance, and metallicity.
-    
-    #     Parameters:
-    #         _lgrho (array_like): Log10 density values.
-    #         _lgp (array_like): Log10 pressure values.
-    #         _y (array_like): Helium mass fraction values.
-    #         _z (array_like): Heavy metal mass fraction values.
-    #         ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
-    #         logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
-    
-    #     Returns:
-    #         ndarray: Computed temperature values.
-    #     """
-        
-    #     _lgrho = np.atleast_1d(_lgrho)
-    #     _lgp = np.atleast_1d(_lgp)
-    #     _y = np.atleast_1d(_y)
-    #     _z = np.atleast_1d(_z)
-
-    #     # Ensure inputs are numpy arrays and broadcasted to the same shape
-    #     _lgrho, _lgp, _y, _z = np.broadcast_arrays(_lgrho, _lgp, _y, _z)
-
-    #     if ideal_guess:
-    #         guess = ideal_xy.get_s_rhop(_lgrho, _lgp, _y)
-    #     else:
-    #         if arr_guess is None:
-    #             raise ValueError("logt_guess must be provided when ideal_guess is False.")
-    #         else:
-    #             guess = arr_guess
-    #     # sol = root(err, guess, tol=1e-6)
-    #     # return sol.x, sol.success
-
-    # # Define a function to compute root and capture convergence
-    #     def root_func(lgrho_i, lgp_i, y_i, z_i, guess_i):
-    #         def err(_s):
-    #             logrho_test = self.get_logrho_sp(_s, lgp_i, y_i, z_i)
-    #             return (logrho_test / lgrho_i) - 1
-
-
-    #         if method == 'root':
-    #             sol = root(err, guess_i, tol=1e-8)
-    #             if sol.success:
-    #                 return sol.x[0], True
-    #             else:
-    #                 return np.nan, False  # Assign np.nan to non-converged elements
-
-    #         elif method == 'newton':
-    #             try:
-    #                 sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
-    #                 return sol_root, True
-    #             except RuntimeError:
-    #                 #Convergence failed
-    #                 return np.nan, False
-    #             except Exception as e:
-    #                 #Handle other exceptions
-    #                 return np.nan, False
-
-    #         elif method == 'brentq':
-    #             # Define an initial interval around the guess
-    #             delta = 0.1  # Initial interval half-width
-    #             a = guess_i - delta
-    #             b = guess_i + delta
-
-    #             # Try to find a valid interval where the function changes sign
-    #             max_attempts = 5
-    #             factor = 2.0  # Factor to expand the interval if needed
-
-    #             for attempt in range(max_attempts):
-    #                 try:
-    #                     fa = err(a)
-    #                     fb = err(b)
-    #                     if np.isnan(fa) or np.isnan(fb):
-    #                         raise ValueError("Function returned NaN.")
-
-    #                     if fa * fb < 0:
-    #                         # Valid interval found
-    #                         sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
-    #                         return sol_root, True
-    #                     else:
-    #                         # Expand the interval and try again
-    #                         a -= delta * factor
-    #                         b += delta * factor
-    #                         delta *= factor  # Increase delta for next iteration
-    #                 except ValueError:
-    #                     # If err() cannot be evaluated, expand the interval
-    #                     a -= delta * factor
-    #                     b += delta * factor
-    #                     delta *= factor
-
-    #             # If no valid interval is found after max_attempts
-    #             return np.nan, False
-
-    #         elif method == 'newton_brentq':
-    #             # Try the Newton method first
-    #             try:
-    #                 sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
-    #                 return sol_root, True
-    #             except RuntimeError:
-    #                 # Fall back to the Brentq method if Newton fails
-    #                 delta = 0.1
-    #                 a = guess_i - delta
-    #                 b = guess_i + delta
-    #                 max_attempts = 5
-    #                 factor = 2.0
-
-    #                 for attempt in range(max_attempts):
-    #                     try:
-    #                         fa = err(a)
-    #                         fb = err(b)
-    #                         if np.isnan(fa) or np.isnan(fb):
-    #                             raise ValueError("Function returned NaN.")
-    #                         if fa * fb < 0:
-    #                             sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
-    #                             return sol_root, True
-    #                         else:
-    #                             a -= delta * factor
-    #                             b += delta * factor
-    #                             delta *= factor
-    #                     except ValueError:
-    #                         a -= delta * factor
-    #                         b += delta * factor
-    #                         delta *= factor
-    #                 return np.nan, False
-    #         else:
-    #             raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
-    #     # Vectorize the root_func
-    #     vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
-
-    #     # Apply the vectorized function
-    #     temperatures, converged = vectorized_root_func(_lgrho, _lgp, _y, _z, guess)
-
-    #     return temperatures, converged
 
 
     def interpolate_non_converged_temperatures_1d(self, _lgrho, temperatures, converged, interp_kind='linear'):
@@ -1690,12 +1567,96 @@ class mixtures(hhe):
         s2 = func(_lgrho, _lgp, _y, _z + dz)
         return (s2 - s1)/(2 * dz)
 
-    def get_gamma1(_s, _lgp, _y, _z, dp=1e-2, tab=True):
+    def get_gamma1(self, _s, _lgp, _y, _z, dp=1e-2, tab=True):
         # dlnP/dlnrho_S, Y, Z = dlogP/dlogrho_S, Y, Z
         func = self.get_logrho_sp_tab if tab else self.get_logrho_sp
         lgrho1 = func(_s, _lgp-dp, _y, _z)
         lgrho2 = func(_s, _lgp+dp, _y, _z)
         return (2*dp)/(lgrho2 - lgrho1)
+
+     #### Triple Product Rule Derivatives ###*
+
+
+    def get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=0.1, tab=True):
+        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+        ds = _s*0.1 if ds is None else ds
+        if tab:
+            p1 = 10**func(_s - ds, _lgrho, _y, _z)
+            p2 = 10**func(_s + ds, _lgrho, _y, _z)
+        else:
+            p1, conv1 = 10**func(_s - ds, _lgrho, _y, _z)
+            p2, conv2 = 10**func(_s + ds, _lgrho, _y, _z)
+
+        return (p2 - p1) / (2 * ds / erg_to_kbbar)
+
+    def get_dpdy_srho(_s, _lgrho, _y, _z, dy=1e-2, tab=True):
+        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+        dy = _y*0.1 if dy is None else dy
+        if tab:
+            p1 = 10**func(_s, _lgrho, _y - dy, _z)
+            p2 = 10**func(_s, _lgrho, _y + dy, _z)
+        else:
+            p1, conv1 = 10**func(_s, _lgrho, _y - dy, _z)
+            p2, conv2 = 10**func(_s, _lgrho, _y + dy, _z)
+
+        return (p2 - p1) / (2 * dy)
+
+
+    def get_dpdz_srho(_s, _lgrho, _y, _z, dz=1e-2, tab=True):
+        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+        dz = _z*0.1 if dz is None else dz
+        if tab:
+            p1 = 10**func(_s, _lgrho, _y, _z - dz)
+            p2 = 10**func(_s, _lgrho, _y, _z + dz)
+        else:
+            p1, conv1 = 10**func(_s, _lgrho, _y, _z - dz)
+            p2, conv2 = 10**func(_s, _lgrho, _y, _z + dz)
+
+        return (p2 - p1) / (2 * dz)
+
+    def get_dsdy_rhop_srho(_s, _lgrho, _y, _z, ds=0.1, dy=1e-2, tab=True):
+
+        #dPdS|{rho, Y, Z}:
+        dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, tab=tab)
+        #dPdY|{S, rho, Y}:
+        dpdy_srho = get_dpdy_srho(_s, _lgrho, _y, _z, dy=dy, tab=tab)
+
+        #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdy_rhopy
+
+
+    def get_dsdz_rhop_srho(_s, _lgrho, _y, _z, ds=0.1, dz=1e-2, tab=True):
+
+        #dPdS|{rho, Y, Z}:
+        dpds_rhoy_srho = get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, tab=tab)
+        #dPdY|{S, rho, Y}:
+        dpdz_srho = get_dpdz_srho(_s, _lgrho, _y, _z, dz=dz, tab=tab)
+
+        #dSdZ|{rho, P, Z} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdz_rhopy
+
+
+
+    ########### Chemical Potential Terms ###########
+
+    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-3, tab=True):
+
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, tab=tab)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, tab=tab)
+
+        return (u2 - u1)/(2 * dy)
+
+    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-3, tab=True):
+
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, tab=tab)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, tab=tab)
+
+        return (u2 - u1)/(2 * dy)
+
 
 
 
