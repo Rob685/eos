@@ -1728,6 +1728,29 @@ class mixtures(hhe):
         t2 = 10**self.func(_s, _lgrho, _y, _z + dz)
 
         return (t2 - t1)/(2 * dy)
+
+    ########## Thermodynamic Consistency Test ###########
+
+    # du/ds_(rho, Y) = T 
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, ds=1e-2, tab=True):
+
+        u1 = 10**self.get_logu_srho(_s - ds, _lgrho, _y, _z, tab=tab)
+        u2 = 10**self.get_logu_srho(_s + ds, _lgrho, _y, _z, tab=tab)
+
+        return (u2 - u1)/(2 * s / erg_to_kbbar)
+
+    # -du/dV_(S, Y) = P 
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, drho=0.1, tab=True):
+
+        R0 = 10 **_lgrho
+        R1 = R0*(1-drho)
+        R2 = R0*(1+drho)
+
+        u1 = 10**self.get_logu_srho(_s, np.log10(R1), _y, _z, tab=tab)
+        u2 = 10**self.get_logu_srho(_s, np.log10(R2), _y, _z, tab=tab)
+
+        return (u2 - u1)/((1/R1) - (1/R2))
+
     
 
 
