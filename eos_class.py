@@ -169,32 +169,36 @@ class mixtures(hhe):
                 self.srho_data = np.load('eos/cms/{}_hg_{}_srho_2D.npz'.format(hhe_eos, z_eos))
             else:
                 self.pt_data = np.load('eos/cms/{}_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
+                self.rhot_data = np.load('eos/cms/{}_{}_rhot.npz'.format(hhe_eos, z_eos))
+                self.sp_data = np.load('eos/cms/{}_{}_sp.npz'.format(hhe_eos, z_eos))
         else:
             self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
+            self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
+            self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
     
         # 1-D independent grids
         self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
-        # self.logpvals_sp = self.sp_data['logpvals']
+        self.logpvals_sp = self.sp_data['logpvals']
         # self.logpvals_rhop = self.rhop_data['logpvals']
 
         self.logtvals = self.pt_data['logtvals'] # log10 K
-        #self.logtvals_rhot = self.rhot_data['logtvals']
+        self.logtvals_rhot = self.rhot_data['logtvals']
 
-        # self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
+        self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
         # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
         # self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
 
-        # self.svals_sp = self.sp_data['s_vals'] # kb/baryon
+        self.svals_sp = self.sp_data['s_vals'] # kb/baryon
         # self.svals_srho = self.srho_data['s_vals'] # kb/baryon
 
         self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
         self.zvals_pt = self.pt_data['zvals'] # mass fraction
 
-        # self.yvals_rhot = self.rhot_data['yvals']
-        # self.zvals_rhot = self.rhot_data['zvals']
+        self.yvals_rhot = self.rhot_data['yvals']
+        self.zvals_rhot = self.rhot_data['zvals']
 
-        # self.yvals_sp = self.sp_data['yvals']
-        # self.zvals_sp = self.sp_data['zvals']
+        self.yvals_sp = self.sp_data['yvals']
+        self.zvals_sp = self.sp_data['zvals']
 
         # self.yvals_rhop = self.rhop_data['yvals']
         # self.zvals_rhop = self.rhop_data['zvals']
@@ -207,11 +211,11 @@ class mixtures(hhe):
         self.logrho_pt_tab = self.pt_data['logrho_pt'] # log10 g/cc
         self.logu_pt_tab = self.pt_data['logu_pt'] # log10 erg/g
 
-        # self.s_rhot_tab = self.rhot_data['s_rhot']
-        # self.logp_rhot_tab = self.rhot_data['logp_rhot']
+        self.s_rhot_tab = self.rhot_data['s_rhot']
+        self.logp_rhot_tab = self.rhot_data['logp_rhot']
 
-        # self.logt_sp_tab = self.sp_data['logt_sp']
-        # self.logrho_sp_tab = self.sp_data['logrho_sp']
+        self.logt_sp_tab = self.sp_data['logt_sp']
+        self.logrho_sp_tab = self.sp_data['logrho_sp']
 
         # #self.s_rhop_tab = self.rhop_data['s_rhop']
         # self.logt_rhop_tab = self.rhop_data['logt_rhop']
@@ -226,11 +230,11 @@ class mixtures(hhe):
         self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
         self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
-        # self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
-        # self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
+        self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
+        self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
 
-        # self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
-        # self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
+        self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
+        self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
 
         # #self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
         # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab[0], **rgi_args)
@@ -358,6 +362,11 @@ class mixtures(hhe):
         return np.log10(1/(((1 - _y_prime) * (1 - _z) / rho_h) + (_y_prime * (1 - _z) / rho_he) + vmix*(1 - _z) + _z/rho_z))
 
     def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
+
+        """
+        This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
+        When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).    
+        """
         
         umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hg else 0.0
 
