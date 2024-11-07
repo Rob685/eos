@@ -1595,18 +1595,16 @@ class mixtures(hhe):
     # Brunt coefficient when computing in drho space
     def get_dlogrho_ds_py(self, _s, _lgp, _y, _z, ds=0.1, tab=True):
         func = self.get_logrho_sp_tab if tab else self.get_logrho_sp
-        lgrho2 = func(_s + ds, _lgp, _y, _z,
-            hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
-        lgrho1 = func(_s - ds, _lgp, _y, _z,
-            hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_tot=y_tot)
+        lgrho2 = func(_s + ds, _lgp, _y, _z)
+        lgrho1 = func(_s - ds, _lgp, _y, _z)
         return ((lgrho2 - lgrho1) * log10_to_loge) / (2 * ds / erg_to_kbbar)
 
     # Chi_T/Chi_rho
     # aka "delta" in MLT flux
     def get_dlogrho_dlogt_py(self, _lgp, _lgt, _y, _z, dt=1e-3):
         
-        lgrho1 = self.get_logrho_pt_tab(_lgp, _lgt - dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
-        lgrho2 = self.get_logrho_pt_tab(_lgp, _lgt + dt, _y_call, _z, hhe_eos=hhe_eos, z_eos=z_eos, hg=hg)
+        lgrho1 = self.get_logrho_pt_tab(_lgp, _lgt - dt, _y, _z)
+        lgrho2 = self.get_logrho_pt_tab(_lgp, _lgt + dt, _y, _z)
 
         return (lgrho2 - lgrho1)/(2 * dt)
 
