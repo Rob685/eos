@@ -545,10 +545,10 @@ class mixtures(hhe):
 
         args = (_s, _lgrho, _y, _z)
         if tab:
-            logp, logt = get_logp_srho_tab(*args), get_logt_srho_tab(*args)
+            logp, logt = self.get_logp_srho_tab(*args), self.get_logt_srho_tab(*args)
         else:
-            logp, logt = get_logp_logt_srho(*args, method='nelder-mead')
-        return get_logu_pt_tab(logp, logt, _y, _z)
+            logp, logt = self.get_logp_logt_srho(*args, method='nelder-mead')
+        return self.get_logu_pt_tab(logp, logt, _y, _z)
 
 
 
