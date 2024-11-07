@@ -109,7 +109,7 @@ def get_smix_id_yz(Y, Z, mz):
 
 #### P, _lgt mixtures ####
 
-def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos=None, hg=True):
+def get_s_pt(_lgp, _lgt, _y_prime, _z, hhe_eos, z_eos='aqua', hg=True):
     """
     This calculates the entropy for a metallicity mixture.
     The cms and mls EOSes already contain the HG23 non-ideal corrections
