@@ -687,7 +687,7 @@ class mixtures(hhe):
     def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
-        Compute the temperature given entropy, pressure, helium abundance, and metallicity.
+        Compute the pressure given density, temperature, helium abundance, and metallicity.
     
         Parameters:
             _lgrho (array_like): Log10 density values.
@@ -823,7 +823,7 @@ class mixtures(hhe):
     def get_logp_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
-        Compute the temperature given entropy, pressure, helium abundance, and metallicity.
+        Compute the pressure given entropy, density, helium abundance, and metallicity.
     
         Parameters:
             _s (array_like): Entropy values.
@@ -859,6 +859,140 @@ class mixtures(hhe):
                 # Error function for logt(S, logp)
                 logrho_test = self.get_logrho_sp_tab(s_i, _lgp, y_i, z_i)
                 return (logrho_test/lgrho_i) - 1
+
+            if method == 'root':
+                sol = root(err, guess_i, tol=1e-8)
+                if sol.success:
+                    return sol.x[0], True
+                else:
+                    return np.nan, False  # Assign np.nan to non-converged elements
+
+            elif method == 'newton':
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    #Convergence failed
+                    return np.nan, False
+                except Exception as e:
+                    #Handle other exceptions
+                    return np.nan, False
+
+            elif method == 'brentq':
+                # Define an initial interval around the guess
+                delta = 0.1  # Initial interval half-width
+                a = guess_i - delta
+                b = guess_i + delta
+
+                # Try to find a valid interval where the function changes sign
+                max_attempts = 5
+                factor = 2.0  # Factor to expand the interval if needed
+
+                for attempt in range(max_attempts):
+                    try:
+                        fa = err(a)
+                        fb = err(b)
+                        if np.isnan(fa) or np.isnan(fb):
+                            raise ValueError("Function returned NaN.")
+
+                        if fa * fb < 0:
+                            # Valid interval found
+                            sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                            return sol_root, True
+                        else:
+                            # Expand the interval and try again
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor  # Increase delta for next iteration
+                    except ValueError:
+                        # If err() cannot be evaluated, expand the interval
+                        a -= delta * factor
+                        b += delta * factor
+                        delta *= factor
+
+                # If no valid interval is found after max_attempts
+                return np.nan, False
+
+            elif method == 'newton_brentq':
+                # Try the Newton method first
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Fall back to the Brentq method if Newton fails
+                    delta = 0.1
+                    a = guess_i - delta
+                    b = guess_i + delta
+                    max_attempts = 5
+                    factor = 2.0
+
+                    for attempt in range(max_attempts):
+                        try:
+                            fa = err(a)
+                            fb = err(b)
+                            if np.isnan(fa) or np.isnan(fb):
+                                raise ValueError("Function returned NaN.")
+                            if fa * fb < 0:
+                                sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                                return sol_root, True
+                            else:
+                                a -= delta * factor
+                                b += delta * factor
+                                delta *= factor
+                        except ValueError:
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor
+                    return np.nan, False
+            else:
+                raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
+        # Vectorize the root_func
+        vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
+
+        # Apply the vectorized function
+        temperatures, converged = vectorized_root_func(_s, _lgrho, _y, _z, guess)
+
+        return temperatures, converged
+
+    def get_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+
+        """
+        Compute the temperature given entropy, density, helium abundance, and metallicity.
+    
+        Parameters:
+            _s (array_like): Entropy values.
+            _lgrho (array_like): Log10 density values.
+            _y (array_like): Helium mass fraction values.
+            _z (array_like): Heavy metal mass fraction values.
+            ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
+            logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
+    
+        Returns:
+            ndarray: Computed temperature values.
+        """
+        
+        _s = np.atleast_1d(_s)
+        _lgrho = np.atleast_1d(_lgrho)
+        _y = np.atleast_1d(_y)
+        _z = np.atleast_1d(_z)
+
+        _y = _y if self.y_prime else _y / (1 - _z)
+
+        # Ensure inputs are numpy arrays and broadcasted to the same shape
+        _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
+
+        if ideal_guess:
+            guess = ideal_xy.get_t_srho(_s, _lgrho, _y)
+        else:
+            if arr_guess is None:
+                raise ValueError("logt_guess must be provided when ideal_guess is False.")
+            guess = arr_guess
+    # Define a function to compute root and capture convergence
+        def root_func(s_i, lgrho_i, y_i, z_i, guess_i):
+            def err(_lgt):
+                # Error function for logt(S, logp)
+                s_test = self.get_s_rhot_tab(lgrho_i, _lgt, y_i, z_i) * erg_to_kbbar
+                return (s_test/s_i) - 1
 
             if method == 'root':
                 sol = root(err, guess_i, tol=1e-8)
@@ -1106,7 +1240,7 @@ class mixtures(hhe):
     def get_logt_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
-        Compute the temperature given entropy, pressure, helium abundance, and metallicity.
+        Compute the temperature given density, pressure, helium abundance, and metallicity.
     
         Parameters:
             _lgrho (array_like): Log10 density values.
