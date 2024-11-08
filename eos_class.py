@@ -554,7 +554,7 @@ class mixtures(hhe):
 
     ### Inversion Functions ###
 
-    def get_logt_sp(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_sp_inv(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -692,11 +692,11 @@ class mixtures(hhe):
 
         return temperatures, converged
 
-    def get_logrho_sp(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logt, conv = self.get_logt_sp( _s, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        return self.get_logrho_pt(_lgp, logt, _y, _z)
+    def get_logrho_sp_inv(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logt, conv = self.get_logt_sp_inv( _s, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+        return self.get_logrho_pt_tab(_lgp, logt, _y, _z)
 
-    def get_logp_rhot(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -828,11 +828,11 @@ class mixtures(hhe):
 
         return pressure, converged
 
-    def get_s_rhot(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None):
-        logp = self.get_logp_rhot(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+    def get_s_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None):
+        logp = self.get_logp_rhot_inv(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
         return self.get_s_pt_tab(logp, _lgt, _y, _z)
 
-    def get_logp_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton'):
+    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -966,7 +966,7 @@ class mixtures(hhe):
 
         return temperatures, converged
 
-    def get_logp_logt_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
+    def get_logp_logt_srho_2Dinv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
         """
         Compute temperature and pressure given entropy, density, helium abundance, and metallicity.
 
@@ -1031,8 +1031,8 @@ class mixtures(hhe):
 
                 def opt(vars):
                     lgp, lgt = vars
-                    s_calc = self.get_s_pt(lgp, lgt, y_i, z_i) * erg_to_kbbar
-                    lgrho_calc = self.get_logrho_pt(lgp, lgt, y_i, z_i)
+                    s_calc = self.get_s_pt_tab(lgp, lgt, y_i, z_i) * erg_to_kbbar
+                    lgrho_calc = self.get_logrho_pt_tab(lgp, lgt, y_i, z_i)
                     
                     # Convert s_calc and lgrho_calc to scalars if they are arrays
                     if isinstance(s_calc, np.ndarray):
@@ -1062,8 +1062,8 @@ class mixtures(hhe):
                 def opt(vars):
 
                     lgp, lgt = vars
-                    s_calc = self.get_s_pt(lgp, lgt, y_i, z_i) * erg_to_kbbar
-                    lgrho_calc = self.get_logrho_pt(lgp, lgt, y_i, z_i)
+                    s_calc = self.get_s_pt_tab(lgp, lgt, y_i, z_i) * erg_to_kbbar
+                    lgrho_calc = self.get_logrho_pt_tab(lgp, lgt, y_i, z_i)
                     
                     # Convert s_calc and lgrho_calc to scalars if they are arrays
                     if isinstance(s_calc, np.ndarray):
@@ -1098,13 +1098,13 @@ class mixtures(hhe):
         return logp_values, logt_values, converged
 
 
-    def get_logt_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None):
-        logp, convp = self.get_logp_srho(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
-        logt, convt = self.get_logt_sp(_s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+    def get_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None):
+        logp, convp = self.get_logp_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+        logt, convt = self.get_logt_sp_inv(_s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
         return logt, convt
 
 
-    def get_logt_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -1242,8 +1242,8 @@ class mixtures(hhe):
 
         return temperatures, converged
         
-    def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logt, conv = self.get_logt_rhop(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+    def get_s_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logt, conv = self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_s_pt_tab(_lgp, logt, _y, _z)
 
 
@@ -1374,7 +1374,7 @@ class mixtures(hhe):
                         #pdb.set_trace()
                         #if prev_res1_temp is None:
                         try:
-                            res1_temp, conv = self.get_logt_sp(
+                            res1_temp, conv = self.get_logt_sp_inv(
                                 a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                 )
                         except:
@@ -1397,7 +1397,7 @@ class mixtures(hhe):
                     elif basis == 'rhot':
                         if prev_res1_temp is None:
 
-                            res1_temp, conv = self.get_logp_rhot(
+                            res1_temp, conv = self.get_logp_rhot_inv(
                                 a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                 )
                         else:
@@ -1418,7 +1418,7 @@ class mixtures(hhe):
 
                         if twoD_inv: # uses 2-D inversion
                             if prev_res1_temp is None:
-                                res1_temp, res2_temp, conv = self.get_logp_logt_srho(
+                                res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
                                     a_const, b_const, y_const, z_arr, ideal_guess=True, method='nelder-mead'
                                     )
                             else:
@@ -1447,11 +1447,11 @@ class mixtures(hhe):
 
                             if prev_res1_temp is None:
 
-                                res1_temp, conv = self.get_logp_srho(
+                                res1_temp, conv = self.get_logp_srho_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                     )
                             else:
-                                res1_temp, conv = self.get_logp_srho(
+                                res1_temp, conv = self.get_logp_srho_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
                                     )
 
@@ -1469,7 +1469,7 @@ class mixtures(hhe):
                     elif basis == 'rhop':
                         #if prev_res1_temp is None:
 
-                        res1_temp, conv = self.get_logt_rhop(
+                        res1_temp, conv = self.get_logt_rhop_inv(
                             a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                         )
                         # else:
@@ -1514,6 +1514,57 @@ class mixtures(hhe):
             res2_list.append(res2_b)
 
         return np.array([res1_list]), np.array([res2_list])
+
+
+    ################################################ Wrapper Functions ################################################
+
+    def get_logt_sp(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_logt_sp_tab(_s, _lgp, _y, _z)
+
+        else:
+            return self.get_logt_sp_inv(_s, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
+
+    def get_logrho_sp(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_logrho_sp_tab(_s, _lgp, _y, _z)
+
+        else:
+            return self.get_logrho_sp_inv(_s, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
+
+    def get_logp_rhot(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_logp_rhot_tab(_lgrho, _lgp, _y, _z)
+
+        else:
+            return self.get_logp_rhot_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
+
+    def get_s_rhot(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_s_rhot_tab(_lgrho, _lgp, _y, _z)
+
+        else:
+            return self.get_s_rhot_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
+
+    def get_logt_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_logt_rhop_tab(_lgrho, _lgp, _y, _z)
+
+        else:
+            return self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
+
+    def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        if tab:
+            return self.get_s_rhop_tab(_lgrho, _lgp, _y, _z)
+
+        else:
+            return self.get_s_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)
 
     ################################################ Derivatives ################################################
 
