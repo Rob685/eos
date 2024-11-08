@@ -1671,7 +1671,7 @@ class mixtures(hhe):
         lgp1 = self.get_logp_rhot_tab(_lgrho, _lgt, _y, _z - dz)
         lgp2 = self.get_logp_rhot_tab(_lgrho, _lgt, _y, _z + dz)
 
-        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dy)
+        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dz)
 
     def get_dlogp_dlogt_rhoy_rhot(self, _lgrho, _lgt,  _y, _z, dt=1e-2):
         # Chi_T
@@ -1788,7 +1788,7 @@ class mixtures(hhe):
         u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, tab=tab)
         u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, tab=tab)
 
-        return (u2 - u1)/(2 * dy)
+        return (u2 - u1)/(2 * dz)
 
     ########### Conductive Flux Terms ###########
 
@@ -1804,7 +1804,7 @@ class mixtures(hhe):
         t1 = 10**self.func(_s, _lgrho, _y, _z - dz)
         t2 = 10**self.func(_s, _lgrho, _y, _z + dz)
 
-        return (t2 - t1)/(2 * dy)
+        return (t2 - t1)/(2 * dz)
 
     ########## Thermodynamic Consistency Test ###########
 
@@ -1814,7 +1814,7 @@ class mixtures(hhe):
         u1 = 10**self.get_logu_srho(_s - ds, _lgrho, _y, _z, tab=tab)
         u2 = 10**self.get_logu_srho(_s + ds, _lgrho, _y, _z, tab=tab)
 
-        return (u2 - u1)/(2 * s / erg_to_kbbar)
+        return (u2 - u1)/(2 * ds / erg_to_kbbar)
 
     # -du/dV_(S, Y) = P 
     def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, drho=0.1, tab=True):
