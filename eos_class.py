@@ -539,18 +539,6 @@ class mixtures(hhe):
         else:
             return result
 
-    def get_logu_srho(self, _s, _lgrho, _y, _z, tab=True):
-
-        _y = _y if self.y_prime else _y / (1 - _z)
-
-        args = (_s, _lgrho, _y, _z)
-        if tab:
-            logp, logt = self.get_logp_srho_tab(*args), self.get_logt_srho_tab(*args)
-        else:
-            logp, logt = self.get_logp_logt_srho(*args, method='nelder-mead')
-        return self.get_logu_pt_tab(logp, logt, _y, _z)
-
-
 
     ### Inversion Functions ###
 
@@ -1098,10 +1086,21 @@ class mixtures(hhe):
         return logp_values, logt_values, converged
 
 
-    def get_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
         logp, convp = self.get_logp_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        logt, convt = self.get_logt_sp_inv(_s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        return logt, convt
+        logt, convt = self.get_logt_sp_inv(_s, logp, _y, _z, ideal_guess=True, arr_guess=None, method=method)
+        return logp, logt
+
+    def get_logu_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+
+        _y = _y if self.y_prime else _y / (1 - _z)
+
+        args = (_s, _lgrho, _y, _z)
+        if tab:
+            logp, logt = self.get_logp_srho_tab(*args), self.get_logt_srho_tab(*args)
+        else:
+            logp, logt = self.get_logp_logt_srho_inv( _s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+        return self.get_logu_pt_tab(logp, logt, _y, _z)
 
 
     def get_logt_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
@@ -1579,8 +1578,8 @@ class mixtures(hhe):
             return self.get_logt_srho_tab(_s, _lgrho, _y, _z)
 
         else:
-            return self.get_logt_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, 
-                                        arr_guess=arr_guess, method=method)
+            return self.get_logp_logt_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, 
+                                        arr_guess=arr_guess, method=method)[-1]
 
     ################################################ Derivatives ################################################
 
@@ -1710,60 +1709,38 @@ class mixtures(hhe):
     #### Triple Product Rule Derivatives ###*
 
 
-    def get_dpds_rhoy_srho(self, _s, _lgrho, _y, _z, ds=0.1, tab=True):
-        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+    def get_dpds_rhoy_srho(self, _s, _lgrho, _y, _z, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         ds = _s*0.1 if ds is None else ds
-        if tab:
-            p1 = 10**func(_s - ds, _lgrho, _y, _z)
-            p2 = 10**func(_s + ds, _lgrho, _y, _z)
-        else:
-            lgp1, conv1 = func(_s - ds, _lgrho, _y, _z)
-            lgp2, conv2 = func(_s + ds, _lgrho, _y, _z)
-
-            p1 = 10**lgp1
-            p2 = 10**lgp2
+        p1 = 10**self.get_logp_srho(_s - ds, _lgrho, _y, _z, **kwargs)
+        p2 = 10**self.get_logp_srho(_s + ds, _lgrho, _y, _z, **kwargs)
 
         return (p2 - p1) / (2 * ds / erg_to_kbbar)
 
-    def get_dpdy_srho(self, _s, _lgrho, _y, _z, dy=0.1, tab=True):
-        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+    def get_dpdy_srho(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         dy = _y*0.1 if dy is None else dy
-        if tab:
-            p1 = 10**func(_s, _lgrho, _y - dy, _z)
-            p2 = 10**func(_s, _lgrho, _y + dy, _z)
-        else:
-            lgp1, conv1 = func(_s, _lgrho, _y - dy, _z)
-            lgp2, conv2 = func(_s, _lgrho, _y + dy, _z)
-
-            p1 = 10**lgp1
-            p2 = 10**lgp2
+        p1 = 10**self.get_logp_srho(_s, _lgrho, _y - dy, _z, **kwargs)
+        p2 = 10**self.get_logp_srho(_s, _lgrho, _y + dy, _z, **kwargs)
 
         return (p2 - p1) / (2 * dy)
 
 
-    def get_dpdz_srho(self, _s, _lgrho, _y, _z, dz=0.1, tab=True):
-        func = self.get_logp_srho_tab if tab else self.get_logp_srho
+    def get_dpdz_srho(self, _s, _lgrho, _y, _z, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         dz = _z*0.1 if dz is None else dz
-        if tab:
-            p1 = 10**func(_s, _lgrho, _y, _z - dz)
-            p2 = 10**func(_s, _lgrho, _y, _z + dz)
-
-        else:
-            lgp1, conv1 = func(_s, _lgrho, _y, _z - dz)
-            lgp2, conv2 = func(_s, _lgrho, _y, _z + dz)
-
-            p1 = 10**lgp1
-            p2 = 10**lgp2
+        p1 = 10**self.get_logp_srho(_s, _lgrho, _y, _z - dz, **kwargs)
+        p2 = 10**self.get_logp_srho(_s, _lgrho, _y, _z + dz, **kwargs)
 
         return (p2 - p1) / (2 * dz)
 
     # Triple product rule dsdx_rhop version
-    def get_dsdy_rhop_srho(self, _s, _lgrho, _y, _z, ds=0.1, dy=0.1, tab=True):
-
+    def get_dsdy_rhop_srho(self, _s, _lgrho, _y, _z, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         #dPdS|{rho, Y, Z}:
-        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, tab=tab)
+        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
         #dPdY|{S, rho, Y}:
-        dpdy_srho = self.get_dpdy_srho(_s, _lgrho, _y, _z, dy=dy, tab=tab)
+        dpdy_srho = self.get_dpdy_srho(_s, _lgrho, _y, _z, dy=dy, **kwargs)
 
         #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
         dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
@@ -1771,12 +1748,12 @@ class mixtures(hhe):
         return dsdy_rhopy
 
 
-    def get_dsdz_rhop_srho(self, _s, _lgrho, _y, _z, ds=0.1, dz=0.1, tab=True):
-
+    def get_dsdz_rhop_srho(self, _s, _lgrho, _y, _z, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         #dPdS|{rho, Y, Z}:
-        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, tab=tab)
+        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
         #dPdY|{S, rho, Y}:
-        dpdz_srho = self.get_dpdz_srho(_s, _lgrho, _y, _z, dz=dz, tab=tab)
+        dpdz_srho = self.get_dpdz_srho(_s, _lgrho, _y, _z, dz=dz, **kwargs)
 
         #dSdZ|{rho, P, Z} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
         dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
@@ -1787,54 +1764,57 @@ class mixtures(hhe):
 
     ########### Chemical Potential Terms ###########
 
-    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, tab=True):
+    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
 
-        u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, tab=tab)
-        u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, tab=tab)
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, **kwargs)
 
         return (u2 - u1)/(2 * dy)
 
-    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, tab=True):
+    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
 
-        u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, tab=tab)
-        u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, tab=tab)
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, **kwargs)
 
         return (u2 - u1)/(2 * dz)
 
     ########### Conductive Flux Terms ###########
 
-    def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, tab=True):
+    def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         func = self.get_logt_srho_tab if tab else self.get_logt_srho
-        t1 = 10**self.func(_s, _lgrho, _y - dy, _z)
-        t2 = 10**self.func(_s, _lgrho, _y + dy, _z)
+        t1 = 10**self.func(_s, _lgrho, _y - dy, _z, **kwargs)
+        t2 = 10**self.func(_s, _lgrho, _y + dy, _z, **kwargs)
 
         return (t2 - t1)/(2 * dy)
 
-    def get_dtdz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, tab=True):
-        func = self.get_logt_srho_tab if tab else self.get_logt_srho
-        t1 = 10**self.func(_s, _lgrho, _y, _z - dz)
-        t2 = 10**self.func(_s, _lgrho, _y, _z + dz)
+    def get_dtdz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        t1 = 10**self.get_logt_srho(_s, _lgrho, _y, _z - dz, **kwargs)
+        t2 = 10**self.get_logt_srho(_s, _lgrho, _y, _z + dz, **kwargs)
 
         return (t2 - t1)/(2 * dz)
 
     ########## Thermodynamic Consistency Test ###########
 
     # du/ds_(rho, Y) = T 
-    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, ds=1e-2, tab=True):
-
-        u1 = 10**self.get_logu_srho(_s - ds, _lgrho, _y, _z, tab=tab)
-        u2 = 10**self.get_logu_srho(_s + ds, _lgrho, _y, _z, tab=tab)
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, ds=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        u1 = 10**self.get_logu_srho(_s - ds, _lgrho, _y, _z, **kwargs)
+        u2 = 10**self.get_logu_srho(_s + ds, _lgrho, _y, _z, **kwargs)
 
         return (u2 - u1)/(2 * ds / erg_to_kbbar)
 
     # -du/dV_(S, Y) = P 
-    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, drho=0.1, tab=True):
-
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, drho=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         R0 = 10 **_lgrho
         R1 = R0*(1-drho)
         R2 = R0*(1+drho)
 
-        u1 = 10**self.get_logu_srho(_s, np.log10(R1), _y, _z, tab=tab)
-        u2 = 10**self.get_logu_srho(_s, np.log10(R2), _y, _z, tab=tab)
+        u1 = 10**self.get_logu_srho(_s, np.log10(R1), _y, _z, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, np.log10(R2), _y, _z, **kwargs)
 
         return (u2 - u1)/((1/R1) - (1/R2))
