@@ -1524,7 +1524,7 @@ class mixtures(hhe):
 
         else:
             return self.get_logt_sp_inv(_s, _lgp, _y, _z, ideal_guess=ideal_guess, 
-                                        arr_guess=arr_guess, method=method)
+                                        arr_guess=arr_guess, method=method)[0]
 
     def get_logrho_sp(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         if tab:
@@ -1540,7 +1540,7 @@ class mixtures(hhe):
 
         else:
             return self.get_logp_rhot_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
-                                        arr_guess=arr_guess, method=method)
+                                        arr_guess=arr_guess, method=method)[0]
 
     def get_s_rhot(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         if tab:
@@ -1556,7 +1556,7 @@ class mixtures(hhe):
 
         else:
             return self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
-                                        arr_guess=arr_guess, method=method)
+                                        arr_guess=arr_guess, method=method)[0]
 
     def get_s_rhop(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         if tab:
