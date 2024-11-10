@@ -1379,6 +1379,29 @@ class mixtures(hhe):
         logt, conv = self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_s_pt_tab(_lgp, logt, _y, _z)
 
+    # adaptive delta function for z and y derivatives
+    def adaptive_dx(self, x_profile, initial_dx=0.1, tolerance=1e-2):
+        # Initialize dx as an array with an initial value
+        dx = np.full_like(x_profile, initial_dx, dtype=float)
+
+        # Adjust each dz based on z_profile constraints
+        for i in range(len(x_profile)):
+            # Adjust dz so z_profile[i] - dz[i] >= 0
+            if x_profile[i] - dx[i] < 0:
+                dx[i] = x_profile[i]  # Set dz to the maximum allowed value to keep z_profile - dz non-negative
+                
+            # Adjust dz so z_profile[i] + dz[i] <= 1
+            elif x_profile[i] + dx[i] > 1:
+                dx[i] = 1 - x_profile[i]  # Set dz to the maximum allowed value to keep z_profile + dz <= 1
+                
+            # Add a tolerance check to prevent overshooting the bounds
+            if x_profile[i] - dx[i] < 0:
+                dx[i] = max(dx[i] - tolerance, 0)
+            if x_profile[i] + dx[i] > 1:
+                dx[i] = min(dx[i] - tolerance, 1 - x_profile[i])
+
+        return dx
+
 
     def interpolate_non_converged_temperatures_1d(self, _lgrho, temperatures, converged, interp_kind='linear'):
 
