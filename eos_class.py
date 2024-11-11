@@ -317,14 +317,10 @@ class mixtures(hhe):
             or ((not np.isscalar(_z)) and np.any(_z > 1.0))
         ):
             raise Exception('Invalid mass fractions: X + Y + Z > 1.')
-
-        # if not self.y_prime:
-        #     raise Exception('You must initialize the class with y_prime=True to use the volume addition law.')
-
-        smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar
-
+    
         if self.hg:
-            smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal 
+            smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
+            smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hhe_eos == 'cms' else 0.0
         else: 
             smix_xy_nonideal = 0.0
 
@@ -362,8 +358,11 @@ class mixtures(hhe):
             or ((not np.isscalar(_z)) and np.any(_z > 1.0))
         ):
             raise Exception('Invalid mass fractions: X + Y + Z > 1.')
-
-        vmix = self.vmix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime if self.hg else 0.0
+        
+        if self.hg:
+            vmix = self.vmix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime if self.hhe_eos=='cms' else 0.0
+        else:
+            vmix = 0.0
 
         rho_h = 10**self.get_logrho_h(_lgp, _lgt)
         rho_he = 10**self.get_logrho_he(_lgp, _lgt)
@@ -378,7 +377,10 @@ class mixtures(hhe):
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).    
         """
         
-        umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hg else 0.0
+        if self.hg:
+            umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hhe_eos=='cms' else 0.0
+        else:
+            umix = 0.0
 
         u_h = 10**self.get_logu_h(_lgp, _lgt)
         u_he = 10**self.get_logu_he(_lgp, _lgt)
@@ -1975,3 +1977,5 @@ class mixtures(hhe):
         u2 = 10**self.get_logu_srho(_s, np.log10(R2), _y, _z, **kwargs)
 
         return (u2 - u1)/((1/R1) - (1/R2))
+    
+
