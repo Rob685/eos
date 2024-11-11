@@ -36,7 +36,11 @@ class hhe:
     def __init__(self, hhe_eos):
         self.hhe_eos = hhe_eos
 
-        self.hdata = self.grid_data(self.table_reader('TABLE_H_TP_v1'))
+        if self.hhe_eos == 'cms':
+            self.hdata = self.grid_data(self.table_reader('TABLE_H_TP_v1'))
+        elif self.hhe_eos == 'cd':
+            self.hdata = self.grid_data(self.table_reader('TABLE_H_TP_effective'))
+            
         self.hedata = self.grid_data(self.table_reader('TABLE_HE_TP_v1'))   
 
         self.logpvals = self.hdata['logp'][0]
@@ -317,9 +321,9 @@ class mixtures(hhe):
             or ((not np.isscalar(_z)) and np.any(_z > 1.0))
         ):
             raise Exception('Invalid mass fractions: X + Y + Z > 1.')
-    
+
+        smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
         if self.hg:
-            smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
             smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hhe_eos == 'cms' else 0.0
         else: 
             smix_xy_nonideal = 0.0
@@ -333,7 +337,7 @@ class mixtures(hhe):
         elif self.z_eos == 'ppv': 
             mz = 100.3887
         elif self.z_eos == 'iron': 
-            mz= 55.845
+            mz = 55.845
 
         else: 
             raise ValueError('Only aqua and ppv supported for now.')
