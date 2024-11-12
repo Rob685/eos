@@ -1645,8 +1645,6 @@ class mixtures(hhe):
                             res2 = self.get_logt_sp_tab(a_const, res1, y_const, z_arr)
                             prev_res1_temp = res1
 
-
-
                     elif basis == 'rhop':
                         try:
                             if prev_res1_temp is None:
@@ -1662,12 +1660,12 @@ class mixtures(hhe):
                             print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
                             raise
 
-                            res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_arr, res1_temp, conv, interp_kind='quadratic'
-                            )
+                        res1_interp = self.interpolate_non_converged_temperatures_1d(
+                            z_arr, res1_temp, conv, interp_kind='quadratic'
+                        )
 
-                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                            res1 = self.return_noglitch(z_arr, res1_noglitch)
+                        res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                        res1 = self.return_noglitch(z_arr, res1_noglitch)
 
 
                         res2 = self.get_s_pt_tab(b_const, res1_temp, y_const, z_arr)
