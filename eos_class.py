@@ -237,14 +237,14 @@ class mixtures(hhe):
         self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
         self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
-        self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab[0], **rgi_args)
-        self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab[0], **rgi_args)
+        self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab, **rgi_args)
+        self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab, **rgi_args)
 
-        self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab[0], **rgi_args)
-        self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab[0], **rgi_args)
+        self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
+        self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
         #self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
-        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab[0], **rgi_args)
+        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
         self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab[0], **rgi_args)
         self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab[0], **rgi_args)
@@ -505,7 +505,7 @@ class mixtures(hhe):
 
     def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z)
 
         args = (_lgrho, _lgp, _y, _z)
         # v_args = [np.atleast_1d(arg) for arg in args]
@@ -569,7 +569,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        # _y = _y if self.y_prime else _y * (1 - _z)
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgp, _y, _z = np.broadcast_arrays(_s, _lgp, _y, _z)
 
@@ -711,7 +711,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z)
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _lgrho, _lgt, _y, _z = np.broadcast_arrays(_lgrho, _lgt, _y, _z)
 
@@ -847,7 +847,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -981,7 +981,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+       # _y = _y if self.y_prime else _y / (1 - _z)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -1116,7 +1116,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -1264,7 +1264,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _lgrho, _lgp, _y, _z = np.broadcast_arrays(_lgrho, _lgp, _y, _z)
@@ -1625,15 +1625,45 @@ class mixtures(hhe):
 
                         else: # uses 1-D inversion via SP inverted table
 
-                            if prev_res1_temp is None:
+                            #if prev_res1_temp is None:
 
-                                res1_temp, conv = self.get_logp_srho_inv(
+                            # try:
+
+                            #     res1_temp, conv = self.get_logp_srho_inv(
+                            #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                            #         )
+
+                            # except:
+                            #     print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+                            #     raise
+                            # # else:
+                            # #     res1_temp, conv = self.get_logp_srho_inv(
+                            # #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                            # #         )
+
+                            # res1_interp = self.interpolate_non_converged_temperatures_1d(
+                            #     z_arr, res1_temp, conv, interp_kind='quadratic'
+                            # )
+
+                            # res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                            # res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                            # res2 = self.get_logt_sp_tab(a_const, res1, y_const, z_arr)
+                            # prev_res1_temp = res1
+
+                            try:
+
+                                res1_temp, conv = self.get_logt_srho_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                     )
-                            else:
-                                res1_temp, conv = self.get_logp_srho_inv(
-                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                                    )
+
+                            except:
+                                print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+                                raise
+                            # else:
+                            #     res1_temp, conv = self.get_logp_srho_inv(
+                            #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                            #         )
 
                             res1_interp = self.interpolate_non_converged_temperatures_1d(
                                 z_arr, res1_temp, conv, interp_kind='quadratic'
@@ -1642,20 +1672,20 @@ class mixtures(hhe):
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
 
-                            res2 = self.get_logt_sp_tab(a_const, res1, y_const, z_arr)
+                            res2 = self.get_logp_rhot_tab(a_const, res1, y_const, z_arr)
                             prev_res1_temp = res1
 
                     elif basis == 'rhop':
                         try:
-                            if prev_res1_temp is None:
+                            #if prev_res1_temp is None:
 
-                                res1_temp, conv = self.get_logt_rhop_inv(
-                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
-                                )
-                            else:
-                                res1_temp, conv = self.get_logt_rhop_inv(
-                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                                )
+                            res1_temp, conv = self.get_logt_rhop_inv(
+                                a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                             )
+                            # else:
+                            #     res1_temp, conv = self.get_logt_rhop_inv(
+                            #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                            #     )
                         except:
                             print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
                             raise
