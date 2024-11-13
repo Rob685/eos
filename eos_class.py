@@ -1501,7 +1501,7 @@ class mixtures(hhe):
 
         return y_interpolated
 
-    def inversion(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False):
+    def inversion(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False):
 
         """
         Invert the EOS table to compute new thermodynamic quantities.
@@ -1519,45 +1519,131 @@ class mixtures(hhe):
 
         res1_list = []
         res2_list = []
+
+        der1_list = []
+        der2_list = []
+        der3_list = []
+        der4_list = []
+
         for a_ in tqdm(a_arr):
             res1_b = []
             res2_b = []
+            der1_b = []
+            der2_b = []
+            der3_b = []
+            der4_b = []
             for b_ in b_arr:
                 res1_y = []
                 res2_y = []
+                der1_y = []
+                der2_y = []
+                der3_y = []
+                der4_y = []
                 prev_res1_temp = None  # Initialize previous res1_temp to None
                 prev_res2_temp = None # For double inversion
                 for y_ in y_arr:
                     a_const = np.full_like(z_arr, a_)
                     b_const = np.full_like(z_arr, b_)
                     y_const = np.full_like(z_arr, y_)
+                    der1 = np.full_like(z_arr, y_)
+                    der2 = np.full_like(z_arr, y_)
+                    der3 = np.full_like(z_arr, y_)
+                    der4 = np.full_like(z_arr, y_)                    
                     if basis == 'sp':
-                        #pdb.set_trace()
-                        #if prev_res1_temp is None:
                         try:
                             if prev_res1_temp is None:
                                 res1_temp, conv = self.get_logt_sp_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                     )
+                                if calc_derivatives:
+                                    res1_temp2, conv2 = self.get_logt_sp_inv(
+                                        a_const, b_const*1.1, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+                                    res1_temp3, conv3 = self.get_logt_sp_inv(
+                                        a_const, b_const*0.9, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                        )
                             else:
                                 res1_temp, conv = self.get_logt_sp_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
                                     )
+                                if calc_derivatives:
+                                    res1_temp2, conv2 = self.get_logt_sp_inv(
+                                        a_const, b_const*1.1, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                        )
+                                    res1_temp3, conv3 = self.get_logt_sp_inv(
+                                        a_const, b_const*0.9, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                        )
                         except:
                             print('Failed at s={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
                             raise
 
-                        # interpolates quadratically over any non-converged values (NaN returns from inversion)
-                        res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            z_arr, res1_temp, conv, interp_kind='quadratic'
-                        )
+                        if calc_derivatives:
+                        
+                            res2_temp = self.get_logrho_pt_tab(b_const, res1_temp, y_const, z_arr)
+                            res2_temp2 = self.get_logrho_pt_tab(b_const*1.1, res1_temp2, y_const, z_arr)
+                            res2_temp3 = self.get_logrho_pt_tab(b_const*0.9, res1_temp3, y_const, z_arr)
 
-                        # two passes through no-glitch filter... some have more than two glitches that the first pass does
-                        # not catch.
-                        res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                        res1 = self.return_noglitch(z_arr, res1_noglitch)
+                            der1_temp = (res1_temp2 - res1_temp3)/(b_const*0.2) # grad_ad
+                            der2_temp = (b_const*0.2)/(res2_temp2 - res2_temp3) # Gamma_1
+                            der3_temp = (res1_temp2 - res1_temp3)/(res2_temp2 - res2_temp3) # Gruneisen parameter
+                            der4_temp = np.sqrt((10**(b_const*1.1) - 10**(b_const*0.9))/(10**res2_temp2 - 10**res2_temp3)) # c_s
 
-                        res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_arr)
+                            # interpolates quadratically over any non-converged values (NaN returns from inversion)
+                            res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                            )
+
+                            res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res2_temp, conv, interp_kind='quadratic'
+                            )
+
+                            der1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der1_temp, conv2, interp_kind='quadratic'
+                            )
+
+                            der2_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der2_temp, conv2, interp_kind='quadratic'
+                            )
+
+                            der3_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der3_temp, conv, interp_kind='quadratic'
+                            )
+
+                            der4_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der4_temp, conv, interp_kind='quadratic'
+                            )
+
+                            # two passes through no-glitch filter... some have more than two glitches that the first pass does
+                            # not catch.
+                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                            res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                            res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                            res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                            der1_noglitch = self.return_noglitch(z_arr, der1_temp)
+                            der1 = self.return_noglitch(z_arr, der1_noglitch)
+
+                            der2_noglitch = self.return_noglitch(z_arr, der2_temp)
+                            der2 = self.return_noglitch(z_arr, der2_noglitch)
+
+                            der3_noglitch = self.return_noglitch(z_arr, der3_temp)
+                            der3 = self.return_noglitch(z_arr, der3_noglitch)
+
+                            der4_noglitch = self.return_noglitch(z_arr, der4_temp)
+                            der4 = self.return_noglitch(z_arr, der4_noglitch)
+
+                        else:
+
+                            res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                            )
+
+                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                            res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                            res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_arr)
+
 
                         prev_res1_temp = res1 # Update prev_res1_temp for the next iteration
 
@@ -1597,12 +1683,26 @@ class mixtures(hhe):
                             try:
                                 if prev_res1_temp is None:
                                     res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
-                                        a_const, b_const, y_const, z_arr, ideal_guess=True, method='nelder-mead'
+                                        a_const, b_const, y_const, z_arr, ideal_guess=True, method='root'
                                         )
+                                    if calc_derivatives:
+                                        res1_temp2, res2_temp2, conv2 = self.get_logp_logt_srho_2Dinv(
+                                            a_const, b_const, y_const*1.1, z_arr, ideal_guess=True, method='root'
+                                            )
+                                        res1_temp3, res2_temp3, conv3 = self.get_logp_logt_srho_2Dinv(
+                                            a_const, b_const, y_const*0.9, z_arr, ideal_guess=True, method='root'
+                                            )
                                 else:
-                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho(
-                                        a_const, b_const, y_const, z_arr, ideal_guess=False, method='nelder-mead', arr_guess=[prev_res1_temp, prev_res2_temp]
+                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
+                                        a_const, b_const, y_const, z_arr, ideal_guess=False, method='root', arr_guess=[prev_res1_temp, prev_res2_temp]
                                         )
+                                    if calc_derivatives:
+                                        res1_temp2, res2_temp2, conv2 = self.get_logp_logt_srho_2Dinv(
+                                            a_const, b_const, y_const*1.1, z_arr, ideal_guess=False, method='root', arr_guess=[prev_res1_temp, prev_res2_temp]
+                                            )
+                                        res1_temp3, res2_temp3, conv3 = self.get_logp_logt_srho_2Dinv(
+                                            a_const, b_const, y_const*0.9, z_arr, ideal_guess=False, method='root', arr_guess=[prev_res1_temp, prev_res2_temp]
+                                            )                                                                                
                             except:
                                 print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
                                 raise
@@ -1617,45 +1717,146 @@ class mixtures(hhe):
 
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
+
                             res2_noglitch = self.return_noglitch(z_arr, res2_interp)
                             res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                            if calc_derivatives:
+
+                                res3_temp = self.get_logu_pt_tab(res1_temp, res2_temp, y_const, z_arr)
+                                res3_temp2 = self.get_logu_pt_tab(res1_temp2, res2_temp2, y_const*1.1, z_arr)
+                                res3_temp3 = self.get_logu_pt_tab(res1_temp3, res2_temp3, y_const*0.9, z_arr)
+
+                                der1_temp = np.gradient(10**res3_temp)/np.gradient(z_arr) # dUdz_srho
+                                der2_temp = (10**res3_temp2 - 10**res3_temp3)/(y_const*0.2) # dUdy_srho
+
+                                der3_temp = np.gradient(10**res1_temp)/np.gradient(z_arr) # dTdz_srho
+                                der4_temp = (10**res2_temp2 - 10**res2_temp3)/(y_const*0.2) # dTdy_srho
+
+                                # res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                #     z_arr, res1_temp, conv, interp_kind='quadratic'
+                                # )
+
+                                # res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                #     z_arr, res2_temp, conv, interp_kind='quadratic'
+                                # )
+
+                                der1_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, der1_temp, conv, interp_kind='quadratic'
+                                )
+
+                                der2_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, der2_temp, conv2, interp_kind='quadratic'
+                                )
+
+                                der3_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, der3_temp, conv, interp_kind='quadratic'
+                                )
+
+                                der4_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, der4_temp, conv2, interp_kind='quadratic'
+                                )
+
+                                res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                                res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                                res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                                res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                                der1_noglitch = self.return_noglitch(z_arr, der1_temp)
+                                der1 = self.return_noglitch(z_arr, der1_noglitch)
+
+                                der2_noglitch = self.return_noglitch(z_arr, der2_temp)
+                                der2 = self.return_noglitch(z_arr, der2_noglitch)
+
+                                der3_noglitch = self.return_noglitch(z_arr, der3_temp)
+                                der3 = self.return_noglitch(z_arr, der3_noglitch)
+
+                                der4_noglitch = self.return_noglitch(z_arr, der4_temp)
+                                der4 = self.return_noglitch(z_arr, der4_noglitch)
 
                             prev_res1_temp = res1
                             prev_res2_temp = res2
 
                         else: # uses 1-D inversion via SP inverted table
 
-                            #if prev_res1_temp is None:
-
-                            # try:
-
-                            #     res1_temp, conv = self.get_logp_srho_inv(
-                            #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
-                            #         )
-
-                            # except:
-                            #     print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                            #     raise
-                            # # else:
-                            # #     res1_temp, conv = self.get_logp_srho_inv(
-                            # #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                            # #         )
-
-                            # res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            #     z_arr, res1_temp, conv, interp_kind='quadratic'
-                            # )
-
-                            # res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                            # res1 = self.return_noglitch(z_arr, res1_noglitch)
-
-                            # res2 = self.get_logt_sp_tab(a_const, res1, y_const, z_arr)
-                            # prev_res1_temp = res1
-
                             try:
+                                if prev_res1_temp is None:
 
-                                res1_temp, conv = self.get_logt_srho_inv(
-                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
-                                    )
+                                    res1_temp, conv = self.get_logp_srho_inv(
+                                        a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+                                    res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                        z_arr, res1_temp, conv, interp_kind='quadratic'
+                                        )
+
+                                    res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                        a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+                                    res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                        z_arr, res2_temp, conv, interp_kind='quadratic'
+                                        )
+
+                                    if calc_derivatives:
+                                        res1_temp2, conv2 = self.get_logp_srho_inv(
+                                            a_const, b_const, y_const*1.1, z_arr, method=inversion_method, ideal_guess=True
+                                            )   
+
+                                        res1_temp3, conv3 = self.get_logp_srho_inv(
+                                            a_const, b_const, y_const*0.9, z_arr, method=inversion_method, ideal_guess=True
+                                            )   
+
+                                        res1_interp2 = self.interpolate_non_converged_temperatures_1d(
+                                            z_arr, res1_temp2, conv2, interp_kind='quadratic'
+                                            )
+                                        res1_interp3 = self.interpolate_non_converged_temperatures_1d(
+                                            z_arr, res1_temp3, conv3, interp_kind='quadratic'
+                                            )     
+                                   
+                                        res2_temp2, conv2_2 = self.get_logt_sp_inv(
+                                            a_const, res1_interp2, y_const*1.1, z_arr, method=inversion_method, ideal_guess=True
+                                            )
+                                        res2_temp3, conv2_3 = self.get_logt_sp_inv(
+                                            a_const, res1_interp3, y_const*0.9, z_arr, method=inversion_method, ideal_guess=True
+                                            )   
+
+
+                                else:
+                                    res1_temp, conv = self.get_logp_srho_inv(
+                                        a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                        )
+                                    res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                        z_arr, res1_temp, conv, interp_kind='quadratic'
+                                        )
+                                    res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                        a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp
+                                        )
+                                    res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                        z_arr, res2_temp, conv2_1, interp_kind='quadratic'
+                                        )
+
+
+                                    if calc_derivatives:
+                                        res1_temp2, conv2 = self.get_logp_srho_inv(
+                                            a_const, b_const, y_const*1.1, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                            )                                        
+                                        res1_temp3, conv3 = self.get_logp_srho_inv(
+                                            a_const, b_const, y_const*0.9, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                            )
+
+
+                                        res1_interp2 = self.interpolate_non_converged_temperatures_1d(
+                                            z_arr, res1_temp2, conv2, interp_kind='quadratic'
+                                            )
+                                        res1_interp3 = self.interpolate_non_converged_temperatures_1d(
+                                            z_arr, res1_temp3, conv3, interp_kind='quadratic'
+                                            )   
+
+                                    #res2_temp, conv2_1 = self.get_logt_sp_inv(a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp)
+                                        res2_temp2, conv2_2 = self.get_logt_sp_inv(a_const, res1_interp2, y_const*1.1, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp)
+                                        res2_temp3, conv2_3 = self.get_logt_sp_inv(a_const, res1_interp3, y_const*0.9, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp)
+        
+
 
                             except:
                                 print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
@@ -1665,6 +1866,146 @@ class mixtures(hhe):
                             #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
                             #         )
 
+                            if calc_derivatives:
+                                res2_interp2 = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, res2_temp2, conv2_2, interp_kind='quadratic'
+                                    )
+                                res2_interp3 = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, res2_temp3, conv2_3, interp_kind='quadratic'
+                                    )  
+                            
+                                res3_temp = self.get_logu_pt_tab(res1_interp, res2_interp, y_const, z_arr)
+                                res3_temp2 = self.get_logu_pt_tab(res1_interp2, res2_interp2, y_const*1.1, z_arr)
+                                res3_temp3 = self.get_logu_pt_tab(res1_interp3, res2_interp3, y_const*0.9, z_arr)
+
+                                der1_temp = np.gradient(10**res3_temp)/np.gradient(z_arr) # dUdz_srho
+                                der2_temp = (10**res3_temp2 - 10**res3_temp3)/(y_const*0.2) # dUdy_srho
+
+                                der3_temp = np.gradient(10**res2_interp)/np.gradient(z_arr) # dTdz_srho
+                                der4_temp = (10**res2_interp2 - 10**res2_interp3)/(y_const*0.2) # dTdy_srho
+
+                                res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                                res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                                res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                                res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                                der1_noglitch = self.return_noglitch(z_arr, der1_temp)
+                                der1 = self.return_noglitch(z_arr, der1_noglitch)
+
+                                der2_noglitch = self.return_noglitch(z_arr, der2_temp)
+                                der2 = self.return_noglitch(z_arr, der2_noglitch)
+
+                                der3_noglitch = self.return_noglitch(z_arr, der3_temp)
+                                der3 = self.return_noglitch(z_arr, der3_noglitch)
+
+                                der4_noglitch = self.return_noglitch(z_arr, der4_temp)
+                                der4 = self.return_noglitch(z_arr, der4_noglitch)
+
+                            else:
+                                res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                                res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                                res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                                res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                            prev_res1_temp = res1
+                            prev_res2_temp = res2
+
+                    elif basis == 'rhop':
+                        try:
+                            if prev_res1_temp is None:
+
+                                res1_temp, conv = self.get_logt_rhop_inv(
+                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                    )
+                                res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                                    )
+                                if calc_derivatives:
+                                    res1_temp2, conv2 = self.get_logt_rhop_inv(
+                                        a_const, b_const, y_const*1.1, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+
+                                    res1_temp3, conv3 = self.get_logt_rhop_inv(
+                                        a_const, b_const, y_const*0.9, z_arr, method=inversion_method, ideal_guess=True
+                                        )
+                            else:
+                                res1_temp, conv = self.get_logt_rhop_inv(
+                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                    )
+                                res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                                    )
+                                if calc_derivatives:
+                                    res1_temp2, conv2 = self.get_logt_rhop_inv(
+                                        a_const, b_const, y_const*1.1, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                        )
+
+                                    res1_temp3, conv3 = self.get_logt_rhop_inv(
+                                        a_const, b_const, y_const*0.9, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                        )  
+
+                        except:
+                            print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+                            raise
+
+                        if calc_derivatives:
+
+                            res2_temp = self.get_s_pt_tab(b_const, res1_temp, y_const, z_arr)
+                            res2_temp2 = self.get_s_pt_tab(b_const, res1_temp2, y_const*1.1, z_arr)
+                            res2_temp3 = self.get_s_pt_tab(b_const, res1_temp3, y_const*0.9, z_arr)
+
+                            der1_temp = np.gradient(res2_temp)/np.gradient(z_arr) # dsdz_rhop
+                            der2_temp = (res2_temp2 - res2_temp3)/(y_const*0.2) # dsdy_rhop
+
+                            der3_temp = np.gradient(10**res1_temp)/np.gradient(z_arr) # dTdz_rhop
+                            der4_temp = (10**res1_temp2 - 10**res1_temp3)/(y_const*0.2) # dTdy_rhop
+
+                            res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                            )
+
+                            res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, res2_temp, conv, interp_kind='quadratic'
+                            )
+
+                            der1_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der1_temp, conv2, interp_kind='quadratic'
+                            )
+
+                            der2_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der2_temp, conv2, interp_kind='quadratic'
+                            )
+
+                            der3_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der3_temp, conv, interp_kind='quadratic'
+                            )
+
+                            der4_interp = self.interpolate_non_converged_temperatures_1d(
+                                z_arr, der4_temp, conv, interp_kind='quadratic'
+                            )
+
+                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                            res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                            res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                            res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                            der1_noglitch = self.return_noglitch(z_arr, der1_temp)
+                            der1 = self.return_noglitch(z_arr, der1_noglitch)
+
+                            der2_noglitch = self.return_noglitch(z_arr, der2_temp)
+                            der2 = self.return_noglitch(z_arr, der2_noglitch)
+
+                            der3_noglitch = self.return_noglitch(z_arr, der3_temp)
+                            der3 = self.return_noglitch(z_arr, der3_noglitch)
+
+                            der4_noglitch = self.return_noglitch(z_arr, der4_temp)
+                            der4 = self.return_noglitch(z_arr, der4_noglitch)
+
+                        else:
+
                             res1_interp = self.interpolate_non_converged_temperatures_1d(
                                 z_arr, res1_temp, conv, interp_kind='quadratic'
                             )
@@ -1672,46 +2013,42 @@ class mixtures(hhe):
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
 
-                            res2 = self.get_logp_rhot_tab(a_const, res1, y_const, z_arr)
-                            prev_res1_temp = res1
+                            res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_arr)
+                        
 
-                    elif basis == 'rhop':
-                        try:
-                            #if prev_res1_temp is None:
-
-                            res1_temp, conv = self.get_logt_rhop_inv(
-                                a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
-                             )
-                            # else:
-                            #     res1_temp, conv = self.get_logt_rhop_inv(
-                            #         a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                            #     )
-                        except:
-                            print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                            raise
-
-                        res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            z_arr, res1_temp, conv, interp_kind='quadratic'
-                        )
-
-                        res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                        res1 = self.return_noglitch(z_arr, res1_noglitch)
+                        prev_res1_temp = res1
+                        prev_res2_temp = res2
 
 
-                        res2 = self.get_s_pt_tab(b_const, res1_temp, y_const, z_arr)
-                        prev_res1_temp = res1  
                     else:
                         raise ValueError('Unknown inversion basis. Please choose sp, rhot, srho, or rhop')
 
                     res1_y.append(res1)
                     res2_y.append(res2)
+                    der1_y.append(der1)
+                    der2_y.append(der2)
+                    der3_y.append(der3)
+                    der4_y.append(der4)
+
                 res1_b.append(res1_y)
                 res2_b.append(res2_y)
+                der1_b.append(der1_y)
+                der2_b.append(der2_y)
+                der3_b.append(der3_y)
+                der4_b.append(der4_y)
 
             res1_list.append(res1_b)
             res2_list.append(res2_b)
 
-        return np.array(res1_list), np.array(res2_list)
+            der1_list.append(der1_b)
+            der2_list.append(der2_b)
+            der3_list.append(der3_b)
+            der4_list.append(der4_b)
+
+        if calc_derivatives:
+            return np.array(res1_list), np.array(res2_list), np.array(der2_list), np.array(der1_list), np.array(der4_list), np.array(der3_list)
+        else:
+            return np.array(res1_list), np.array(res2_list)
 
 
     ################################################ Wrapper Functions ################################################
@@ -1785,7 +2122,7 @@ class mixtures(hhe):
     ########### Convection Derivatives ###########
 
     # Specific heat at constant pressure
-    def get_cp(self, _s, _lgp, _y, _z, ds=1e-3, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_cp_sp(self, _s, _lgp, _y, _z, ds=1e-3, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
 
         ds = _s*0.1 if ds is None else ds
@@ -1795,8 +2132,15 @@ class mixtures(hhe):
 
         return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
 
+    def get_cp_pt(self, _lgp, _lgt, _y, _z, dt=0.1):
+
+        s1 = self.get_s_pt_tab(_lgp, _lgt - dt, _y, _z)
+        s2 = self.get_s_pt_tab(_lgp, _lgt + dt, _y, _z)
+
+        return (s2 - s1) / (2 * dt)
+
     # Specific heat at constant volume
-    def get_cv(self, _s, _lgrho, _y, _z, ds=1e-3, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_cv_srho(self, _s, _lgrho, _y, _z, ds=1e-3, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
 
         ds = _s*0.1 if ds is None else ds
@@ -1805,6 +2149,14 @@ class mixtures(hhe):
         lgt2 = self.get_logt_srho(_s + ds, _lgrho, _y, _z, **kwargs)
 
         return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
+
+    def get_cv_rhot(self, _lgrho, _lgt, _y, _z, dt=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        s1 = self.get_s_rhot(_lgrho, _lgt - dt, _y, _z, **kwargs)
+        s2 = self.get_s_rhot(_lgrho, _lgt + dt, _y, _z, **kwargs)
+
+        return (s2 - s1) / (2 * dt)
 
     # Adiabatic temperature gradient
     def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
@@ -1959,6 +2311,56 @@ class mixtures(hhe):
 
         return dsdz_rhopy
 
+
+    def get_drhods_rhoy_sp(self, _s, _lgp, _y, _z, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        ds = _s*0.1 if ds is None else ds
+        rho1 = 10**self.get_logrho_sp(_s - ds, _lgp, _y, _z, **kwargs)
+        rho2 = 10**self.get_logrho_sp(_s + ds, _lgp, _y, _z, **kwargs)
+
+        return (rho2 - rho1) / (2 * ds / erg_to_kbbar)
+
+    def get_drhody_sp(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dy = _y*0.1 if dy is None else dy
+        rho1 = 10**self.get_logrho_sp(_s, _lgp, _y - dy, _z, **kwargs)
+        rho2 = 10**self.get_logrho_sp(_s, _lgp, _y + dy, _z, **kwargs)
+
+        return (rho2 - rho1) / (2 * dy)
+
+
+    def get_drhodz_sp(self, _s, _lgp, _y, _z, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dz = _z*0.1 if dz is None else dz
+        rho1 = 10**self.get_logrho_sp(_s, _lgrho, _y, _z - dz, **kwargs)
+        rho2 = 10**self.get_logrho_sp(_s, _lgrho, _y, _z + dz, **kwargs)
+
+        return (rho2 - rho1) / (2 * dz)
+
+    def get_dsdy_rhop_sp(self, _s, _lgp, _y, _z, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        #dPdS|{rho, Y, Z}:
+        drhods_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
+        #dPdY|{S, rho, Y}:
+        dpdy_srho = self.get_dpdy_srho(_s, _lgrho, _y, _z, dy=dy, **kwargs)
+
+        #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdy_rhopy
+
+
+    def get_dsdz_rhop_sp(self, _s, _lgrho, _y, _z, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        #dPdS|{rho, Y, Z}:
+        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
+        #dPdY|{S, rho, Y}:
+        dpdz_srho = self.get_dpdz_srho(_s, _lgrho, _y, _z, dz=dz, **kwargs)
+
+        #dSdZ|{rho, P, Z} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdz_rhopy
 
 
     ########### Chemical Potential Terms ###########
