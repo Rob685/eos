@@ -2285,7 +2285,7 @@ class mixtures(hhe):
 
         return (p2 - p1) / (2 * dz)
 
-    # Triple product rule dsdx_rhop version
+    ########### Triple product rule dsdx_rhop version ###########
     def get_dsdy_rhop_srho(self, _s, _lgrho, _y, _z, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         #dPdS|{rho, Y, Z}:
@@ -2340,27 +2340,27 @@ class mixtures(hhe):
     def get_dsdy_rhop_sp(self, _s, _lgp, _y, _z, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         #dPdS|{rho, Y, Z}:
-        drhods_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
+        drhods_rhoy_srho = self.get_drhods_rhoy_sp(_s, _lgp, _y, _z, ds=ds, **kwargs)
         #dPdY|{S, rho, Y}:
-        dpdy_srho = self.get_dpdy_srho(_s, _lgrho, _y, _z, dy=dy, **kwargs)
+        drhody_sp = self.get_drhody_sp(_s, _lgp, _y, _z, dy=dy, **kwargs)
 
         #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
-        dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
+        dsdy_rhop = -drhody_sp/drhods_rhoy_srho # triple product rule
 
-        return dsdy_rhopy
+        return dsdy_rhop
 
 
-    def get_dsdz_rhop_sp(self, _s, _lgrho, _y, _z, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dsdz_rhop_sp(self, _s, _lgp, _y, _z, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
-        #dPdS|{rho, Y, Z}:
-        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, ds=ds, **kwargs)
-        #dPdY|{S, rho, Y}:
-        dpdz_srho = self.get_dpdz_srho(_s, _lgrho, _y, _z, dz=dz, **kwargs)
+        #drhodS|{P, Y, Z}:
+        drhods_rhoy_srho = self.get_drhods_rhoy_sp(_s, _lgp, _y, _z, ds=ds, **kwargs)
+        #drhodZ|{P, rho, Y}:
+        drhodz_sp = self.get_drhodz_sp(_s, _lgp, _y, _z, dz=dz, **kwargs)
 
-        #dSdZ|{rho, P, Z} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
-        dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
+        #dSdZ|{rho, P, Z} = -drhodZ|{S, rho, Y} / drhodS|{rho, Y, Z}
+        dsdz_rhop = -drhodz_srho/drhods_rhoy_srho # triple product rule
 
-        return dsdz_rhopy
+        return dsdz_rhop
 
 
     ########### Chemical Potential Terms ###########
