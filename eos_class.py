@@ -243,11 +243,11 @@ class mixtures(hhe):
         self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
         self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
-        #self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab[0], **rgi_args)
+        #self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
         self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
-        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab[0], **rgi_args)
-        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab[0], **rgi_args)
+        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
+        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
 
 
     def Y_to_n(self, _y):
@@ -716,7 +716,7 @@ class mixtures(hhe):
         _lgrho, _lgt, _y, _z = np.broadcast_arrays(_lgrho, _lgt, _y, _z)
 
         if ideal_guess:
-            guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _y)
+            guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _y/(1 - _z))
         else:
             if arr_guess is None:
                 raise ValueError("logt_guess must be provided when ideal_guess is False.")
@@ -725,7 +725,8 @@ class mixtures(hhe):
         def root_func(lgrho_i, lgt_i, y_i, z_i, guess_i):
             def err(_lgp):
                 # Error function for logt(S, logp)
-                logrho_test = self.get_logrho_pt_tab(_lgp, lgt_i, y_i, z_i)
+                _y_call = y_i if self.y_prime else y_i / (1 - z_i)
+                logrho_test = self.get_logrho_pt(_lgp, lgt_i, _y_call, z_i)
                 return (logrho_test/lgrho_i) - 1
 
             if method == 'root':
@@ -822,7 +823,7 @@ class mixtures(hhe):
         return pressure, converged
 
     def get_s_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None):
-        logp = self.get_logp_rhot_inv(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
+        logp, conv = self.get_logp_rhot_inv(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess)
         return self.get_s_pt_tab(logp, _lgt, _y, _z)
 
     def get_logp_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
@@ -2006,9 +2007,9 @@ class mixtures(hhe):
 
                         else:
 
-                            res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_arr, res1_temp, conv, interp_kind='quadratic'
-                            )
+                            # res1_interp = self.interpolate_non_converged_temperatures_1d(
+                            #     z_arr, res1_temp, conv, interp_kind='quadratic'
+                            # )
 
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
@@ -2320,7 +2321,7 @@ class mixtures(hhe):
 
         return (rho2 - rho1) / (2 * ds / erg_to_kbbar)
 
-    def get_drhody_sp(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_drhody_sp(self, _s, _lgp, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         dy = _y*0.1 if dy is None else dy
         rho1 = 10**self.get_logrho_sp(_s, _lgp, _y - dy, _z, **kwargs)
@@ -2332,8 +2333,8 @@ class mixtures(hhe):
     def get_drhodz_sp(self, _s, _lgp, _y, _z, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         dz = _z*0.1 if dz is None else dz
-        rho1 = 10**self.get_logrho_sp(_s, _lgrho, _y, _z - dz, **kwargs)
-        rho2 = 10**self.get_logrho_sp(_s, _lgrho, _y, _z + dz, **kwargs)
+        rho1 = 10**self.get_logrho_sp(_s, _lgp, _y, _z - dz, **kwargs)
+        rho2 = 10**self.get_logrho_sp(_s, _lgp, _y, _z + dz, **kwargs)
 
         return (rho2 - rho1) / (2 * dz)
 
@@ -2358,24 +2359,24 @@ class mixtures(hhe):
         drhodz_sp = self.get_drhodz_sp(_s, _lgp, _y, _z, dz=dz, **kwargs)
 
         #dSdZ|{rho, P, Z} = -drhodZ|{S, rho, Y} / drhodS|{rho, Y, Z}
-        dsdz_rhop = -drhodz_srho/drhods_rhoy_srho # triple product rule
+        dsdz_rhop = -drhodz_sp/drhods_rhoy_srho # triple product rule
 
         return dsdz_rhop
 
 
     ########### Chemical Potential Terms ###########
 
-    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dudy_srho(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
-
+        dy = _y*0.1 if dy is None else dy
         u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, **kwargs)
         u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, **kwargs)
 
         return (u2 - u1)/(2 * dy)
 
-    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dudz_srho(self, _s, _lgrho, _y, _z, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
-
+        dz = _z*0.1 if dz is None else dz
         u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, **kwargs)
         u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, **kwargs)
 
@@ -2383,7 +2384,7 @@ class mixtures(hhe):
 
     ########### Conductive Flux Terms ###########
 
-    def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         func = self.get_logt_srho_tab if tab else self.get_logt_srho
         t1 = 10**self.func(_s, _lgrho, _y - dy, _z, **kwargs)
@@ -2391,7 +2392,7 @@ class mixtures(hhe):
 
         return (t2 - t1)/(2 * dy)
 
-    def get_dtdz_srho(self, _s, _lgrho, _y, _z, dz=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dtdz_srho(self, _s, _lgrho, _y, _z, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         t1 = 10**self.get_logt_srho(_s, _lgrho, _y, _z - dz, **kwargs)
         t2 = 10**self.get_logt_srho(_s, _lgrho, _y, _z + dz, **kwargs)
