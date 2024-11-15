@@ -1521,35 +1521,38 @@ class mixtures(hhe):
         res1_list = []
         res2_list = []
 
-        der1_list = []
-        der2_list = []
-        der3_list = []
-        der4_list = []
+        if calc_derivatives:
+            der1_list = []
+            der2_list = []
+            der3_list = []
+            der4_list = []
 
         for a_ in tqdm(a_arr):
             res1_b = []
             res2_b = []
-            der1_b = []
-            der2_b = []
-            der3_b = []
-            der4_b = []
+            if calc_derivatives:
+                der1_b = []
+                der2_b = []
+                der3_b = []
+                der4_b = []
             for b_ in b_arr:
                 res1_y = []
                 res2_y = []
-                der1_y = []
-                der2_y = []
-                der3_y = []
-                der4_y = []
+                if calc_derivatives:
+                    der1_y = []
+                    der2_y = []
+                    der3_y = []
+                    der4_y = []
                 prev_res1_temp = None  # Initialize previous res1_temp to None
                 prev_res2_temp = None # For double inversion
                 for y_ in y_arr:
                     a_const = np.full_like(z_arr, a_)
                     b_const = np.full_like(z_arr, b_)
                     y_const = np.full_like(z_arr, y_)
-                    der1 = np.full_like(z_arr, y_)
-                    der2 = np.full_like(z_arr, y_)
-                    der3 = np.full_like(z_arr, y_)
-                    der4 = np.full_like(z_arr, y_)                    
+                    # der1 = np.full_like(z_arr, y_)
+                    # der2 = np.full_like(z_arr, y_)
+                    # der3 = np.full_like(z_arr, y_)
+                    # der4 = np.full_like(z_arr, y_)                    
                     if basis == 'sp':
                         try:
                             if prev_res1_temp is None:
@@ -2026,25 +2029,27 @@ class mixtures(hhe):
 
                     res1_y.append(res1)
                     res2_y.append(res2)
-                    der1_y.append(der1)
-                    der2_y.append(der2)
-                    der3_y.append(der3)
-                    der4_y.append(der4)
+                    if calc_derivatives:
+                        der1_y.append(der1)
+                        der2_y.append(der2)
+                        der3_y.append(der3)
+                        der4_y.append(der4)
 
                 res1_b.append(res1_y)
                 res2_b.append(res2_y)
-                der1_b.append(der1_y)
-                der2_b.append(der2_y)
-                der3_b.append(der3_y)
-                der4_b.append(der4_y)
+                if calc_derivatives:
+                    der1_b.append(der1_y)
+                    der2_b.append(der2_y)
+                    der3_b.append(der3_y)
+                    der4_b.append(der4_y)
 
             res1_list.append(res1_b)
             res2_list.append(res2_b)
-
-            der1_list.append(der1_b)
-            der2_list.append(der2_b)
-            der3_list.append(der3_b)
-            der4_list.append(der4_b)
+            if calc_derivatives:
+                der1_list.append(der1_b)
+                der2_list.append(der2_b)
+                der3_list.append(der3_b)
+                der4_list.append(der4_b)
 
         if calc_derivatives:
             return np.array(res1_list), np.array(res2_list), np.array(der2_list), np.array(der1_list), np.array(der4_list), np.array(der3_list)
