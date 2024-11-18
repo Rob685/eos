@@ -237,8 +237,8 @@ class mixtures(hhe):
         self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
         self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
-        # self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab, **rgi_args)
-        # self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab, **rgi_args)
+        self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab, **rgi_args)
+        self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab, **rgi_args)
 
         # self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
         # self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
@@ -2322,8 +2322,8 @@ class mixtures(hhe):
 
     #     # if calc_derivatives:
     #     #     return np.array(res1_list), np.array(res2_list), np.array(der2_list), np.array(der1_list), np.array(der4_list), np.array(der3_list)
-    #     else:
-    #         return np.array(res1_list), np.array(res2_list)
+    #     # else:
+    #      return np.array(res1_list), np.array(res2_list)
 
     def inversion(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False):
 
@@ -2576,8 +2576,8 @@ class mixtures(hhe):
             res1_list.append(res1_b)
             res2_list.append(res2_b)
 
-        else:
-            return np.array(res1_list), np.array(res2_list)
+
+        return np.array(res1_list), np.array(res2_list)
 
 
     ################################################ Wrapper Functions ################################################
