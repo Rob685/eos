@@ -297,12 +297,59 @@ class mixtures(hhe):
     ####### Volume-Addition Law #######
 
 
-    def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
+    # def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
 
+    #     """
+    #     This calculates the entropy for a metallicity mixture using the volume addition law.
+    #     These terms contain the ideal entropy of mixing, so
+    #     for metal mixures, we subtract the H-He ideal entropy of mixing and
+    #     add back the metal mixture entropy of mixing plus the non-ideal
+    #     correction from Howard & Guillot (2023a).
+
+    #     The _y_prime parameter is the Y in a pure H-He EOS. Therefore, it
+    #     is Y/(1 - Z). So the y value that should be
+    #     used to calculate the entropy of mixing should be Y*(1 - Z).
+    #     """
+
+    #     _y = _y_prime*(1 - _z)
+
+    #     if (
+    #         (np.isscalar(_y_prime) and _y_prime > 1.0)
+    #         or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+    #         or (np.isscalar(_z) and _z > 1.0)
+    #         or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+    #     ):
+    #         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+
+    #     smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
+    #     if self.hg:
+    #         smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hhe_eos == 'cms' else 0.0
+    #     else: 
+    #         smix_xy_nonideal = 0.0
+
+    #     s_x = 10**self.get_s_h(_lgp, _lgt)
+    #     s_y = 10**self.get_s_he(_lgp, _lgt)
+    #     s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+    #     if self.z_eos == 'aqua': 
+    #         mz = 18.015
+    #     elif self.z_eos == 'ppv': 
+    #         mz = 100.3887
+    #     elif self.z_eos == 'iron': 
+    #         mz = 55.845
+
+    #     else: 
+    #         raise ValueError('Only aqua and ppv supported for now.')
+
+    #     smix_xyz_ideal = self.get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
+
+    #     return s_x * (1 - _y_prime) * (1 - _z) + s_y * _y_prime * (1 - _z) + s_z * _z + smix_xyz_ideal + smix_xy_nonideal*(1 - _z)
+
+    def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
         """
         This calculates the entropy for a metallicity mixture using the volume addition law.
         These terms contain the ideal entropy of mixing, so
-        for metal mixures, we subtract the H-He ideal entropy of mixing and
+        for metal mixtures, we subtract the H-He ideal entropy of mixing and
         add back the metal mixture entropy of mixing plus the non-ideal
         correction from Howard & Guillot (2023a).
 
@@ -311,85 +358,171 @@ class mixtures(hhe):
         used to calculate the entropy of mixing should be Y*(1 - Z).
         """
 
-        _y = _y_prime*(1 - _z)
+        def validate_mass_fractions(_y_prime, _z):
+            if (
+                (np.isscalar(_y_prime) and _y_prime > 1.0)
+                or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+                or (np.isscalar(_z) and _z > 1.0)
+                or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+            ):
+                raise ValueError('Invalid mass fractions: X + Y + Z > 1.')
 
-        if (
-            (np.isscalar(_y_prime) and _y_prime > 1.0)
-            or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
-            or (np.isscalar(_z) and _z > 1.0)
-            or ((not np.isscalar(_z)) and np.any(_z > 1.0))
-        ):
-            raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+        def get_mz(z_eos):
+            if z_eos == 'aqua':
+                return 18.015
+            elif z_eos == 'ppv':
+                return 100.3887
+            elif z_eos == 'iron':
+                return 55.845
+            else:
+                raise ValueError('Only aqua, ppv, and iron supported for now.')
 
-        smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
+        _y = _y_prime * (1 - _z)
+        validate_mass_fractions(_y_prime, _z)
+
+        smix_xy_ideal = self.get_smix_id_y(_y_prime) / erg_to_kbbar
+        smix_xy_nonideal = 0.0
         if self.hg:
-            smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hhe_eos == 'cms' else 0.0
-        else: 
-            smix_xy_nonideal = 0.0
+            if self.hhe_eos == 'cms':
+                smix_xy_nonideal = self.smix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime - smix_xy_ideal
 
-        s_x = 10**self.get_s_h(_lgp, _lgt)
-        s_y = 10**self.get_s_he(_lgp, _lgt)
+        s_x = 10 ** self.get_s_h(_lgp, _lgt)
+        s_y = 10 ** self.get_s_he(_lgp, _lgt)
         s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
-        if self.z_eos == 'aqua': 
-            mz = 18.015
-        elif self.z_eos == 'ppv': 
-            mz = 100.3887
-        elif self.z_eos == 'iron': 
-            mz = 55.845
-
-        else: 
-            raise ValueError('Only aqua and ppv supported for now.')
-
+        mz = get_mz(self.z_eos)
         smix_xyz_ideal = self.get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
 
-        return s_x * (1 - _y_prime) * (1 - _z) + s_y * _y_prime * (1 - _z) + s_z * _z + smix_xyz_ideal + smix_xy_nonideal*(1 - _z)
+        return (
+            s_x * (1 - _y_prime) * (1 - _z)
+            + s_y * _y_prime * (1 - _z)
+            + s_z * _z
+            + smix_xyz_ideal
+            + smix_xy_nonideal * (1 - _z)
+        )
+
+    # def get_logrho_pt(self, _lgp, _lgt, _y_prime, _z):
+
+    #     """
+    #     This function calculates the density of a H-He-Z mixture using the volume addition law.
+    #     When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a)
+    #     """
+
+    #     _y = _y_prime*(1 - _z)
+
+    #     if (
+    #         (np.isscalar(_y_prime) and _y_prime > 1.0)
+    #         or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+    #         or (np.isscalar(_z) and _z > 1.0)
+    #         or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+    #     ):
+    #         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+        
+    #     if self.hg:
+    #         vmix = self.vmix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime if self.hhe_eos=='cms' else 0.0
+    #     else:
+    #         vmix = 0.0
+
+    #     rho_h = 10**self.get_logrho_h(_lgp, _lgt)
+    #     rho_he = 10**self.get_logrho_he(_lgp, _lgt)
+    #     rho_z = 10**metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+    #     return np.log10(1/(((1 - _y_prime) * (1 - _z) / rho_h) + (_y_prime * (1 - _z) / rho_he) + vmix*(1 - _z) + _z/rho_z))
 
     def get_logrho_pt(self, _lgp, _lgt, _y_prime, _z):
-
         """
         This function calculates the density of a H-He-Z mixture using the volume addition law.
-        When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a)
+        When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
+
+        Parameters:
+            _lgp (float): Logarithm of pressure.
+            _lgt (float): Logarithm of temperature.
+            _y_prime (float): Helium mass fraction in a pure H-He EOS.
+            _z (float): Metallicity.
+
+        Returns:
+            float: Logarithm of the density.
         """
 
-        _y = _y_prime*(1 - _z)
+        def validate_mass_fractions(_y_prime, _z):
+            if (
+                (np.isscalar(_y_prime) and _y_prime > 1.0)
+                or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
+                or (np.isscalar(_z) and _z > 1.0)
+                or ((not np.isscalar(_z)) and np.any(_z > 1.0))
+            ):
+                raise ValueError('Invalid mass fractions: X + Y + Z > 1.')
 
-        if (
-            (np.isscalar(_y_prime) and _y_prime > 1.0)
-            or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
-            or (np.isscalar(_z) and _z > 1.0)
-            or ((not np.isscalar(_z)) and np.any(_z > 1.0))
-        ):
-            raise Exception('Invalid mass fractions: X + Y + Z > 1.')
+        def calculate_vmix(_lgp, _lgt, _y_prime):
+            if self.hg and self.hhe_eos == 'cms':
+                return self.vmix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime
+            return 0.0
+
+        _y = _y_prime * (1 - _z)
+        validate_mass_fractions(_y_prime, _z)
+
+        vmix = calculate_vmix(_lgp, _lgt, _y_prime)
+
+        rho_h = 10 ** self.get_logrho_h(_lgp, _lgt)
+        rho_he = 10 ** self.get_logrho_he(_lgp, _lgt)
+        rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+        mixture_density = (1 - _y_prime) * (1 - _z) / rho_h + _y_prime * (1 - _z) / rho_he + vmix * (1 - _z) + _z / rho_z
+
+        return np.log10(1 / mixture_density)
+
+    # def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
+
+    #     """
+    #     This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
+    #     When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).    
+    #     """
         
-        if self.hg:
-            vmix = self.vmix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime if self.hhe_eos=='cms' else 0.0
-        else:
-            vmix = 0.0
+    #     if self.hg:
+    #         umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hhe_eos=='cms' else 0.0
+    #     else:
+    #         umix = 0.0
 
-        rho_h = 10**self.get_logrho_h(_lgp, _lgt)
-        rho_he = 10**self.get_logrho_he(_lgp, _lgt)
-        rho_z = 10**metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
+    #     u_h = 10**self.get_logu_h(_lgp, _lgt)
+    #     u_he = 10**self.get_logu_he(_lgp, _lgt)
+    #     u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
-        return np.log10(1/(((1 - _y_prime) * (1 - _z) / rho_h) + (_y_prime * (1 - _z) / rho_he) + vmix*(1 - _z) + _z/rho_z))
+    #     return np.log10(u_h * (1 - _y_prime) * (1 - _z) + u_he * _y_prime * (1 - _z) + umix * (1 - _z) + u_z * _z)
 
     def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
-
         """
         This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
-        When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).    
+        When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
+
+        Parameters:
+            _lgp (float): Logarithm of pressure.
+            _lgt (float): Logarithm of temperature.
+            _y_prime (float): Helium mass fraction in a pure H-He EOS.
+            _z (float): Metallicity.
+
+        Returns:
+            float: Logarithm of the internal energy per unit mass.
         """
-        
-        if self.hg:
-            umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hhe_eos=='cms' else 0.0
-        else:
-            umix = 0.0
 
-        u_h = 10**self.get_logu_h(_lgp, _lgt)
-        u_he = 10**self.get_logu_he(_lgp, _lgt)
-        u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
+        def calculate_umix(_lgp, _lgt, _y_prime):
+            if self.hg and self.hhe_eos == 'cms':
+                return self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime
+            return 0.0
 
-        return np.log10(u_h * (1 - _y_prime) * (1 - _z) + u_he * _y_prime * (1 - _z) + umix * (1 - _z) + u_z * _z)
+        umix = calculate_umix(_lgp, _lgt, _y_prime)
+
+        u_h = 10 ** self.get_logu_h(_lgp, _lgt)
+        u_he = 10 ** self.get_logu_he(_lgp, _lgt)
+        u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+        mixture_energy = (
+            u_h * (1 - _y_prime) * (1 - _z)
+            + u_he * _y_prime * (1 - _z)
+            + umix * (1 - _z)
+            + u_z * _z
+        )
+
+        return np.log10(mixture_energy)
 
 
     ####### EOS table calls #######
@@ -1380,10 +1513,130 @@ class mixtures(hhe):
         temperatures, converged = vectorized_root_func(_lgrho, _lgp, _y, _z, guess)
 
         return temperatures, converged
-        
+
+
     def get_s_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logt, conv = self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        return self.get_s_pt_tab(_lgp, logt, _y, _z)
+        """
+        Compute the entropy given density, pressure, helium abundance, and metallicity.
+
+        Parameters:
+            _lgrho (array_like): Log10 density values.
+            _lgp (array_like): Log10 pressure values.
+            _y (array_like): Helium mass fraction values.
+            _z (array_like): Heavy metal mass fraction values.
+            ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
+            arr_guess (array_like, optional): User-provided initial guess for log entropy when `ideal_guess` is False.
+            method (str, optional): Method to use for root finding ('root', 'newton', or 'brentq').
+
+        Returns:
+            ndarray: Computed entropy values.
+            ndarray: Convergence status for each element.
+        """
+        
+        _lgrho = np.atleast_1d(_lgrho)
+        _lgp = np.atleast_1d(_lgp)
+        _y = np.atleast_1d(_y)
+        _z = np.atleast_1d(_z)
+
+        # Ensure inputs are numpy arrays and broadcasted to the same shape
+        _lgrho, _lgp, _y, _z = np.broadcast_arrays(_lgrho, _lgp, _y, _z)
+
+        if ideal_guess:
+            #y_call = _y if self.y_prime else _y / (1 - _z)
+            guess = ideal_xy.get_s_rhop(_lgrho, _lgp, _y)
+        else:
+            if arr_guess is None:
+                raise ValueError("arr_guess must be provided when ideal_guess is False.")
+            else:
+                guess = arr_guess
+
+        def root_func(lgrho_i, lgp_i, y_i, z_i, guess_i):
+            def err(_s):
+                logrho_test = self.get_logrho_sp_tab(_s, lgp_i, y_i, z_i)
+                return (logrho_test / lgrho_i) - 1
+
+            if method == 'root':
+                sol = root(err, guess_i, tol=1e-8)
+                if sol.success:
+                    return sol.x[0], True
+                else:
+                    return np.nan, False  # Assign np.nan to non-converged elements
+
+            elif method == 'newton':
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Convergence failed
+                    return np.nan, False
+                except Exception as e:
+                    # Handle other exceptions
+                    return np.nan, False
+
+            elif method == 'brentq':
+                try:
+                    a, b = guess_i - 1, guess_i + 1  # Initial bracket
+                    fa, fb = err(a), err(b)
+                    factor = 1.5
+                    delta = 0.1
+                    while fa * fb > 0:
+                        a -= delta * factor
+                        b += delta * factor
+                        delta *= factor
+                        fa, fb = err(a), err(b)
+                        if np.isnan(fa) or np.isnan(fb):
+                            raise ValueError("Function returned NaN.")
+                    sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                    return sol_root, True
+                except ValueError:
+                    return np.nan, False
+
+            elif method == 'newton_brentq':
+                # Try the Newton method first
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Fall back to the Brentq method if Newton fails
+                    delta = 0.1
+                    a = guess_i - delta
+                    b = guess_i + delta
+                    max_attempts = 5
+                    factor = 2.0
+
+                    for attempt in range(max_attempts):
+                        try:
+                            fa = err(a)
+                            fb = err(b)
+                            if np.isnan(fa) or np.isnan(fb):
+                                raise ValueError("Function returned NaN.")
+                            if fa * fb < 0:
+                                sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                                return sol_root, True
+                            else:
+                                a -= delta * factor
+                                b += delta * factor
+                                delta *= factor
+                        except ValueError:
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor
+                    return np.nan, False
+
+            else:
+                raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
+
+        # Vectorize the root_func
+        vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
+
+        # Apply the vectorized function
+        entropies, converged = vectorized_root_func(_lgrho, _lgp, _y, _z, guess)
+
+        return entropies / erg_to_kbbar, converged
+        
+    # def get_s_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    #     logt, conv = self.get_logt_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+    #     return self.get_s_pt_tab(_lgp, logt, _y, _z)
 
     # adaptive delta function for z and y derivatives
     def adaptive_dx(self, x_profile, initial_dx=0.1, tolerance=1e-2):
@@ -1920,7 +2173,23 @@ class mixtures(hhe):
                         try:
                             if prev_res1_temp is None:
 
-                                res1_temp, conv = self.get_logt_rhop_inv(
+                                # res1_temp, conv = self.get_logt_rhop_inv(
+                                #     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                #     )
+                                # res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                # z_arr, res1_temp, conv, interp_kind='quadratic'
+                                #     )
+                                # if calc_derivatives:
+                                #     res1_temp2, conv2 = self.get_logt_rhop_inv(
+                                #         a_const, b_const, y_const*1.1, z_arr, method=inversion_method, ideal_guess=True
+                                #         )
+
+                                #     res1_temp3, conv3 = self.get_logt_rhop_inv(
+                                #         a_const, b_const, y_const*0.9, z_arr, method=inversion_method, ideal_guess=True
+                                #         )
+                                
+                                # inverting the table along entropy instead of temperature instead....
+                                res1_temp, conv = self.get_s_rhop_inv(
                                     a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
                                     )
                                 res1_interp = self.interpolate_non_converged_temperatures_1d(
@@ -2017,7 +2286,7 @@ class mixtures(hhe):
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
 
-                            res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_arr)
+                            res2 = self.get_logt_sp_tab(res1, b_const, y_const, z_arr)
                         
 
                         prev_res1_temp = res1
@@ -2105,7 +2374,7 @@ class mixtures(hhe):
 
         else:
             return self.get_s_rhop_inv(_lgrho, _lgp, _y, _z, ideal_guess=ideal_guess, 
-                                        arr_guess=arr_guess, method=method)
+                                        arr_guess=arr_guess, method=method)[0]
 
     def get_logp_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         if tab:
@@ -2143,7 +2412,7 @@ class mixtures(hhe):
         s1 = self.get_s_pt_tab(_lgp, _lgt - dt, _y, _z)
         s2 = self.get_s_pt_tab(_lgp, _lgt + dt, _y, _z)
 
-        return (s2 - s1) / (2 * dt)
+        return (s2 - s1) / (2 * dt * logt10_to_loge)
 
     # Specific heat at constant volume
     def get_cv_srho(self, _s, _lgrho, _y, _z, ds=1e-3, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
@@ -2162,7 +2431,7 @@ class mixtures(hhe):
         s1 = self.get_s_rhot(_lgrho, _lgt - dt, _y, _z, **kwargs)
         s2 = self.get_s_rhot(_lgrho, _lgt + dt, _y, _z, **kwargs)
 
-        return (s2 - s1) / (2 * dt)
+        return (s2 - s1) / (2 * dt * logt10_to_loge)
 
     # Adiabatic temperature gradient
     def get_nabla_ad(self, _s, _lgp, _y, _z, dp=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
