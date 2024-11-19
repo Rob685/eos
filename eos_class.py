@@ -243,11 +243,11 @@ class mixtures(hhe):
         self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
         self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
-        # self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
-        # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
+        self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
+        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
-        # self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
-        # self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
+        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
+        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
 
 
     def Y_to_n(self, _y):
@@ -3092,9 +3092,8 @@ class mixtures(hhe):
 
     def get_dtdy_srho(self, _s, _lgrho, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
-        func = self.get_logt_srho_tab if tab else self.get_logt_srho
-        t1 = 10**self.func(_s, _lgrho, _y - dy, _z, **kwargs)
-        t2 = 10**self.func(_s, _lgrho, _y + dy, _z, **kwargs)
+        t1 = 10**self.get_logt_srho(_s, _lgrho, _y - dy, _z, **kwargs)
+        t2 = 10**self.get_logt_srho(_s, _lgrho, _y + dy, _z, **kwargs)
 
         return (t2 - t1)/(2 * dy)
 
