@@ -1366,12 +1366,11 @@ class mixtures(hhe):
 
     def get_logu_srho(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
-
-        args = (_s, _lgrho, _y, _z)
         if tab:
-            logp, logt = self.get_logp_srho_tab(*args), self.get_logt_srho_tab(*args)
+            logp, logt = self.get_logp_srho_tab(_s, _lgrho, _y, _z), self.get_logt_srho_tab(_s, _lgrho, _y, _z)
         else:
+            #_y = _y if self.y_prime else _y / (1 - _z)
+            # WARNING: do not rely on in-situ derivatives because the y prime is not implemented here (yet)
             logp, convp = self.get_logp_srho_inv( _s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_p_guess, method=method)
             logt, convt = self.get_logt_sp_inv( _s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_t_guess, method=method)
         return self.get_logu_pt_tab(logp, logt, _y, _z)
