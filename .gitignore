@@ -5,3 +5,9 @@ scvh/eos_adam/*
 cms/coolTLusty_adam/*
 figs/*
 coolTlust_tables_new/*
+*.f
+water_eos
+water_eos2
+water_eos3
+water_eos4
+water_table.txt
