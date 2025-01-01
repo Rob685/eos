@@ -368,7 +368,7 @@ class mixtures(hhe):
                 raise ValueError('Invalid mass fractions: X + Y + Z > 1.')
 
         def get_mz(z_eos):
-            if z_eos == 'aqua':
+            if z_eos == 'aqua' or z_eos == 'mazevet':
                 return 18.015
             elif z_eos == 'ppv':
                 return 100.3887

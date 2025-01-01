@@ -1,11 +1,10 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
-from scipy.optimize import root, root_scalar
-from eos import ideal_eos, aqua_eos, ppv_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
+# from scipy.optimize import root, root_scalar
+from eos import ideal_eos, aqua_eos, mazevet_eos, ppv_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
 import os
 
 from astropy import units as u
-#from scipy.optimize import root, root_scalar
 from astropy.constants import k_B
 from astropy.constants import u as amu
 
@@ -30,8 +29,6 @@ MJ_to_erg_S = (u.MJ/u.kg/u.K).to('erg/(K * g)')
 MJ_to_erg_U = (u.MJ/u.kg).to('erg/g')
 MJ_to_kbbar = (u.MJ/u.Kelvin/u.kg).to(k_B/amu)
 
-CURR_DIR = os.path.dirname(os.path.realpath(__file__))
-
 ideal_water = ideal_eos.IdealEOS(m=18) # default for ideal eos is water for now
 
 #### P, T ####
@@ -39,6 +36,8 @@ ideal_water = ideal_eos.IdealEOS(m=18) # default for ideal eos is water for now
 def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_rho_pt_tab(p, t)
+    elif eos == 'mazevet':
+        return mazevet_eos.get_logrho_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_rho_pt_tab(p, t)
     elif eos == 'serpentine':
@@ -57,6 +56,8 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_s_pt_tab(p, t)
+    elif eos == 'mazevet':
+        return mazevet_eos.get_s_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_pt_tab(p, t)
     elif eos == 'serpentine':
@@ -75,6 +76,8 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_u_pt_tab(p, t)
+    elif eos == 'mazevet':
+        return np.log10(mazevet_eos.get_u_pt_tab(p, t))
     elif eos == 'ppv':
         return ppv_eos.get_u_pt_tab(p, t)
     elif eos == 'serpentine':
@@ -95,6 +98,8 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_p_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_p_rhot_tab(rho, t)
+    elif eos == 'mazevet':
+        return np.log10(mazevet_eos.get_p_rhot_tab(rho, t))
     elif eos == 'ppv':
         return ppv_eos.get_p_rhot_tab(rho, t)
     # elif eos == 'serpentine':
@@ -115,6 +120,8 @@ def get_p_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_s_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_s_rhot_tab(rho, t)
+    elif eos == 'mazevet':
+        return mazevet_eos.get_s_rhot_tab(rho, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_rhot_tab(rho, t)
     # elif eos == 'serpentine':
