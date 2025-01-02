@@ -180,23 +180,23 @@ class mixtures(hhe):
             self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
             self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
             self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
+            # self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
+            # self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
     
         # 1-D independent grids
         self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
         self.logpvals_sp = self.sp_data['logpvals']
-        self.logpvals_rhop = self.rhop_data['logpvals']
+        # self.logpvals_rhop = self.rhop_data['logpvals']
 
         self.logtvals = self.pt_data['logtvals'] # log10 K
         self.logtvals_rhot = self.rhot_data['logtvals']
 
         self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
-        self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
-        self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
+        # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+        # self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
 
         self.svals_sp = self.sp_data['s_vals'] # kb/baryon
-        self.svals_srho = self.srho_data['s_vals'] # kb/baryon
+        # self.svals_srho = self.srho_data['s_vals'] # kb/baryon
 
         self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
         self.zvals_pt = self.pt_data['zvals'] # mass fraction
@@ -207,11 +207,11 @@ class mixtures(hhe):
         self.yvals_sp = self.sp_data['yvals']
         self.zvals_sp = self.sp_data['zvals']
 
-        self.yvals_rhop = self.rhop_data['yvals']
-        self.zvals_rhop = self.rhop_data['zvals']
+        # self.yvals_rhop = self.rhop_data['yvals']
+        # self.zvals_rhop = self.rhop_data['zvals']
 
-        self.yvals_srho = self.srho_data['yvals']
-        self.zvals_srho = self.srho_data['zvals']
+        # self.yvals_srho = self.srho_data['yvals']
+        # self.zvals_srho = self.srho_data['zvals']
 
         # 4-D dependent grids
         self.s_pt_tab = self.pt_data['s_pt'] # erg/g/K
@@ -224,11 +224,11 @@ class mixtures(hhe):
         self.logt_sp_tab = self.sp_data['logt_sp']
         self.logrho_sp_tab = self.sp_data['logrho_sp']
 
-        self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
-        self.logt_rhop_tab = self.rhop_data['logt_rhop']
+        # self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
+        # self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
-        self.logp_srho_tab = self.srho_data['logp_srho']
-        self.logt_srho_tab = self.srho_data['logt_srho']
+        # self.logp_srho_tab = self.srho_data['logp_srho']
+        # self.logt_srho_tab = self.srho_data['logt_srho']
 
         # RGI interpolation functions
         rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
@@ -243,11 +243,11 @@ class mixtures(hhe):
         self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
         self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
-        self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
-        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
+        # self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
+        # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
-        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
-        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
+        # self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
+        # self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
 
 
     def Y_to_n(self, _y):
@@ -2472,12 +2472,13 @@ class mixtures(hhe):
                                     res1_interp = self.interpolate_non_converged_temperatures_1d(
                                         z_arr, res1_temp, conv, interp_kind='quadratic'
                                         )
-                                    res2_temp, conv2_1 = self.get_logt_sp_inv(
-                                        a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp
-                                        )
-                                    res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                        z_arr, res2_temp, conv2_1, interp_kind='quadratic'
-                                        )
+                                    # res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                    #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp
+                                    #     )
+
+                                    # res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                    #     z_arr, res2_temp, conv2_1, interp_kind='quadratic'
+                                    #     )
 
                             except:
                                 print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
@@ -2486,8 +2487,12 @@ class mixtures(hhe):
                             res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                             res1 = self.return_noglitch(z_arr, res1_noglitch)
 
-                            res2_noglitch = self.return_noglitch(z_arr, res2_interp)
-                            res2 = self.return_noglitch(z_arr, res2_noglitch)
+                            # res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                            # res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                            res2 = self.get_logt_sp_tab(
+                                a_const, res1, y_const, z_arr
+                                )
 
                             prev_res1_temp = res1
                             prev_res2_temp = res2
