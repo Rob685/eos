@@ -36,7 +36,7 @@ ideal_water = ideal_eos.IdealEOS(m=18) # default for ideal eos is water for now
 def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_rho_pt_tab(p, t)
-    elif eos == 'mazevet':
+    elif eos == 'mlcp':
         return mazevet_eos.get_logrho_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_rho_pt_tab(p, t)
@@ -58,7 +58,7 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_s_pt_tab(p, t)
-    elif eos == 'mazevet':
+    elif eos == 'mlcp':
         return mazevet_eos.get_s_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_pt_tab(p, t)
@@ -80,7 +80,7 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_u_pt_tab(p, t)
-    elif eos == 'mazevet':
+    elif eos == 'mlcp':
         return np.log10(mazevet_eos.get_u_pt_tab(p, t))
     elif eos == 'ppv':
         return ppv_eos.get_u_pt_tab(p, t)
@@ -104,7 +104,7 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_p_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_p_rhot_tab(rho, t)
-    elif eos == 'mazevet':
+    elif eos == 'mlcp':
         return np.log10(mazevet_eos.get_p_rhot_tab(rho, t))
     elif eos == 'ppv':
         return ppv_eos.get_p_rhot_tab(rho, t)
@@ -126,7 +126,7 @@ def get_p_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_s_rhot_tab(rho, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_s_rhot_tab(rho, t)
-    elif eos == 'mazevet':
+    elif eos == 'mlcp':
         return mazevet_eos.get_s_rhot_tab(rho, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_rhot_tab(rho, t)

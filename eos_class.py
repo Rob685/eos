@@ -180,23 +180,23 @@ class mixtures(hhe):
             self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
             self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
             self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
-            # self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
-            # self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
+            self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
+            self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
     
         # 1-D independent grids
         self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
         self.logpvals_sp = self.sp_data['logpvals']
-        # self.logpvals_rhop = self.rhop_data['logpvals']
+        self.logpvals_rhop = self.rhop_data['logpvals']
 
         self.logtvals = self.pt_data['logtvals'] # log10 K
         self.logtvals_rhot = self.rhot_data['logtvals']
 
         self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
-        # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
-        # self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
+        self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+        self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
 
         self.svals_sp = self.sp_data['s_vals'] # kb/baryon
-        # self.svals_srho = self.srho_data['s_vals'] # kb/baryon
+        self.svals_srho = self.srho_data['s_vals'] # kb/baryon
 
         self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
         self.zvals_pt = self.pt_data['zvals'] # mass fraction
@@ -207,11 +207,11 @@ class mixtures(hhe):
         self.yvals_sp = self.sp_data['yvals']
         self.zvals_sp = self.sp_data['zvals']
 
-        # self.yvals_rhop = self.rhop_data['yvals']
-        # self.zvals_rhop = self.rhop_data['zvals']
+        self.yvals_rhop = self.rhop_data['yvals']
+        self.zvals_rhop = self.rhop_data['zvals']
 
-        # self.yvals_srho = self.srho_data['yvals']
-        # self.zvals_srho = self.srho_data['zvals']
+        self.yvals_srho = self.srho_data['yvals']
+        self.zvals_srho = self.srho_data['zvals']
 
         # 4-D dependent grids
         self.s_pt_tab = self.pt_data['s_pt'] # erg/g/K
@@ -224,11 +224,11 @@ class mixtures(hhe):
         self.logt_sp_tab = self.sp_data['logt_sp']
         self.logrho_sp_tab = self.sp_data['logrho_sp']
 
-        # self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
-        # self.logt_rhop_tab = self.rhop_data['logt_rhop']
+        self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
+        self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
-        # self.logp_srho_tab = self.srho_data['logp_srho']
-        # self.logt_srho_tab = self.srho_data['logt_srho']
+        self.logp_srho_tab = self.srho_data['logp_srho']
+        self.logt_srho_tab = self.srho_data['logt_srho']
 
         # RGI interpolation functions
         rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
@@ -243,11 +243,11 @@ class mixtures(hhe):
         self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
         self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
-        # self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
-        # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
+        self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
+        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
-        # self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
-        # self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
+        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
+        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
 
 
     def Y_to_n(self, _y):
@@ -295,55 +295,6 @@ class mixtures(hhe):
 
 
     ####### Volume-Addition Law #######
-
-
-    # def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
-
-    #     """
-    #     This calculates the entropy for a metallicity mixture using the volume addition law.
-    #     These terms contain the ideal entropy of mixing, so
-    #     for metal mixures, we subtract the H-He ideal entropy of mixing and
-    #     add back the metal mixture entropy of mixing plus the non-ideal
-    #     correction from Howard & Guillot (2023a).
-
-    #     The _y_prime parameter is the Y in a pure H-He EOS. Therefore, it
-    #     is Y/(1 - Z). So the y value that should be
-    #     used to calculate the entropy of mixing should be Y*(1 - Z).
-    #     """
-
-    #     _y = _y_prime*(1 - _z)
-
-    #     if (
-    #         (np.isscalar(_y_prime) and _y_prime > 1.0)
-    #         or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
-    #         or (np.isscalar(_z) and _z > 1.0)
-    #         or ((not np.isscalar(_z)) and np.any(_z > 1.0))
-    #     ):
-    #         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
-
-    #     smix_xy_ideal =  self.get_smix_id_y(_y_prime) / erg_to_kbbar 
-    #     if self.hg:
-    #         smix_xy_nonideal =  self.smix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime - smix_xy_ideal if self.hhe_eos == 'cms' else 0.0
-    #     else: 
-    #         smix_xy_nonideal = 0.0
-
-    #     s_x = 10**self.get_s_h(_lgp, _lgt)
-    #     s_y = 10**self.get_s_he(_lgp, _lgt)
-    #     s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
-
-    #     if self.z_eos == 'aqua': 
-    #         mz = 18.015
-    #     elif self.z_eos == 'ppv': 
-    #         mz = 100.3887
-    #     elif self.z_eos == 'iron': 
-    #         mz = 55.845
-
-    #     else: 
-    #         raise ValueError('Only aqua and ppv supported for now.')
-
-    #     smix_xyz_ideal = self.get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
-
-    #     return s_x * (1 - _y_prime) * (1 - _z) + s_y * _y_prime * (1 - _z) + s_z * _z + smix_xyz_ideal + smix_xy_nonideal*(1 - _z)
 
     def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
         """
@@ -401,34 +352,6 @@ class mixtures(hhe):
             + smix_xy_nonideal * (1 - _z)
         )
 
-    # def get_logrho_pt(self, _lgp, _lgt, _y_prime, _z):
-
-    #     """
-    #     This function calculates the density of a H-He-Z mixture using the volume addition law.
-    #     When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a)
-    #     """
-
-    #     _y = _y_prime*(1 - _z)
-
-    #     if (
-    #         (np.isscalar(_y_prime) and _y_prime > 1.0)
-    #         or ((not np.isscalar(_y_prime)) and np.any(_y_prime > 1.0))
-    #         or (np.isscalar(_z) and _z > 1.0)
-    #         or ((not np.isscalar(_z)) and np.any(_z > 1.0))
-    #     ):
-    #         raise Exception('Invalid mass fractions: X + Y + Z > 1.')
-        
-    #     if self.hg:
-    #         vmix = self.vmix_interp(_lgp, _lgt)*(1 - _y_prime)*_y_prime if self.hhe_eos=='cms' else 0.0
-    #     else:
-    #         vmix = 0.0
-
-    #     rho_h = 10**self.get_logrho_h(_lgp, _lgt)
-    #     rho_he = 10**self.get_logrho_he(_lgp, _lgt)
-    #     rho_z = 10**metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
-
-    #     return np.log10(1/(((1 - _y_prime) * (1 - _z) / rho_h) + (_y_prime * (1 - _z) / rho_he) + vmix*(1 - _z) + _z/rho_z))
-
     def get_logrho_pt(self, _lgp, _lgt, _y_prime, _z):
         """
         This function calculates the density of a H-He-Z mixture using the volume addition law.
@@ -470,24 +393,6 @@ class mixtures(hhe):
         mixture_density = (1 - _y_prime) * (1 - _z) / rho_h + _y_prime * (1 - _z) / rho_he + vmix * (1 - _z) + _z / rho_z
 
         return np.log10(1 / mixture_density)
-
-    # def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
-
-    #     """
-    #     This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
-    #     When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).    
-    #     """
-        
-    #     if self.hg:
-    #         umix = self.umix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime if self.hhe_eos=='cms' else 0.0
-    #     else:
-    #         umix = 0.0
-
-    #     u_h = 10**self.get_logu_h(_lgp, _lgt)
-    #     u_he = 10**self.get_logu_he(_lgp, _lgt)
-    #     u_z = 10**metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
-
-    #     return np.log10(u_h * (1 - _y_prime) * (1 - _z) + u_he * _y_prime * (1 - _z) + umix * (1 - _z) + u_z * _z)
 
     def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
         """
