@@ -154,7 +154,7 @@ class hhe:
 
 
 class mixtures(hhe):
-    def __init__(self, hhe_eos, z_eos, hg=True, y_prime=False, interp_method='linear'):
+    def __init__(self, hhe_eos, z_eos, hg=True, y_prime=False, interp_method='linear', new_z_mix=False):
 
         super().__init__(hhe_eos=hhe_eos)
         
@@ -163,91 +163,93 @@ class mixtures(hhe):
         self.z_eos = z_eos
         self.interp_method = interp_method
 
-        if hhe_eos == 'cms':
-            if self.hg:
-                self.pt_data = np.load('eos/cms/{}_hg_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
-                self.rhot_data = np.load('eos/cms/{}_hg_{}_rhot.npz'.format(hhe_eos, z_eos))
-                self.sp_data = np.load('eos/cms/{}_hg_{}_sp.npz'.format(hhe_eos, z_eos))
-                self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
-                self.srho_data = np.load('eos/cms/{}_hg_{}_srho.npz'.format(hhe_eos, z_eos))
+        if not new_z_mix:
+
+            if hhe_eos == 'cms':
+                if self.hg:
+                    self.pt_data = np.load('eos/cms/{}_hg_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
+                    self.rhot_data = np.load('eos/cms/{}_hg_{}_rhot.npz'.format(hhe_eos, z_eos))
+                    self.sp_data = np.load('eos/cms/{}_hg_{}_sp.npz'.format(hhe_eos, z_eos))
+                    self.rhop_data = np.load('eos/cms/{}_hg_{}_rhop.npz'.format(hhe_eos, z_eos))
+                    self.srho_data = np.load('eos/cms/{}_hg_{}_srho.npz'.format(hhe_eos, z_eos))
+                else:
+                    self.pt_data = np.load('eos/cms/{}_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
+                    self.rhot_data = np.load('eos/cms/{}_{}_rhot.npz'.format(hhe_eos, z_eos))
+                    self.sp_data = np.load('eos/cms/{}_{}_sp.npz'.format(hhe_eos, z_eos))
+                    self.rhop_data = np.load('eos/cms/{}_{}_rhop.npz'.format(hhe_eos, z_eos))
+                    self.srho_data = np.load('eos/cms/{}_{}_srho.npz'.format(hhe_eos, z_eos))
             else:
-                self.pt_data = np.load('eos/cms/{}_{}_pt_compressed.npz'.format(hhe_eos, z_eos))
-                self.rhot_data = np.load('eos/cms/{}_{}_rhot.npz'.format(hhe_eos, z_eos))
-                self.sp_data = np.load('eos/cms/{}_{}_sp.npz'.format(hhe_eos, z_eos))
-                self.rhop_data = np.load('eos/cms/{}_{}_rhop.npz'.format(hhe_eos, z_eos))
-                self.srho_data = np.load('eos/cms/{}_{}_srho.npz'.format(hhe_eos, z_eos))
-        else:
-            self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
-            self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
-    
-        # 1-D independent grids
-        self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
-        self.logpvals_sp = self.sp_data['logpvals']
-        self.logpvals_rhop = self.rhop_data['logpvals']
+                self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
+        
+            # 1-D independent grids
+            self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
+            self.logpvals_sp = self.sp_data['logpvals']
+            self.logpvals_rhop = self.rhop_data['logpvals']
 
-        self.logtvals = self.pt_data['logtvals'] # log10 K
-        self.logtvals_rhot = self.rhot_data['logtvals']
+            self.logtvals = self.pt_data['logtvals'] # log10 K
+            self.logtvals_rhot = self.rhot_data['logtvals']
 
-        self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
-        self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
-        self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
+            self.logrhovals_rhot = self.rhot_data['logrhovals'] # log10 g/cc
+            self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+            self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
 
-        self.svals_sp = self.sp_data['s_vals'] # kb/baryon
-        self.svals_srho = self.srho_data['s_vals'] # kb/baryon
+            self.svals_sp = self.sp_data['s_vals'] # kb/baryon
+            self.svals_srho = self.srho_data['s_vals'] # kb/baryon
 
-        self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
-        self.zvals_pt = self.pt_data['zvals'] # mass fraction
+            self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
+            self.zvals_pt = self.pt_data['zvals'] # mass fraction
 
-        self.yvals_rhot = self.rhot_data['yvals']
-        self.zvals_rhot = self.rhot_data['zvals']
+            self.yvals_rhot = self.rhot_data['yvals']
+            self.zvals_rhot = self.rhot_data['zvals']
 
-        self.yvals_sp = self.sp_data['yvals']
-        self.zvals_sp = self.sp_data['zvals']
+            self.yvals_sp = self.sp_data['yvals']
+            self.zvals_sp = self.sp_data['zvals']
 
-        self.yvals_rhop = self.rhop_data['yvals']
-        self.zvals_rhop = self.rhop_data['zvals']
+            self.yvals_rhop = self.rhop_data['yvals']
+            self.zvals_rhop = self.rhop_data['zvals']
 
-        self.yvals_srho = self.srho_data['yvals']
-        self.zvals_srho = self.srho_data['zvals']
+            self.yvals_srho = self.srho_data['yvals']
+            self.zvals_srho = self.srho_data['zvals']
 
-        # 4-D dependent grids
-        self.s_pt_tab = self.pt_data['s_pt'] # erg/g/K
-        self.logrho_pt_tab = self.pt_data['logrho_pt'] # log10 g/cc
-        self.logu_pt_tab = self.pt_data['logu_pt'] # log10 erg/g
+            # 4-D dependent grids
+            self.s_pt_tab = self.pt_data['s_pt'] # erg/g/K
+            self.logrho_pt_tab = self.pt_data['logrho_pt'] # log10 g/cc
+            self.logu_pt_tab = self.pt_data['logu_pt'] # log10 erg/g
 
-        self.s_rhot_tab = self.rhot_data['s_rhot'] # erg/g/K
-        self.logp_rhot_tab = self.rhot_data['logp_rhot']
+            self.s_rhot_tab = self.rhot_data['s_rhot'] # erg/g/K
+            self.logp_rhot_tab = self.rhot_data['logp_rhot']
 
-        self.logt_sp_tab = self.sp_data['logt_sp']
-        self.logrho_sp_tab = self.sp_data['logrho_sp']
+            self.logt_sp_tab = self.sp_data['logt_sp']
+            self.logrho_sp_tab = self.sp_data['logrho_sp']
 
-        self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
-        self.logt_rhop_tab = self.rhop_data['logt_rhop']
+            self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
+            self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
-        self.logp_srho_tab = self.srho_data['logp_srho']
-        self.logt_srho_tab = self.srho_data['logt_srho']
+            self.logp_srho_tab = self.srho_data['logp_srho']
+            self.logt_srho_tab = self.srho_data['logt_srho']
 
-        # RGI interpolation functions
-        rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
+            # RGI interpolation functions
+            rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
 
-        self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.s_pt_tab, **rgi_args)
-        self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
-        self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
+            self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.s_pt_tab, **rgi_args)
+            self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logrho_pt_tab, **rgi_args)
+            self.logu_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt), self.logu_pt_tab, **rgi_args)
 
-        self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab, **rgi_args)
-        self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab, **rgi_args)
+            self.s_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.s_rhot_tab, **rgi_args)
+            self.logp_rhot_rgi = RGI((self.logrhovals_rhot, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot), self.logp_rhot_tab, **rgi_args)
 
-        self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
-        self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
+            self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logt_sp_tab, **rgi_args)
+            self.logrho_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp), self.logrho_sp_tab, **rgi_args)
 
-        self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
-        self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
+            self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.s_rhop_tab, **rgi_args)
+            self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop), self.logt_rhop_tab, **rgi_args)
 
-        self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
-        self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
+            self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logp_srho_tab, **rgi_args)
+            self.logt_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho), self.logt_srho_tab, **rgi_args)
 
 
     def Y_to_n(self, _y):
@@ -321,7 +323,7 @@ class mixtures(hhe):
         def get_mz(z_eos):
             if z_eos == 'aqua' or z_eos == 'mlcp':
                 return 18.015
-            elif z_eos == 'ppv':
+            elif z_eos == 'ppv' or z_eos == 'ppv2':
                 return 100.3887
             elif z_eos == 'iron':
                 return 55.845
@@ -418,7 +420,10 @@ class mixtures(hhe):
 
         u_h = 10 ** self.get_logu_h(_lgp, _lgt)
         u_he = 10 ** self.get_logu_he(_lgp, _lgt)
-        u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
+        if self.z_eos == 'mlcp':
+            u_z = metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
+        else:
+            u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
         mixture_energy = (
             u_h * (1 - _y_prime) * (1 - _z)

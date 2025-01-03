@@ -81,7 +81,7 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_u_pt_tab(p, t)
     elif eos == 'mlcp':
-        return np.log10(mazevet_eos.get_u_pt_tab(p, t))
+        return mazevet_eos.get_u_pt_tab(p, t) # NOT LOG BECAUSE SOMETIMES IT IS NEGATIVE!
     elif eos == 'ppv':
         return ppv_eos.get_u_pt_tab(p, t)
     elif eos == 'ppv2':
