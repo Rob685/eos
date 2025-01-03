@@ -319,14 +319,14 @@ class mixtures(hhe):
                 raise ValueError('Invalid mass fractions: X + Y + Z > 1.')
 
         def get_mz(z_eos):
-            if z_eos == 'aqua' or z_eos == 'mazevet':
+            if z_eos == 'aqua' or z_eos == 'mlcp':
                 return 18.015
             elif z_eos == 'ppv':
                 return 100.3887
             elif z_eos == 'iron':
                 return 55.845
             else:
-                raise ValueError('Only aqua, ppv, and iron supported for now.')
+                raise ValueError('Only water (aqua or mazevet+19 (mlcp)), ppv, and iron supported for now.')
 
         _y = _y_prime * (1 - _z)
         validate_mass_fractions(_y_prime, _z)
