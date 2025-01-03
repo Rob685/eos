@@ -2457,12 +2457,12 @@ class mixtures(hhe):
                                         z_arr, res1_temp, conv, interp_kind='quadratic'
                                         )
 
-                                    res2_temp, conv2_1 = self.get_logt_sp_inv(
-                                        a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=True
-                                        )
-                                    res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                        z_arr, res2_temp, conv, interp_kind='quadratic'
-                                        )
+                                    # res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                    #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                    #     )
+                                    # res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                    #     z_arr, res2_temp, conv, interp_kind='quadratic'
+                                    #     )
 
 
                                 else:

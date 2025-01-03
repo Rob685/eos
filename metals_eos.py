@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 # from scipy.optimize import root, root_scalar
-from eos import ideal_eos, aqua_eos, mazevet_eos, ppv_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
+from eos import ideal_eos, aqua_eos, mazevet_eos, ppv_eos, ppv2_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
 import os
 
 from astropy import units as u
@@ -40,6 +40,8 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return mazevet_eos.get_logrho_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_rho_pt_tab(p, t)
+    elif eos == 'ppv2':
+        return ppv2_eos.get_logrho_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_pt_tab(p, t)
     elif eos == 'fo':
@@ -60,6 +62,8 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return mazevet_eos.get_s_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_pt_tab(p, t)
+    elif eos == 'ppv2':
+        return ppv2_eos.get_s_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_s_pt_tab(p, t)
     elif eos == 'fo':
@@ -80,6 +84,8 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return np.log10(mazevet_eos.get_u_pt_tab(p, t))
     elif eos == 'ppv':
         return ppv_eos.get_u_pt_tab(p, t)
+    elif eos == 'ppv2':
+        return ppv2_eos.get_logu_pt_tab(p, t)
     elif eos == 'serpentine':
         return serpentine_eos.get_u_pt_tab(p, t)
     elif eos == 'fo':
@@ -145,6 +151,8 @@ def get_t_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
         return aqua_eos.get_t_sp_tab(s, p)
     elif eos == 'ppv':
         return ppv_eos.get_t_sp_tab(s, p)
+    elif eos == 'ppv2':
+        return ppv2_eos.get_logt_sp_tab(s, p)
     elif eos == 'serpentine':
         return serpentine_eos.get_t_sp_tab(s, p)
     elif eos == 'fo':
@@ -164,6 +172,8 @@ def get_rho_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
         return aqua_eos.get_rho_sp_tab(s, p)
     elif eos == 'ppv':
         return ppv_eos.get_rho_sp_tab(s, p)
+    elif eos == 'ppv2':
+        return ppv2_eos.get_logrho_sp_tab(s, p)
     elif eos == 'serpentine':
         return serpentine_eos.get_rho_sp_tab(s, p)
     elif eos == 'fo':
