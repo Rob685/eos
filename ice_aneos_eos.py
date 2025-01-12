@@ -30,12 +30,12 @@ def get_s_pt_tab(p, t):
         return float((10**aneos_ice.get_logs(p, t)/11605.333))
     return 10**aneos_ice.get_logs(p, t)/11605.333
 
-def get_rho_pt_tab(p, t):
+def get_logrho_pt_tab(p, t):
     if np.isscalar(p):
         return float(aneos_ice.get_logrho(p, t))
     return aneos_ice.get_logrho(p, t)
 
-def get_u_pt_tab(p, t):
+def get_logu_pt_tab(p, t):
     if np.isscalar(p):
         return float(aneos_ice.get_logu(p, t))
     return aneos_ice.get_logu(p, t)

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
 # from scipy.optimize import root, root_scalar
-from eos import ideal_eos, aqua_eos, mazevet_eos, ppv_eos, ppv2_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
+from eos import ideal_eos, aqua_eos, mazevet_eos, ice_aneos_eos, ppv_eos, ppv2_eos, serpentine_eos, aneos_forsterite_eos, fe_eos, zmix_eos
 import os
 
 from astropy import units as u
@@ -38,6 +38,8 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return aqua_eos.get_rho_pt_tab(p, t)
     elif eos == 'mlcp':
         return mazevet_eos.get_logrho_pt_tab(p, t)
+    elif eos == 'ice_aneos':
+        return ice_aneos_eos.get_logrho_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_rho_pt_tab(p, t)
     elif eos == 'ppv2':
@@ -60,6 +62,8 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return aqua_eos.get_s_pt_tab(p, t)
     elif eos == 'mlcp':
         return mazevet_eos.get_s_pt_tab(p, t)
+    elif eos == 'ice_aneos':
+        return ice_aneos_eos.get_s_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_s_pt_tab(p, t)
     elif eos == 'ppv2':
@@ -82,6 +86,8 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
         return aqua_eos.get_u_pt_tab(p, t)
     elif eos == 'mlcp':
         return mazevet_eos.get_u_pt_tab(p, t) # NOT LOG BECAUSE SOMETIMES IT IS NEGATIVE!
+    elif eos == 'ice_aneos':
+        return ice_aneos_eos.get_logu_pt_tab(p, t)
     elif eos == 'ppv':
         return ppv_eos.get_u_pt_tab(p, t)
     elif eos == 'ppv2':
