@@ -5,82 +5,38 @@ from astropy.constants import k_B
 from astropy.constants import u as amu
 from astropy import units as u
 
-from eos import ideal_eos
+# from eos import ideal_eos
+from eos import ice_aneos_eos as ice
 
-ideal_z = ideal_eos.IdealEOS(m=18) # ideal EOS for water
+# ideal_z = ideal_eos.IdealEOS(m=18) # ideal EOS for water
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 
-rhot_data = np.load('eos/mazevet/mazevet_water_2021_rhot.npz')
-pt_data = np.load('eos/mazevet/mazevet_water_2021_pt.npz')
-
-# rho, T basis
-logrhovals_rhot = rhot_data['logrhovals'] # log g/cm^3
-logtvals_rhot = rhot_data['logtvals'] # log K
-pvals_grid_rhot = rhot_data['pvals'] # in dyn/cm2
-s_grid_rhot = rhot_data['svals'] # in erg/g/K
-u_grid_rhot = rhot_data['uvals'] # in erg/g
+# rhot_data = np.load('eos/mazevet/mazevet_water_2021_rhot.npz')
+pt_data = np.load('eos/mazevet/mazevet_aneos_pt.npz')
 
 # P, T basis
 logpvals_pt = pt_data['logpvals'] # log g/cm^3
 logtvals_pt = pt_data['logtvals'] # log K
-logrho_grid_pt = pt_data['logrhovals'] # in dyn/cm2
-s_grid_pt = pt_data['svals'] # in erg/g/K
-u_grid_pt = pt_data['uvals'] # in erg/g
+logrho_grid_pt = pt_data['logrho_pt'] # in dyn/cm2
+s_grid_pt = pt_data['s_pt'] # in erg/g/K
+logu_grid_pt = pt_data['logu_pt'] # in erg/g
 
 # INTERPOLATION FUNCTIONS
 
-s_rgi_rhot = RGI((logtvals_rhot, logrhovals_rhot),  s_grid_rhot, method='linear', \
+rho_rgi_pt = RGI((logtvals_pt, logpvals_pt), logrho_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
-
-p_rgi_rhot = RGI((logtvals_rhot, logrhovals_rhot), pvals_grid_rhot, method='linear', \
+s_rgi_pt = RGI((logtvals_pt, logpvals_pt), s_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
-
-u_rgi_rhot = RGI((logtvals_rhot, logrhovals_rhot), u_grid_rhot, method='linear', \
-            bounds_error=False, fill_value=None)
-
-rho_rgi_pt = RGI((logpvals_pt, logtvals_pt), logrho_grid_pt, method='linear', \
-            bounds_error=False, fill_value=None)
-s_rgi_pt = RGI((logpvals_pt, logtvals_pt), s_grid_pt, method='linear', \
-            bounds_error=False, fill_value=None)
-u_rgi_pt = RGI((logpvals_pt, logtvals_pt), u_grid_pt, method='linear', \
+logu_rgi_pt = RGI((logtvals_pt, logpvals_pt), logu_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
 
 # TABLE FUNCTIONS
 
-def get_p_rhot_tab(_lgrho, _lgt): # returns in dyn/cm^2
-    args = (_lgt, _lgrho)
-    v_args = [np.atleast_1d(arg) for arg in args]
-    pts = np.column_stack(v_args)
-    result = p_rgi_rhot(pts)
-    if all(np.isscalar(arg) for arg in args):
-        return result.item()
-    else:
-        return result
-
-def get_s_rhot_tab(_lgrho, _lgt): # returns in erg/g/K
-    args = (_lgt, _lgrho)
-    v_args = [np.atleast_1d(arg) for arg in args]
-    pts = np.column_stack(v_args)
-    result = s_rgi_rhot(pts)
-    if all(np.isscalar(arg) for arg in args):
-        return result.item()
-    else:
-        return result
-def get_u_rhot_tab(_lgrho, _lgt): # returns in erg/g
-    args = (_lgt, _lgrho)
-    v_args = [np.atleast_1d(arg) for arg in args]
-    pts = np.column_stack(v_args)
-    result = u_rgi_rhot(pts)
-    if all(np.isscalar(arg) for arg in args):
-        return result.item()
-    else:
-        return result
-
 def get_logrho_pt_tab(_lgp, _lgt): 
-    args = (_lgp, _lgt)
+    args = (_lgt, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = rho_rgi_pt(pts)
@@ -90,7 +46,7 @@ def get_logrho_pt_tab(_lgp, _lgt):
         return result
 
 def get_s_pt_tab(_lgp, _lgt): # returns in erg/g/K
-    args = (_lgp, _lgt)
+    args = (_lgt, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = s_rgi_pt(pts)
@@ -99,11 +55,11 @@ def get_s_pt_tab(_lgp, _lgt): # returns in erg/g/K
     else:
         return result
 
-def get_u_pt_tab(_lgp, _lgt): # returns in erg/g
-    args = (_lgp, _lgt)
+def get_logu_pt_tab(_lgp, _lgt): # returns in erg/g
+    args = (_lgt, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = u_rgi_pt(pts)
+    result = logu_rgi_pt(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
@@ -111,7 +67,7 @@ def get_u_pt_tab(_lgp, _lgt): # returns in erg/g
 
 # INVERSION FUNCTION
 
-def get_logrho_pt_inv(_lgp, _lgt, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+def get_logp_rhot_inv(_lgrho, _lgt, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
     """
     Compute the pressure given density, temperature, helium abundance, and metallicity.
@@ -126,25 +82,25 @@ def get_logrho_pt_inv(_lgp, _lgt, ideal_guess=True, arr_guess=None, method='newt
         ndarray: Computed temperature values.
     """
 
-    _lgp = np.atleast_1d(_lgp)
+    _lgrho = np.atleast_1d(_lgrho)
     _lgt = np.atleast_1d(_lgt)
 
     #_y = _y if self.y_prime else _y / (1 - _z)
     # Ensure inputs are numpy arrays and broadcasted to the same shape
-    _lgp, _lgt = np.broadcast_arrays(_lgp, _lgt)
+    _lgrho, _lgt = np.broadcast_arrays(_lgrho, _lgt)
 
     if ideal_guess:
-        guess = ideal_z.get_rho_pt(_lgp, _lgt, 0)
+        guess = ideal_water.get_p_rhot(_lgrho, _lgt, 0)
     else:
         if arr_guess is None:
             raise ValueError("logt_guess must be provided when ideal_guess is False.")
         guess = arr_guess
    # Define a function to compute root and capture convergence
-    def root_func(lgp_i, lgt_i, guess_i):
-        def err(_lgrho):
+    def root_func(lgrho_i, lgt_i, guess_i):
+        def err(_lgp):
             # Error function for logt(S, logp)
-            logp_test = get_p_rhot(_lgrho, lgt_i)
-            return (logp_test/10**lgp_i) - 1
+            logrho_test = ice.get_logrho_pt_tab(_lgp, lgt_i)
+            return (logrho_test/lgrho_i) - 1
 
         if method == 'root':
             sol = root(err, guess_i, tol=1e-8)
@@ -235,6 +191,6 @@ def get_logrho_pt_inv(_lgp, _lgt, ideal_guess=True, arr_guess=None, method='newt
     vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
 
     # Apply the vectorized function
-    density, converged = vectorized_root_func(_lgp, _lgt, guess)
+    density, converged = vectorized_root_func(_lgrho, _lgt, guess)
 
     return density, converged

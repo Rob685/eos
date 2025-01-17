@@ -36,7 +36,7 @@ ideal_water = ideal_eos.IdealEOS(m=18) # default for ideal eos is water for now
 def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166, z_eos1='aqua', z_eos2='ppv', z_eos3='iron'):
     if eos == 'aqua':
         return aqua_eos.get_rho_pt_tab(p, t)
-    elif eos == 'mlcp':
+    elif eos == 'aneos_mlcp':
         return mazevet_eos.get_logrho_pt_tab(p, t)
     elif eos == 'ice_aneos':
         return ice_aneos_eos.get_logrho_pt_tab(p, t)
@@ -60,7 +60,7 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166, z_eos1='aqua', z_eos2='pp
 def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_s_pt_tab(p, t)
-    elif eos == 'mlcp':
+    elif eos == 'aneos_mlcp':
         return mazevet_eos.get_s_pt_tab(p, t)
     elif eos == 'ice_aneos':
         return ice_aneos_eos.get_s_pt_tab(p, t)
@@ -84,8 +84,8 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
 def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_u_pt_tab(p, t)
-    elif eos == 'mlcp':
-        return mazevet_eos.get_u_pt_tab(p, t) # NOT LOG BECAUSE SOMETIMES IT IS NEGATIVE!
+    elif eos == 'aneos_mlcp':
+        return mazevet_eos.get_logu_pt_tab(p, t) # NOT LOG BECAUSE SOMETIMES IT IS NEGATIVE!
     elif eos == 'ice_aneos':
         return ice_aneos_eos.get_logu_pt_tab(p, t)
     elif eos == 'ppv':
