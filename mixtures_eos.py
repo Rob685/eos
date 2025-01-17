@@ -11,6 +11,7 @@ import pdb
 from eos import smooth
 
 """
+    ROB: THIS HAS BEEN DEPRICATED. USE eos_class.py INSTEAD.
     This file provides access to H-He and H-He-Z mixtures.
     The mixtures are calculated via the volume addition law.
     For convenience, please use the _tab functions insteaad of the inversion functions.
