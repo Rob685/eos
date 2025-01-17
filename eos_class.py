@@ -182,8 +182,8 @@ class mixtures(hhe):
                 self.pt_data = np.load('eos/{}/{}_{}_pt_compressed.npz'.format(hhe_eos, hhe_eos, z_eos))
                 self.rhot_data = np.load('eos/{}/{}_{}_rhot.npz'.format(hhe_eos, hhe_eos, z_eos))
                 self.sp_data = np.load('eos/{}/{}_{}_sp.npz'.format(hhe_eos, hhe_eos, z_eos))
-                # self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
-                # self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos))
+                self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, z_eos))
         
             # 1-D independent grids (P, T)
             self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
@@ -214,22 +214,22 @@ class mixtures(hhe):
             self.logp_rhot_tab = self.rhot_data['logp_rhot']
 
             # # 1-D independent grids (rho, P)
-            # self.logpvals_rhop = self.rhop_data['logpvals']
-            # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
-            # self.yvals_rhop = self.rhop_data['yvals']
-            # self.zvals_rhop = self.rhop_data['zvals']
-            # # 4-D dependent grids (rho, P)
-            # self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
-            # self.logt_rhop_tab = self.rhop_data['logt_rhop']
+            self.logpvals_rhop = self.rhop_data['logpvals']
+            self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+            self.yvals_rhop = self.rhop_data['yvals']
+            self.zvals_rhop = self.rhop_data['zvals']
+            # 4-D dependent grids (rho, P)
+            self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
+            self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
-            # # 1-D independent grids (S, rho)
-            # self.svals_srho = self.srho_data['s_vals'] # kb/baryon
-            # self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
-            # self.yvals_srho = self.srho_data['yvals']
-            # self.zvals_srho = self.srho_data['zvals']
-            # # 4-D dependent grids (S, rho)
-            # self.logp_srho_tab = self.srho_data['logp_srho']
-            # self.logt_srho_tab = self.srho_data['logt_srho']
+            # 1-D independent grids (S, rho)
+            self.svals_srho = self.srho_data['s_vals'] # kb/baryon
+            self.logrhovals_srho = self.srho_data['logrhovals'] # log10 g/cc -- rho, P table range
+            self.yvals_srho = self.srho_data['yvals']
+            self.zvals_srho = self.srho_data['zvals']
+            # 4-D dependent grids (S, rho)
+            self.logp_srho_tab = self.srho_data['logp_srho']
+            self.logt_srho_tab = self.srho_data['logt_srho']
 
             # RGI interpolation functions
             rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
