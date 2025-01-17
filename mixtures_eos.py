@@ -10,6 +10,7 @@ from eos import ideal_eos, metals_eos, cms_eos, cd_eos, mls_eos, mh13_eos, scvh_
 import pdb
 from eos import smooth
 
+raise Warning('This file has been depricated. Use eos_class.py instead.')
 """
     ROB: THIS HAS BEEN DEPRICATED. USE eos_class.py INSTEAD.
     This file provides access to H-He and H-He-Z mixtures.
