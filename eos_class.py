@@ -154,13 +154,32 @@ class hhe:
 
 
 class mixtures(hhe):
-    def __init__(self, hhe_eos, z_eos, hg=True, y_prime=False, interp_method='linear', new_z_mix=False):
+    def __init__(self, hhe_eos, 
+                    z_eos, 
+                    zmix_eos1 = 'ice_aneos', 
+                    zmix_eos2 = 'ppv2', 
+                    zmix_eos3 = 'iron',
+                    f_ppv = 0.5,
+                    f_fe = 0.0,
+                    hg=True, 
+                    y_prime=False, 
+                    interp_method='linear', 
+                    new_z_mix=False
+                    ):
 
         super().__init__(hhe_eos=hhe_eos)
         
         self.y_prime = y_prime
         self.hg = hg
         self.z_eos = z_eos
+
+        if self.z_eos == 'mixture':
+            self.zmix_eos1 = zmix_eos1
+            self.zmix_eos2 = zmix_eos2
+            self.zmix_eos3 = zmix_eos3
+            self.f_ppv = f_ppv
+            self.f_fe = f_fe
+
         self.interp_method = interp_method
 
         if not new_z_mix:
@@ -324,6 +343,8 @@ class mixtures(hhe):
                 return 100.3887
             elif z_eos == 'iron':
                 return 55.845
+            elif z_eos == 'mixture':
+                return 18.015 * (1 - self.f_ppv) + 100.3887 * self.f_ppv# + 55.845
             else:
                 raise ValueError('Only water (aqua or mazevet+19 (mlcp)), ppv, and iron supported for now.')
 
@@ -338,7 +359,12 @@ class mixtures(hhe):
 
         s_x = 10 ** self.get_s_h(_lgp, _lgt)
         s_y = 10 ** self.get_s_he(_lgp, _lgt)
-        s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+        if self.z_eos == 'mixture':
+            s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe, 
+                                            z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
+        else:
+            s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
         mz = get_mz(self.z_eos)
         smix_xyz_ideal = self.get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
@@ -387,7 +413,13 @@ class mixtures(hhe):
 
         rho_h = 10 ** self.get_logrho_h(_lgp, _lgt)
         rho_he = 10 ** self.get_logrho_he(_lgp, _lgt)
-        rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
+
+        if self.z_eos == 'mixture':
+            rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe, 
+                                            z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
+                                        
+        else:
+            rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
         mixture_density = (1 - _y_prime) * (1 - _z) / rho_h + _y_prime * (1 - _z) / rho_he + vmix * (1 - _z) + _z / rho_z
 
@@ -417,7 +449,11 @@ class mixtures(hhe):
 
         u_h = 10 ** self.get_logu_h(_lgp, _lgt)
         u_he = 10 ** self.get_logu_he(_lgp, _lgt)
-        u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
+        if self.z_eos == 'mixture':
+            u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe, 
+                                            z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
+        else:
+            u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
         mixture_energy = (
             u_h * (1 - _y_prime) * (1 - _z)

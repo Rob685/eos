@@ -57,7 +57,7 @@ def get_rho_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166, z_eos1='aqua', z_eos2='pp
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
-def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
+def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166, z_eos1='aqua', z_eos2='ppv', z_eos3='iron'):
     if eos == 'aqua':
         return aqua_eos.get_s_pt_tab(p, t)
     elif eos == 'aneos_mlcp':
@@ -77,11 +77,11 @@ def get_s_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     elif eos == 'ideal':
         return ideal_water.get_s_pt(p, t, 0)/erg_to_kbbar
     elif eos == 'mixture':
-        return zmix_eos.get_s_pt_tab(p, t, f_ppv, f_fe)
+        return zmix_eos.get_s_pt_tab(p, t, f_ppv, f_fe, z_eos1=z_eos1, z_eos2=z_eos2, z_eos3=z_eos3)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
-def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
+def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166, z_eos1='aqua', z_eos2='ppv', z_eos3='iron'):
     if eos == 'aqua':
         return aqua_eos.get_u_pt_tab(p, t)
     elif eos == 'aneos_mlcp':
@@ -101,7 +101,7 @@ def get_u_pt_tab(p, t, eos, f_ppv=0.333, f_fe=0.166):
     elif eos == 'ideal':
         return ideal_water.get_u_pt(p, t)
     elif eos == 'mixture':
-        return zmix_eos.get_u_pt_tab(p, t, f_ppv, f_fe)
+        return zmix_eos.get_u_pt_tab(p, t, f_ppv, f_fe, z_eos1=z_eos1, z_eos2=z_eos2, z_eos3=z_eos3)
     else:
         raise Exception('EOS must be aqua, ppv, serpentine, iron, or ideal')
 
