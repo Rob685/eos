@@ -1575,7 +1575,7 @@ class mixtures(hhe):
         return entropies / erg_to_kbbar, converged
 
     # adaptive delta function for z and y derivatives
-    def adaptive_dx(self, x_profile, initial_dx=0.1, tolerance=1e-2):
+    def adaptive_dx(self, x_profile, initial_dx=0.025, tolerance=1e-2):
         # Initialize dx as an array with an initial value
         dx = np.full_like(x_profile, initial_dx, dtype=float)
 
@@ -2195,6 +2195,26 @@ class mixtures(hhe):
             return self.get_logp_logt_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, 
                                         arr_guess=arr_guess, method=method)[-1]
 
+    # obtains adiabatic entropy profile based on a P, T, Y, and Z profile:
+    def err_grad(self, s_trial, _lgp, _y, _z):
+        grad_a = self.get_nabla_ad(s_trial, _lgp, _y, _z)
+        logt = self.get_logt_sp_tab(s_trial, _lgp, _y, _z)
+        grad_prof = np.gradient(logt)/np.gradient(_lgp)
+        return (grad_a/grad_prof) - 1
+
+    def get_s_ad(self, _lgp, _lgt, _y, _z):
+        """This function returns the entropy value
+        required for nabla - nabla_a = 0 at
+        pressure and temperature profiles"""
+
+        # if y_tot:
+        #     _y /= (1 - _z)
+
+        guess = self.get_s_pt_tab(_lgp, _lgt, _y, _z) * const.erg_to_kbbar
+
+        sol = root(self.err_grad, guess, tol=1e-8, method='hybr', args=(_lgp, _y, _z))
+        return sol.x
+
     ################################################ Derivatives ################################################
 
     ########### Convection Derivatives ###########
@@ -2527,15 +2547,17 @@ class multifraction_mixtures(mixtures):
     """
     
     def __init__(self,
+                 # to be passed to the parent
                  hhe_eos='cd',
+                 z_eos = 'ice_aneos',
                  # For multiple fractions:
-                 z_eos_list=None,
-                 f_ppv_vals=None,
+                 z_eos_list=None, # user defined list of H-He-ice/rock mixture eoses to be loaded and concatenated later
+                 f_ppv_vals=None, # user defined list of f_ppv values corresponding to each eos in z_eos_list
                  # The following will be passed to the parent:
                  zmix_eos1='ice_aneos',
                  zmix_eos2='ppv2',
                  zmix_eos3='iron',
-                 f_ppv=0.5,
+                 f_ppv=0.5, 
                  f_fe=0.0,
                  hg=True,
                  y_prime=False,
@@ -2545,7 +2567,7 @@ class multifraction_mixtures(mixtures):
         # We'll call the parent constructor with z_eos='mixture',
         # so that we preserve any "mixture logic" in the parent (if needed).
         super().__init__(hhe_eos=hhe_eos,
-                         z_eos='mixture',
+                         z_eos=z_eos,
                          zmix_eos1=zmix_eos1,
                          zmix_eos2=zmix_eos2,
                          zmix_eos3=zmix_eos3,
@@ -2588,7 +2610,7 @@ class multifraction_mixtures(mixtures):
         table_defs = {
             'pt': {
                 'coords_names': ['logpvals', 'logtvals', 'yvals', 'zvals'],
-                'data_names':   ['s_pt', 'logrho_pt']
+                'data_names':   ['s_pt', 'logrho_pt', 'logu_pt']
             },
             'rhot': {
                 'coords_names': ['logrhovals', 'logtvals', 'yvals', 'zvals'],
@@ -2614,6 +2636,7 @@ class multifraction_mixtures(mixtures):
             # We'll collect 4D arrays for each fraction
             data0_list = []
             data1_list = []
+            data2_list = []
             
             # 2A. Load the first file
             first_fname = f'eos/{self.hhe_eos}/{self.hhe_eos}_{self.z_eos_list[0]}_{table_type}.npz'
@@ -2625,6 +2648,9 @@ class multifraction_mixtures(mixtures):
             
             data0_list.append(dep0_0)
             data1_list.append(dep1_0)
+            if table_type == 'pt':
+                dep2_0 = arrays_0[data_names[2]]
+                data2_list.append(dep2_0)
             
             # 2B. Load subsequent files
             for i in range(1, len(self.z_eos_list)):
@@ -2635,6 +2661,9 @@ class multifraction_mixtures(mixtures):
                 d1_i = arr_i[data_names[1]]
                 data0_list.append(d0_i)
                 data1_list.append(d1_i)
+                if table_type == 'pt':
+                    d2_i = arr_i[data_names[2]]
+                    data2_list.append(d2_i)
             
             # 2C. Stack along last axis => shape: (n_x1, n_x2, n_x3, n_x4, n_f)
             data0_5d = np.stack(data0_list, axis=-1)
@@ -2644,13 +2673,13 @@ class multifraction_mixtures(mixtures):
             coords_5d = tuple(coords_4d) + (self.f_ppv_vals,)
             
             # 2E. Build interpolators
-            interp_0 = RegularGridInterpolator(
+            interp_0 = RGI(
                 coords_5d, data0_5d,
                 method=self.interp_method,
                 bounds_error=False,
                 fill_value=None
             )
-            interp_1 = RegularGridInterpolator(
+            interp_1 = RGI(
                 coords_5d, data1_5d,
                 method=self.interp_method,
                 bounds_error=False,
@@ -2658,47 +2687,340 @@ class multifraction_mixtures(mixtures):
             )
             
             # 2F. Store in self.data_combined
-            self.data_combined[table_type] = {
-                'coords':   coords_5d,
-                'data0_5d': data0_5d,
-                'data1_5d': data1_5d,
-                'interp_0': interp_0,
-                'interp_1': interp_1
-            }
+            if table_type == 'pt':
+                data2_5d = np.stack(data2_list, axis=-1)
+
+                interp_2 = RGI(
+                    coords_5d, data2_5d,
+                    method=self.interp_method,
+                    bounds_error=False,
+                    fill_value=None
+                )
+
+                self.data_combined[table_type] = {
+                    'coords':   coords_5d,
+                    'data0_5d': data0_5d,
+                    'data1_5d': data1_5d,
+                    'interp_0': interp_0,
+                    'interp_1': interp_1,
+                    'data2_5d': data2_5d,
+                    'interp_2': interp_2
+                }
+
+            else:
+                self.data_combined[table_type] = {
+                    'coords':   coords_5d,
+                    'data0_5d': data0_5d,
+                    'data1_5d': data1_5d,
+                    'interp_0': interp_0,
+                    'interp_1': interp_1
+                }
 
     ############################################################################
     # 3. Define “getter” methods to query each table type
     #
     #    Each method calls the corresponding interpolator in self.data_combined
     #    with the correct ordering of arguments:
-    #      (x1, x2, x3, x4, f_ppv)
-    #    You can rename these or add more as needed.
+    #      (x1, x2, y, z, f_ppv)
     ############################################################################
     
     # --- pt: s_pt, logrho_pt
     def get_s_pt(self, _lgp, _lgt, _y, _z, _frock):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['pt']['interp_0'](( _lgp, _lgt, _y, _z, _frock))
 
     def get_logrho_pt(self, _lgp, _lgt, _y, _z, _frock):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['pt']['interp_1'](( _lgp, _lgt, _y, _z, _frock))
 
+    def get_logu_pt(self, _lgp, _lgt, _y, _z, _frock):
+        _y = _y if self.y_prime else _y / (1 - _z)
+        return self.data_combined['pt']['interp_2'](( _lgp, _lgt, _y, _z, _frock))
+
     # --- rhot: s_rhot, logp_rhot
-    def get_s_rhot_tab(self, _lgrho, _lgt, _y, _z, _frock):
+    def get_s_rhot(self, _lgrho, _lgt, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['rhot']['interp_0']((_lgrho, _lgt, _y, _z, _frock))
     
-    def get_logp_rhot(self, _lgrho, _lgt, _y, _z, _frock):
+    def get_logp_rhot(self, _lgrho, _lgt, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['rhot']['interp_1']((_lgrho, _lgt, _y, _z, _frock))
 
     # --- sp: logt_sp, logrho_sp
-    def get_logt_sp(self, _s, _lgp, _y, _z, _frock):
+    def get_logt_sp(self, _s, _lgp, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['sp']['interp_0']((_s, _lgp, _y, _z, _frock))
 
-    def get_logrho_sp(self, _s, _lgp, _y, _z, _frock):
+    def get_logrho_sp(self, _s, _lgp, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['sp']['interp_1']((_s, _lgp, _y, _z, _frock))
 
     # --- srho: logp_srho, logt_srho
-    def get_logp_srho(self, _s, _lgrho, _y, _z, _frock):
+    def get_logp_srho(self, _s, _lgrho, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['srho']['interp_0']((_s, _lgrho, _y, _z, _frock))
 
-    def get_logt_srho(self, _s, _lgrho, _y, _z, _frock):
+    def get_logt_srho(self, _s, _lgrho, _y, _z, _frock, 
+                        ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        _y = _y if self.y_prime else _y / (1 - _z)
         return self.data_combined['srho']['interp_1']((_s, _lgrho, _y, _z, _frock))
+
+    def get_logu_srho(self, _s, _lgrho, _y, _z, _frock,
+                        ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
+
+        logp = self.get_logp_srho(_s, _lgrho, _y, _z, _frock), 
+        logt = self.get_logt_srho(_s, _lgrho, _y, _z, _frock)
+
+        return self.get_logu_pt(logp, logt, _y, _z, _frock)
+
+    ################################################ Derivatives ################################################
+
+    ########### Convection Derivatives ###########
+
+    # Specific heat at constant pressure
+    def get_cp_sp(self, _s, _lgp, _y, _z, _frock, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        ds = _s*0.1 if ds is None else ds
+
+        lgt1 = self.get_logt_sp(_s - ds, _lgp, _y, _z, _frock, **kwargs)
+        lgt2 = self.get_logt_sp(_s + ds, _lgp, _y, _z, _frock, **kwargs)
+
+        return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
+
+    def get_cp_pt(self, _lgp, _lgt, _y, _z, _frock, dt=0.1):
+
+        s1 = self.get_s_pt(_lgp, _lgt - dt, _y, _z, _frock)
+        s2 = self.get_s_pt(_lgp, _lgt + dt, _y, _z, _frock)
+
+        return (s2 - s1) / (2 * dt * log10_to_loge)
+
+    # Specific heat at constant volume
+    def get_cv_srho(self, _s, _lgrho, _y, _z, _frock, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        ds = _s*0.1 if ds is None else ds
+
+        lgt1 = self.get_logt_srho(_s - ds, _lgrho, _y, _z, _frock, **kwargs)
+        lgt2 = self.get_logt_srho(_s + ds, _lgrho, _y, _z, _frock, **kwargs)
+
+        return (2 * ds / erg_to_kbbar) / ((lgt2 - lgt1) * log10_to_loge)
+
+    def get_cv_rhot(self, _lgrho, _lgt, _y, _z, _frock, dt=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        s1 = self.get_s_rhot(_lgrho, _lgt - dt, _y, _z, _frock, **kwargs)
+        s2 = self.get_s_rhot(_lgrho, _lgt + dt, _y, _z, _frock, **kwargs)
+
+        return (s2 - s1) / (2 * dt * log10_to_loge)
+
+    # Adiabatic temperature gradient
+    def get_nabla_ad(self, _s, _lgp, _y, _z, _frock, dp=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        lgt1 = self.get_logt_sp(_s, _lgp - dp, _y, _z, _frock, **kwargs)
+        lgt2 = self.get_logt_sp(_s, _lgp + dp, _y, _z, _frock, **kwargs)
+        return (lgt2 - lgt1)/(2 * dp)
+
+    # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
+    def get_dsdy_pt(self, _lgp, _lgt, _y, _z, _frock, dy=0.1):
+        dy = _y*0.1 if dy is None else dy
+        s1 = self.get_s_pt(_lgp, _lgt, _y - dy, _z, _frock)
+        s2 = self.get_s_pt(_lgp, _lgt, _y + dy, _z, _frock)
+        return (s2 - s1)/(2 * dy)
+
+    def get_dsdz_pt(self, _lgp, _lgt, _y, _z, _frock, dz=0.1):
+        dz = _z*0.1 if dz is None else dz
+        s1 = self.get_s_pt(_lgp, _lgt, _y, _z - dz,  _frock)
+        s2 = self.get_s_pt(_lgp, _lgt, _y, _z + dz,  _frock)
+        return (s2 - s1)/(2 * dz)
+
+    def get_gamma1(self, _s, _lgp, _y, _z, _frock, dp=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        # dlnP/dlnrho_S, Y, Z = dlogP/dlogrho_S, Y, Z
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        lgrho1 = self.get_logrho_sp(_s, _lgp - dp, _y, _z, _frock, **kwargs)
+        lgrho2 = self.get_logrho_sp(_s, _lgp + dp, _y, _z, _frock, **kwargs)
+        return (2*dp)/(lgrho2 - lgrho1)
+
+    # Brunt coefficient when computing in drho space
+    def get_dlogrho_ds_py(self, _s, _lgp, _y, _z, _frock, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        lgrho2 = self.get_logrho_sp(_s + ds, _lgp, _y, _z, _frock, **kwargs)
+        lgrho1 = self.get_logrho_sp(_s - ds, _lgp, _y, _z, _frock, **kwargs)
+        return ((lgrho2 - lgrho1) * log10_to_loge) / (2 * ds / erg_to_kbbar)
+
+    # Chi_T/Chi_rho
+    # aka "delta" in MLT flux
+    def get_dlogrho_dlogt_py(self, _lgp, _lgt, _y, _z, _frock, dt=1e-2):
+        
+        lgrho1 = self.get_logrho_pt(_lgp, _lgt - dt, _y, _z, _frock)
+        lgrho2 = self.get_logrho_pt(_lgp, _lgt + dt, _y, _z, _frock)
+
+        return (lgrho2 - lgrho1)/(2 * dt)
+
+    def get_dlogp_dy_rhot(self, _lgrho, _lgt,  _y, _z, _frock, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        # Chi_Y
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        lgp1 = self.get_logp_rhot(_lgrho, _lgt, _y - dy, _z, _frock, **kwargs)
+        lgp2 = self.get_logp_rhot(_lgrho, _lgt, _y + dy, _z, _frock, **kwargs)
+
+        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dy)
+
+    def get_dlogp_dz_rhot(self, _lgrho, _lgt,  _y, _z, _frock, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        # Chi_Z
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        lgp1 = self.get_logp_rhot(_lgrho, _lgt, _y, _z - dz, _frock, **kwargs)
+        lgp2 = self.get_logp_rhot(_lgrho, _lgt, _y, _z + dz, _frock, **kwargs)
+
+        return ((lgp2 - lgp1) * log10_to_loge)/(2 * dz)
+
+    def get_dlogp_dlogt_rhoy_rhot(self, _lgrho, _lgt,  _y, _z, _frock, dt=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        # Chi_T
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        lgp1 = self.get_logp_rhot(_lgrho, _lgt - dt, _y, _z, _frock, **kwargs)
+        lgp2 = self.get_logp_rhot(_lgrho, _lgt + dt, _y, _z, _frock, **kwargs)
+
+        return (lgp2 - lgp1)/(2 * dt)
+
+    # Chi_Y/Chi_T
+    def get_dlogt_dy_rhop_rhot(self, _lgrho, _lgt,  _y, _z, _frock, dy=0.1, dt=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        Chi_Y = self.get_dlogp_dy_rhot(_lgrho, _lgt,  _y, _z, _frock, dy=dy, **kwargs)
+        Chi_T = self.get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, _frock, dt=dt, **kwargs)
+
+        return Chi_Y/Chi_T
+
+    # Chi_Z/Chi_T
+    def get_dlogt_dz_rhop_rhot(self, _lgrho, _lgt,  _y, _z, _frock, dz=0.1, dt=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        Chi_Z = self.get_dlogp_dz_rhot(_lgrho, _lgt,  _y, _z, _frock, dz=dz, **kwargs)
+        Chi_T = self.get_dlogp_dlogt_rhoy_rhot(_lgrho, _lgt,  _y, _z, _frock, dt=dt, **kwargs)
+
+        return Chi_Z/Chi_T
+
+    #### Triple Product Rule Derivatives ###*
+
+
+    def get_dpds_rhoy_srho(self, _s, _lgrho, _y, _z, _frock, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        ds = _s*0.1 if ds is None else ds
+        p1 = 10**self.get_logp_srho(_s - ds, _lgrho, _y, _z, _frock, **kwargs)
+        p2 = 10**self.get_logp_srho(_s + ds, _lgrho, _y, _z, _frock, **kwargs)
+
+        return (p2 - p1) / (2 * ds / erg_to_kbbar)
+
+    def get_dpdy_srho(self, _s, _lgrho, _y, _z, _frock, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dy = _y*0.1 if dy is None else dy
+        p1 = 10**self.get_logp_srho(_s, _lgrho, _y - dy, _z, _frock, **kwargs)
+        p2 = 10**self.get_logp_srho(_s, _lgrho, _y + dy, _z, _frock, **kwargs)
+
+        return (p2 - p1) / (2 * dy)
+
+
+    def get_dpdz_srho(self, _s, _lgrho, _y, _z, _frock, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dz = _z*0.1 if dz is None else dz
+        p1 = 10**self.get_logp_srho(_s, _lgrho, _y, _z - dz, _frock, **kwargs)
+        p2 = 10**self.get_logp_srho(_s, _lgrho, _y, _z + dz, _frock, **kwargs)
+
+        return (p2 - p1) / (2 * dz)
+
+    ########### Triple product rule dsdx_rhop version ###########
+
+    # DS/DX|_rho, P - DERIVATIVES NECESSARY FOR THE LEDOUX CONDITION
+    def get_dsdy_rhop_srho(self, _s, _lgrho, _y, _z, _frock, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        #dPdS|{rho, Y, Z}:
+        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, _frock, ds=ds, **kwargs)
+        #dPdY|{S, rho, Y}:
+        dpdy_srho = self.get_dpdy_srho(_s, _lgrho, _y, _z, _frock, dy=dy, **kwargs)
+
+        #dSdY|{rho, P, Z} = -dPdY|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdy_rhopy = -dpdy_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdy_rhopy
+
+
+    def get_dsdz_rhop_srho(self, _s, _lgrho, _y, _z, _frock, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        #dPdS|{rho, Y, Z}:
+        dpds_rhoy_srho = self.get_dpds_rhoy_srho(_s, _lgrho, _y, _z, _frock, ds=ds, **kwargs)
+        #dPdY|{S, rho, Y}:
+        dpdz_srho = self.get_dpdz_srho(_s, _lgrho, _y, _z, _frock, dz=dz, **kwargs)
+
+        #dSdZ|{rho, P, Z} = -dPdZ|{S, rho, Y} / dPdS|{rho, Y, Z}
+        dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
+
+        return dsdz_rhopy
+
+
+    ########### Chemical Potential Terms ###########
+
+    def get_dudy_srho(self, _s, _lgrho, _y, _z, _frock, dy=0.1, ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_p_guess': arr_p_guess, 'arr_t_guess': arr_p_guess, 'method': method, 'tab':tab}
+        dy = _y*0.1 if dy is None else dy
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y - dy, _z, _frock, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y + dy, _z, _frock, **kwargs)
+
+        return (u2 - u1)/(2 * dy)
+
+    def get_dudz_srho(self, _s, _lgrho, _y, _z, _frock, dz=0.1, ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_p_guess': arr_p_guess, 'arr_t_guess': arr_p_guess, 'method': method, 'tab':tab}
+        dz = _z*0.1 if dz is None else dz
+        u1 = 10**self.get_logu_srho(_s, _lgrho, _y, _z - dz, _frock, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, _lgrho, _y, _z + dz, _frock, **kwargs)
+
+        return (u2 - u1)/(2 * dz)
+
+    ########### Conductive Flux Terms ###########
+
+    def get_dtdy_srho(self, _s, _lgrho, _y, _z, _frock, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        t1 = 10**self.get_logt_srho(_s, _lgrho, _y - dy, _z, _frock, **kwargs)
+        t2 = 10**self.get_logt_srho(_s, _lgrho, _y + dy, _z, _frock, **kwargs)
+
+        return (t2 - t1)/(2 * dy)
+
+    def get_dtdz_srho(self, _s, _lgrho, _y, _z, _frock, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        t1 = 10**self.get_logt_srho(_s, _lgrho, _y, _z - dz, _frock, **kwargs)
+        t2 = 10**self.get_logt_srho(_s, _lgrho, _y, _z + dz, _frock, **kwargs)
+
+        return (t2 - t1)/(2 * dz)
+
+    ########## Thermodynamic Consistency Test ###########
+
+    # du/ds_(rho, Y) = T 
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, _frock, ds=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        u1 = 10**self.get_logu_srho(_s - ds, _lgrho, _y, _z, _frock, **kwargs)
+        u2 = 10**self.get_logu_srho(_s + ds, _lgrho, _y, _z, _frock, **kwargs)
+
+        return (u2 - u1)/(2 * ds / erg_to_kbbar)
+
+    # -du/dV_(S, Y) = P 
+    def get_duds_rhoy_srho(self, _s, _lgrho, _y, _z, _frock, drho=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        R0 = 10 **_lgrho
+        R1 = R0*(1-drho)
+        R2 = R0*(1+drho)
+
+        u1 = 10**self.get_logu_srho(_s, np.log10(R1), _y, _z, _frock, **kwargs)
+        u2 = 10**self.get_logu_srho(_s, np.log10(R2), _y, _z, _frock, **kwargs)
+
+        return (u2 - u1)/((1/R1) - (1/R2))
+
+    ########## Atmospheric update derivative ###########
+
+    def get_dtds_sp(self, _s, _lgp, _y, _z, _frock, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        t1 = 10**self.get_logt_sp(_s - ds, _lgp, _y, _z, _frock, **kwargs)
+        t2 = 10**self.get_logt_sp(_s + ds, _lgp, _y, _z, _frock, **kwargs)
+
+        return (t2 - t1)/(2 * ds / erg_to_kbbar)
