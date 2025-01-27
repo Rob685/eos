@@ -156,7 +156,7 @@ class hhe:
 class mixtures(hhe):
     def __init__(self, hhe_eos, 
                     z_eos, 
-                    zmix_eos1 = 'ice_aneos', 
+                    zmix_eos1 = 'aqua_mlcp', 
                     zmix_eos2 = 'ppv2', 
                     zmix_eos3 = 'iron',
                     f_ppv = 0.5,
@@ -337,7 +337,7 @@ class mixtures(hhe):
                 raise ValueError('Invalid mass fractions: X + Y + Z > 1.')
 
         def get_mz(z_eos):
-            if z_eos == 'aqua' or z_eos == 'aneos_mlcp' or z_eos == 'ice_aneos':
+            if z_eos == 'aqua' or z_eos == 'aneos_mlcp' or z_eos == 'ice_aneos' or z_eos == 'aqua_mlcp':
                 return 18.015
             elif z_eos == 'ppv' or z_eos == 'ppv2':
                 return 100.3887

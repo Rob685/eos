@@ -7,6 +7,8 @@ from astropy.constants import u as amu
 from scipy.interpolate import RegularGridInterpolator as RGI
 from scipy.optimize import root, root_scalar
 from eos import ideal_eos
+import warnings
+warnings.filterwarnings("ignore")
 
 """
     This file provides access to the AQUA table (Haldemann et al. 2020). 
@@ -35,10 +37,15 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 def aqua_reader(basis):
     if basis == 'pt':
         cols = ['press', 'temp', 'rho', 'grada', 's', 'u', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+        tab = np.loadtxt('%s/aqua/aqua_eos_%s_v1_0.dat' % (CURR_DIR, basis), skiprows=19)
     elif basis == 'rhot':
         cols = ['rho', 'temp', 'press', 'grada', 's', 'u', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+        tab = np.loadtxt('%s/aqua/aqua_eos_%s_v1_0.dat' % (CURR_DIR, basis), skiprows=21)
+    elif basis == 'rhou':
+        cols = ['rho', 'u', 'press', 'grada', 's', 'temp', 'c', 'mmw', 'x_ion', 'x_d', 'phase']
+        tab = np.loadtxt('%s/aqua/aqua_eos_%s_v1_0.dat' % (CURR_DIR, basis), skiprows=21)
 
-    tab = np.loadtxt('%s/aqua/aqua_eos_%s_v1_0.dat' % (CURR_DIR, basis))
+    
     tab_df = pd.DataFrame(tab, columns=cols)
 
     tab_df['logp'] = np.log10(tab_df['press']*Pa_to_dyn) # in dyn/cm2
@@ -55,7 +62,7 @@ def grid_data(df, basis):
     twoD = {}
     if basis == 'pt':
         shape = df['logp'].nunique(), -1
-    elif basis == 'rhot':
+    elif basis == 'rhot' or basis == 'rhou':
         shape = df['logrho'].nunique(), -1
 
     for i in df.keys():
@@ -130,6 +137,40 @@ def get_u_rhot_tab(lgrho, lgt):
     if np.isscalar(lgrho):
         return float(u_rgi_rhot(np.array([lgrho, lgt]).T))
     return u_rgi_rhot(np.array([lgrho, lgt]).T)
+
+# ### rho, U ###
+
+aqua_data_rhou = grid_data(aqua_reader('rhou'), basis='rhou')
+logrhovals_rhou = aqua_data_rhou['logrho'][:,0]
+loguvals_rhou = aqua_data_rhou['logu'][0]
+
+svals_rhou = aqua_data_rhou['s']
+logpvals_rhou = aqua_data_rhou['logp']
+logtvals_rhou = aqua_data_rhou['logt']
+
+s_rgi_rhou = RGI((logrhovals_rhou, loguvals_rhou), svals_rhou, method='linear', \
+            bounds_error=False, fill_value=None)
+
+p_rgi_rhou = RGI((logrhovals_rhou, loguvals_rhou), logpvals_rhou, method='linear', \
+            bounds_error=False, fill_value=None)
+
+t_rgi_rhou = RGI((logrhovals_rhou, loguvals_rhou), logtvals_rhou, method='linear', \
+            bounds_error=False, fill_value=None)
+
+def get_s_rhou_tab(lgrho, lgu):
+    if np.isscalar(lgrho):
+        return float(s_rgi_rhou(np.array([lgrho, lgu]).T))
+    return s_rgi_rhou(np.array([lgrho, lgu]).T)
+
+def get_p_rhou_tab(lgrho, lgu):
+    if np.isscalar(lgrho):
+        float(p_rgi_rhou(np.array([lgrho, lgu]).T))
+    return p_rgi_rhou(np.array([lgrho, lgu]).T)
+
+def get_t_rhou_tab(lgrho, lgu):
+    if np.isscalar(lgrho):
+        return float(t_rgi_rhou(np.array([lgrho, lgu]).T))
+    return t_rgi_rhou(np.array([lgrho, lgu]).T)
 
 ####### Inverted Functions #######
 
