@@ -1577,7 +1577,7 @@ class mixtures(hhe):
         return entropies / erg_to_kbbar, converged
 
     # adaptive delta function for z and y derivatives
-    def adaptive_dx(self, x_profile, initial_dx=0.025, tolerance=1e-2):
+    def adaptive_dx(self, x_profile, initial_dx=0.1, tolerance=1e-2):
         # Initialize dx as an array with an initial value
         dx = np.full_like(x_profile, initial_dx, dtype=float)
 
@@ -2556,7 +2556,7 @@ class multifraction_mixtures(mixtures):
     def __init__(self,
                  # to be passed to the parent
                  hhe_eos='cd',
-                 z_eos = 'aqua_mlcp',
+                 z_eos = 'aqua',
                  # For multiple fractions:
                  z_eos_list=None, # user defined list of H-He-ice/rock mixture eoses to be loaded and concatenated later
                  f_ppv_vals=None, # user defined list of f_ppv values corresponding to each eos in z_eos_list
@@ -2564,9 +2564,9 @@ class multifraction_mixtures(mixtures):
                  zmix_eos1='aqua_mlcp',
                  zmix_eos2='ppv2',
                  zmix_eos3='iron',
-                 f_ppv=0.5, 
+                 f_ppv=0.0, 
                  f_fe=0.0,
-                 hg=True,
+                 hg=False,
                  y_prime=False,
                  interp_method='linear',
                  new_z_mix=False):
@@ -2588,11 +2588,11 @@ class multifraction_mixtures(mixtures):
         # If user doesn't provide a list, use a default range of fractions:
         if z_eos_list is None:
             z_eos_list = [
-                'ice_rock_0.0',
-                'ice_rock_0.25',
-                'ice_rock_0.5',
-                'ice_rock_0.75',
-                'ice_rock_1.0'
+                '{}_{}_0.0'.format(zmix_eos1, zmix_eos2),
+                '{}_{}_0.25'.format(zmix_eos1, zmix_eos2),
+                '{}_{}_0.5'.format(zmix_eos1, zmix_eos2),
+                '{}_{}_0.75'.format(zmix_eos1, zmix_eos2),
+                '{}_{}_1.0'.format(zmix_eos1, zmix_eos2)
             ]
         if f_ppv_vals is None:
             f_ppv_vals = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
