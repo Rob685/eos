@@ -156,7 +156,7 @@ class hhe:
 class mixtures(hhe):
     def __init__(self, hhe_eos, 
                     z_eos, 
-                    zmix_eos1 = 'aqua_mlcp', 
+                    zmix_eos1 = 'aqua', 
                     zmix_eos2 = 'ppv2', 
                     zmix_eos3 = 'iron',
                     f_ppv = 0.0,
@@ -316,7 +316,7 @@ class mixtures(hhe):
 
     ####### Volume-Addition Law #######
 
-    def get_s_pt(self, _lgp, _lgt, _y_prime, _z):
+    def get_s_pt_val(self, _lgp, _lgt, _y_prime, _z):
         """
         This calculates the entropy for a metallicity mixture using the volume addition law.
         These terms contain the ideal entropy of mixing, so
@@ -379,7 +379,7 @@ class mixtures(hhe):
             + smix_xy_nonideal * (1 - _z)
         )
 
-    def get_logrho_pt(self, _lgp, _lgt, _y_prime, _z):
+    def get_logrho_pt_val(self, _lgp, _lgt, _y_prime, _z):
         """
         This function calculates the density of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -427,7 +427,7 @@ class mixtures(hhe):
 
         return np.log10(1 / mixture_density)
 
-    def get_logu_pt(self, _lgp, _lgt, _y_prime, _z):
+    def get_logu_pt_val(self, _lgp, _lgt, _y_prime, _z):
         """
         This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -2202,6 +2202,14 @@ class mixtures(hhe):
             return self.get_logp_logt_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, 
                                         arr_guess=arr_guess, method=method)[-1]
 
+#    P, T wrappers
+    def get_logrho_pt(self, _lgp, _lgt, _y, _z, _frock=0.0):
+        return self.get_logrho_pt_tab(_lgp, _lgt, _y, _z)
+    def get_s_pt(self, _lgp, _lgt, _y, _z, _frock=0.0):
+        return self.get_s_pt_tab(_lgp, _lgt, _y, _z)
+    def get_logu_pt(self, _lgp, _lgt, _y, _z, _frock=0.0):
+        return self.get_logu_pt_tab(_lgp, _lgt, _y, _z)
+
     # obtains adiabatic entropy profile based on a P, T, Y, and Z profile:
     def err_grad(self, s_trial, _lgp, _y, _z):
         grad_a = self.get_nabla_ad(s_trial, _lgp, _y, _z)
@@ -2553,50 +2561,64 @@ class multifraction_mixtures(mixtures):
         ...
     """
     
-    def __init__(self,
-                 # to be passed to the parent
-                 hhe_eos='cd',
-                 z_eos = 'aqua',
-                 # For multiple fractions:
-                 z_eos_list=None, # user defined list of H-He-ice/rock mixture eoses to be loaded and concatenated later
-                 f_ppv_vals=None, # user defined list of f_ppv values corresponding to each eos in z_eos_list
-                 # The following will be passed to the parent:
-                 zmix_eos1='aqua_mlcp',
-                 zmix_eos2='ppv2',
-                 zmix_eos3='iron',
-                 f_ppv=0.0, 
-                 f_fe=0.0,
-                 hg=False,
-                 y_prime=False,
-                 interp_method='linear',
-                 new_z_mix=False):
+    def __init__(self,    
+                 zmix_eos1,
+                 zmix_eos2,
+                 zmix_eos3,
+                 hhe_eos = 'cd',
+                 z_eos_list: list = None,
+                 f_ppv_vals: np.ndarray = None,
+                 f_ppv: float = 0.0,
+                 f_fe: float = 0.0,
+                 hg: bool = False,
+                 y_prime: bool = False,
+                 interp_method: str = 'linear',
+                 new_z_mix: bool = False):
+        """
+        Initialize the MultiFractionMixtures class.
+
+        Parameters:
+            hhe_eos (str): H-He EOS identifier.
+            z_eos (str): Z EOS identifier.
+            z_eos_list (list): List of H-He-ice/rock mixture EOSes.
+            f_ppv_vals (np.ndarray): Array of f_ppv values.
+            zmix_eos1 (str): First Z mixture EOS identifier.
+            zmix_eos2 (str): Second Z mixture EOS identifier.
+            zmix_eos3 (str): Third Z mixture EOS identifier.
+            f_ppv (float): Fraction of ppv.
+            f_fe (float): Fraction of Fe.
+            hg (bool): Flag for HG.
+            y_prime (bool): Flag for Y prime.
+            interp_method (str): Interpolation method.
+            new_z_mix (bool): Flag for new Z mix.
+        """
         
-        # We'll call the parent constructor with z_eos='mixture',
-        # so that we preserve any "mixture logic" in the parent (if needed).
-        super().__init__(hhe_eos=hhe_eos,
-                         z_eos=z_eos,
-                         zmix_eos1=zmix_eos1,
-                         zmix_eos2=zmix_eos2,
-                         zmix_eos3=zmix_eos3,
-                         f_ppv=f_ppv,
-                         f_fe=f_fe,
-                         hg=hg,
-                         y_prime=y_prime,
-                         interp_method=interp_method,
-                         new_z_mix=new_z_mix)
+        # super().__init__(hhe_eos=hhe_eos,
+        #                  z_eos=z_eos,
+        #                  zmix_eos1=zmix_eos1,
+        #                  zmix_eos2=zmix_eos2,
+        #                  zmix_eos3=zmix_eos3,
+        #                  f_ppv=f_ppv,
+        #                  f_fe=f_fe,
+        #                  hg=hg,
+        #                  y_prime=y_prime,
+        #                  interp_method=interp_method,
+        #                  new_z_mix=new_z_mix)
         
         # If user doesn't provide a list, use a default range of fractions:
         if z_eos_list is None:
             z_eos_list = [
-                '{}_{}_0.0'.format(zmix_eos1, zmix_eos2),
-                '{}_{}_0.25'.format(zmix_eos1, zmix_eos2),
-                '{}_{}_0.5'.format(zmix_eos1, zmix_eos2),
-                '{}_{}_0.75'.format(zmix_eos1, zmix_eos2),
-                '{}_{}_1.0'.format(zmix_eos1, zmix_eos2)
+                f'{zmix_eos1}_{zmix_eos2}_0.0',
+                f'{zmix_eos1}_{zmix_eos2}_0.25',
+                f'{zmix_eos1}_{zmix_eos2}_0.5',
+                f'{zmix_eos1}_{zmix_eos2}_0.75',
+                f'{zmix_eos1}_{zmix_eos2}_1.0'
             ]
         if f_ppv_vals is None:
             f_ppv_vals = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
         
+        self.hhe_eos = hhe_eos
+        self.y_prime = y_prime
         self.z_eos_list   = z_eos_list
         self.f_ppv_vals   = f_ppv_vals
         self.table_types  = ['pt', 'rhot', 'sp', 'srho']  # or add 'rhop' if needed
@@ -2780,7 +2802,7 @@ class multifraction_mixtures(mixtures):
     def get_logu_srho(self, _s, _lgrho, _y, _z, _frock,
                         ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
 
-        logp = self.get_logp_srho(_s, _lgrho, _y, _z, _frock), 
+        logp = self.get_logp_srho(_s, _lgrho, _y, _z, _frock) 
         logt = self.get_logt_srho(_s, _lgrho, _y, _z, _frock)
 
         return self.get_logu_pt(logp, logt, _y, _z, _frock)
