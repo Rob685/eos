@@ -659,7 +659,7 @@ class mixtures(hhe):
         def root_func(s_i, lgp_i, y_i, z_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
+                s_test = self.get_s_pt_val(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -1743,9 +1743,9 @@ class mixtures(hhe):
                                 z_arr, res1_temp, conv, interp_kind='linear'
                             )
                         except:
-                            import pdb
-                            pdb.set_trace()
-                            break
+                            # import pdb
+                            # pdb.set_trace()
+                            raise Exception('Failed interpolation at s={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
 
                         res1_noglitch = self.return_noglitch(z_arr, res1_interp)
                         res1 = self.return_noglitch(z_arr, res1_noglitch)
@@ -1919,220 +1919,220 @@ class mixtures(hhe):
         return np.array(res1_list), np.array(res2_list)
 
 
-    def inversion2(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False):
-        """
-        Invert the EOS table to compute new thermodynamic quantities.
+    # def inversion2(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False):
+    #     """
+    #     Invert the EOS table to compute new thermodynamic quantities.
 
-        Parameters:
-            a_arr (array_like): Array of 'a' values (e.g., entropy).
-            b_arr (array_like): Array of 'b' values (e.g., pressure).
-            y_arr (array_like): Array of helium mass fraction values.
-            z_arr (array_like): Array of metallicity values.
-            basis (str): The basis for inversion ('sp', 'rhot', 'srho', 'rhop').
-            inversion_method (str): Method to use for inversion.
-            twoD_inv (bool): Whether to perform a 2D inversion (only applicable for 'srho' basis).
-            calc_derivatives (bool): Whether to calculate derivatives.
+    #     Parameters:
+    #         a_arr (array_like): Array of 'a' values (e.g., entropy).
+    #         b_arr (array_like): Array of 'b' values (e.g., pressure).
+    #         y_arr (array_like): Array of helium mass fraction values.
+    #         z_arr (array_like): Array of metallicity values.
+    #         basis (str): The basis for inversion ('sp', 'rhot', 'srho', 'rhop').
+    #         inversion_method (str): Method to use for inversion.
+    #         twoD_inv (bool): Whether to perform a 2D inversion (only applicable for 'srho' basis).
+    #         calc_derivatives (bool): Whether to calculate derivatives.
 
-        Returns:
-            res1_array, res2_array: Arrays of the inverted quantities.
-        """
+    #     Returns:
+    #         res1_array, res2_array: Arrays of the inverted quantities.
+    #     """
 
-        import numpy as np
-        from tqdm import tqdm
+    #     import numpy as np
+    #     from tqdm import tqdm
 
-        N_a = len(a_arr)
-        N_b = len(b_arr)
-        N_y = len(y_arr)
-        N_z = len(z_arr)
+    #     N_a = len(a_arr)
+    #     N_b = len(b_arr)
+    #     N_y = len(y_arr)
+    #     N_z = len(z_arr)
 
-        res1_array = np.empty((N_a, N_b, N_y, N_z))
-        res2_array = np.empty((N_a, N_b, N_y, N_z))
+    #     res1_array = np.empty((N_a, N_b, N_y, N_z))
+    #     res2_array = np.empty((N_a, N_b, N_y, N_z))
 
-        for i, a_ in enumerate(tqdm(a_arr)):
-            for j, b_ in enumerate(b_arr):
+    #     for i, a_ in enumerate(tqdm(a_arr)):
+    #         for j, b_ in enumerate(b_arr):
 
-                prev_res1_temp = None
-                prev_res2_temp = None
+    #             prev_res1_temp = None
+    #             prev_res2_temp = None
 
-                for k, y_ in enumerate(y_arr):
+    #             for k, y_ in enumerate(y_arr):
 
-                    a_const = np.full(N_z, a_)
-                    b_const = np.full(N_z, b_)
-                    y_const = np.full(N_z, y_)
-                    z_const = z_arr  # z_arr is assumed to be an array of length N_z
+    #                 a_const = np.full(N_z, a_)
+    #                 b_const = np.full(N_z, b_)
+    #                 y_const = np.full(N_z, y_)
+    #                 z_const = z_arr  # z_arr is assumed to be an array of length N_z
 
-                    if basis == 'sp':
-                        try:
-                            if prev_res1_temp is None:
-                                res1_temp, conv = self.get_logt_sp_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
-                                )
-                            else:
-                                res1_temp, conv = self.get_logt_sp_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
-                                    arr_guess=prev_res1_temp
-                                )
-                        except Exception:
-                            print('Failed at s={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                            raise
+    #                 if basis == 'sp':
+    #                     try:
+    #                         if prev_res1_temp is None:
+    #                             res1_temp, conv = self.get_logt_sp_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
+    #                             )
+    #                         else:
+    #                             res1_temp, conv = self.get_logt_sp_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
+    #                                 arr_guess=prev_res1_temp
+    #                             )
+    #                     except Exception:
+    #                         print('Failed at s={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+    #                         raise
 
-                        # Handle non-converged values
-                        res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            z_const, res1_temp, conv, interp_kind='quadratic'
-                        )
-                        res1_noglitch = self.return_noglitch(z_const, res1_interp)
-                        res1 = self.return_noglitch(z_const, res1_noglitch)
+    #                     # Handle non-converged values
+    #                     res1_interp = self.interpolate_non_converged_temperatures_1d(
+    #                         z_const, res1_temp, conv, interp_kind='quadratic'
+    #                     )
+    #                     res1_noglitch = self.return_noglitch(z_const, res1_interp)
+    #                     res1 = self.return_noglitch(z_const, res1_noglitch)
 
-                        # Compute second result
-                        res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_const)
+    #                     # Compute second result
+    #                     res2 = self.get_logrho_pt_tab(b_const, res1, y_const, z_const)
 
-                        # Store results
-                        res1_array[i, j, k, :] = res1
-                        res2_array[i, j, k, :] = res2
+    #                     # Store results
+    #                     res1_array[i, j, k, :] = res1
+    #                     res2_array[i, j, k, :] = res2
 
-                        # Update previous results
-                        prev_res1_temp = res1
+    #                     # Update previous results
+    #                     prev_res1_temp = res1
 
-                    elif basis == 'rhot':
-                        try:
-                            if prev_res1_temp is None:
-                                res1_temp, conv = self.get_logp_rhot_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
-                                )
-                            else:
-                                res1_temp, conv = self.get_logp_rhot_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
-                                    arr_guess=prev_res1_temp
-                                )
-                        except Exception:
-                            print('Failed at rho={}, logt={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                            raise
+    #                 elif basis == 'rhot':
+    #                     try:
+    #                         if prev_res1_temp is None:
+    #                             res1_temp, conv = self.get_logp_rhot_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
+    #                             )
+    #                         else:
+    #                             res1_temp, conv = self.get_logp_rhot_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
+    #                                 arr_guess=prev_res1_temp
+    #                             )
+    #                     except Exception:
+    #                         print('Failed at rho={}, logt={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+    #                         raise
 
-                        res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            z_const, res1_temp, conv, interp_kind='quadratic'
-                        )
-                        res1_noglitch = self.return_noglitch(z_const, res1_interp)
-                        res1 = self.return_noglitch(z_const, res1_noglitch)
+    #                     res1_interp = self.interpolate_non_converged_temperatures_1d(
+    #                         z_const, res1_temp, conv, interp_kind='quadratic'
+    #                     )
+    #                     res1_noglitch = self.return_noglitch(z_const, res1_interp)
+    #                     res1 = self.return_noglitch(z_const, res1_noglitch)
 
-                        res2 = self.get_s_pt_tab(res1, b_const, y_const, z_const)
+    #                     res2 = self.get_s_pt_tab(res1, b_const, y_const, z_const)
 
-                        res1_array[i, j, k, :] = res1
-                        res2_array[i, j, k, :] = res2
+    #                     res1_array[i, j, k, :] = res1
+    #                     res2_array[i, j, k, :] = res2
 
-                        prev_res1_temp = res1
+    #                     prev_res1_temp = res1
 
-                    elif basis == 'srho':
-                        if twoD_inv:
-                            try:
-                                if prev_res1_temp is None or prev_res2_temp is None:
-                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
-                                        a_const, b_const, y_const, z_const, ideal_guess=True, method='root'
-                                    )
-                                else:
-                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
-                                        a_const, b_const, y_const, z_const, ideal_guess=False, method='root', 
-                                        arr_guess=[prev_res1_temp, prev_res2_temp]
-                                    )
-                            except Exception:
-                                print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                                raise
+    #                 elif basis == 'srho':
+    #                     if twoD_inv:
+    #                         try:
+    #                             if prev_res1_temp is None or prev_res2_temp is None:
+    #                                 res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
+    #                                     a_const, b_const, y_const, z_const, ideal_guess=True, method='root'
+    #                                 )
+    #                             else:
+    #                                 res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
+    #                                     a_const, b_const, y_const, z_const, ideal_guess=False, method='root', 
+    #                                     arr_guess=[prev_res1_temp, prev_res2_temp]
+    #                                 )
+    #                         except Exception:
+    #                             print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+    #                             raise
 
-                            res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_const, res1_temp, conv, interp_kind='quadratic'
-                            )
-                            res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_const, res2_temp, conv, interp_kind='quadratic'
-                            )
-                            res1_noglitch = self.return_noglitch(z_const, res1_interp)
-                            res1 = self.return_noglitch(z_const, res1_noglitch)
-                            res2_noglitch = self.return_noglitch(z_const, res2_interp)
-                            res2 = self.return_noglitch(z_const, res2_noglitch)
+    #                         res1_interp = self.interpolate_non_converged_temperatures_1d(
+    #                             z_const, res1_temp, conv, interp_kind='quadratic'
+    #                         )
+    #                         res2_interp = self.interpolate_non_converged_temperatures_1d(
+    #                             z_const, res2_temp, conv, interp_kind='quadratic'
+    #                         )
+    #                         res1_noglitch = self.return_noglitch(z_const, res1_interp)
+    #                         res1 = self.return_noglitch(z_const, res1_noglitch)
+    #                         res2_noglitch = self.return_noglitch(z_const, res2_interp)
+    #                         res2 = self.return_noglitch(z_const, res2_noglitch)
 
-                            res1_array[i, j, k, :] = res1
-                            res2_array[i, j, k, :] = res2
+    #                         res1_array[i, j, k, :] = res1
+    #                         res2_array[i, j, k, :] = res2
 
-                            prev_res1_temp = res1
-                            prev_res2_temp = res2
+    #                         prev_res1_temp = res1
+    #                         prev_res2_temp = res2
 
-                        else:
-                            # Use 1-D inversion via SP inverted table
-                            try:
-                                if prev_res1_temp is None:
-                                    res1_temp, conv = self.get_logp_srho_inv(
-                                        a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
-                                    )
-                                else:
-                                    res1_temp, conv = self.get_logp_srho_inv(
-                                        a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                                    )
-                            except Exception:
-                                print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                                raise
+    #                     else:
+    #                         # Use 1-D inversion via SP inverted table
+    #                         try:
+    #                             if prev_res1_temp is None:
+    #                                 res1_temp, conv = self.get_logp_srho_inv(
+    #                                     a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
+    #                                 )
+    #                             else:
+    #                                 res1_temp, conv = self.get_logp_srho_inv(
+    #                                     a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+    #                                 )
+    #                         except Exception:
+    #                             print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+    #                             raise
 
-                            res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_const, res1_temp, conv, interp_kind='quadratic'
-                            )
-                            res1_noglitch = self.return_noglitch(z_const, res1_interp)
-                            res1 = self.return_noglitch(z_const, res1_noglitch)
+    #                         res1_interp = self.interpolate_non_converged_temperatures_1d(
+    #                             z_const, res1_temp, conv, interp_kind='quadratic'
+    #                         )
+    #                         res1_noglitch = self.return_noglitch(z_const, res1_interp)
+    #                         res1 = self.return_noglitch(z_const, res1_noglitch)
 
-                            try:
-                                if prev_res2_temp is None:
-                                    res2_temp, conv2 = self.get_logt_sp_inv(
-                                        a_const, res1, y_const, z_const, method=inversion_method, ideal_guess=True
-                                    )
-                                else:
-                                    res2_temp, conv2 = self.get_logt_sp_inv(
-                                        a_const, res1, y_const, z_const, method=inversion_method, ideal_guess=False, 
-                                        arr_guess=prev_res2_temp
-                                    )
-                            except Exception:
-                                print('Failed at s={}, logp={}, y={}'.format(a_const[0], res1[0], y_const[0]))
-                                raise
+    #                         try:
+    #                             if prev_res2_temp is None:
+    #                                 res2_temp, conv2 = self.get_logt_sp_inv(
+    #                                     a_const, res1, y_const, z_const, method=inversion_method, ideal_guess=True
+    #                                 )
+    #                             else:
+    #                                 res2_temp, conv2 = self.get_logt_sp_inv(
+    #                                     a_const, res1, y_const, z_const, method=inversion_method, ideal_guess=False, 
+    #                                     arr_guess=prev_res2_temp
+    #                                 )
+    #                         except Exception:
+    #                             print('Failed at s={}, logp={}, y={}'.format(a_const[0], res1[0], y_const[0]))
+    #                             raise
 
-                            res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_const, res2_temp, conv2, interp_kind='quadratic'
-                            )
-                            res2_noglitch = self.return_noglitch(z_const, res2_interp)
-                            res2 = self.return_noglitch(z_const, res2_noglitch)
+    #                         res2_interp = self.interpolate_non_converged_temperatures_1d(
+    #                             z_const, res2_temp, conv2, interp_kind='quadratic'
+    #                         )
+    #                         res2_noglitch = self.return_noglitch(z_const, res2_interp)
+    #                         res2 = self.return_noglitch(z_const, res2_noglitch)
 
-                            res1_array[i, j, k, :] = res1
-                            res2_array[i, j, k, :] = res2
+    #                         res1_array[i, j, k, :] = res1
+    #                         res2_array[i, j, k, :] = res2
 
-                            prev_res1_temp = res1
-                            prev_res2_temp = res2
+    #                         prev_res1_temp = res1
+    #                         prev_res2_temp = res2
 
-                    elif basis == 'rhop':
-                        try:
-                            if prev_res1_temp is None:
-                                res1_temp, conv = self.get_s_rhop_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
-                                )
-                            else:
-                                res1_temp, conv = self.get_s_rhop_inv(
-                                    a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
-                                    arr_guess=prev_res1_temp
-                                )
-                        except Exception:
-                            print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                            raise
+    #                 elif basis == 'rhop':
+    #                     try:
+    #                         if prev_res1_temp is None:
+    #                             res1_temp, conv = self.get_s_rhop_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=True
+    #                             )
+    #                         else:
+    #                             res1_temp, conv = self.get_s_rhop_inv(
+    #                                 a_const, b_const, y_const, z_const, method=inversion_method, ideal_guess=False, 
+    #                                 arr_guess=prev_res1_temp
+    #                             )
+    #                     except Exception:
+    #                         print('Failed at rho={}, logp={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+    #                         raise
 
-                        res1_interp = self.interpolate_non_converged_temperatures_1d(
-                            z_const, res1_temp, conv, interp_kind='quadratic'
-                        )
-                        res1_noglitch = self.return_noglitch(z_const, res1_interp)
-                        res1 = self.return_noglitch(z_const, res1_noglitch)
+    #                     res1_interp = self.interpolate_non_converged_temperatures_1d(
+    #                         z_const, res1_temp, conv, interp_kind='quadratic'
+    #                     )
+    #                     res1_noglitch = self.return_noglitch(z_const, res1_interp)
+    #                     res1 = self.return_noglitch(z_const, res1_noglitch)
 
-                        res2 = self.get_logt_sp_tab(res1 * erg_to_kbbar, b_const, y_const, z_const)
+    #                     res2 = self.get_logt_sp_tab(res1 * erg_to_kbbar, b_const, y_const, z_const)
 
-                        res1_array[i, j, k, :] = res1
-                        res2_array[i, j, k, :] = res2
+    #                     res1_array[i, j, k, :] = res1
+    #                     res2_array[i, j, k, :] = res2
 
-                        prev_res1_temp = res1
+    #                     prev_res1_temp = res1
 
-                    else:
-                        raise ValueError('Unknown inversion basis. Please choose sp, rhot, srho, or rhop')
+    #                 else:
+    #                     raise ValueError('Unknown inversion basis. Please choose sp, rhot, srho, or rhop')
 
-        return res1_array, res2_array
+    #     return res1_array, res2_array
 
 
 
