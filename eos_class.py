@@ -659,7 +659,7 @@ class mixtures(hhe):
         def root_func(s_i, lgp_i, y_i, z_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt_val(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
+                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
