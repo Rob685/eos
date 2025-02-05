@@ -51,15 +51,16 @@ rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=Fals
 t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
 u_rgi = RGI((s_grid, logpgrid), loguvals, method='linear', bounds_error=False, fill_value=None)
 
-def get_rho_sp_tab(s, p):
+def get_logrho_sp_tab(s, p):
+    if np.isscalar(s):
+        return float(rho_rgi(np.array([s, p]).T))
     return rho_rgi(np.array([s, p]).T)
-def get_t_sp_tab(s, p):
+def get_logt_sp_tab(s, p):
+    if np.isscalar(s):
+        return float(t_rgi(np.array([s, p]).T))
     return t_rgi(np.array([s, p]).T)
-
-def get_rhot_sp_tab(s, p):
-    return get_rho_sp_tab(s, p), get_t_sp_tab(s, p)
-
-def get_u_sp_tab(s, p):
+    
+def get_logu_sp_tab(s, p):
     return u_rgi(np.array([s, p]).T)
 
 
@@ -87,7 +88,7 @@ def get_rho_pt_tab(p, t):
 
 def get_u_pt_tab(p, t):
     s = get_s_pt_tab(p, t)*erg_to_kbbar
-    return get_u_sp_tab(s, p)
+    return get_logu_sp_tab(s, p)
 
 ### rho, T ###
 

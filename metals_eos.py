@@ -156,7 +156,7 @@ def get_t_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_t_sp_tab(s, p)
     elif eos == 'ppv':
-        return ppv_eos.get_t_sp_tab(s, p)
+        return ppv_eos.get_logt_sp_tab(s, p)
     elif eos == 'ppv2':
         return ppv2_eos.get_logt_sp_tab(s, p)
     elif eos == 'serpentine':
@@ -164,7 +164,7 @@ def get_t_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
     elif eos == 'fo':
         return aneos_forsterite_eos.get_t_sp_tab(s/MJ_to_kbbar, (10**p)*1e-10)
     elif eos == 'iron':
-        return fe_eos.get_t_sp_tab(s, p)
+        return fe_eos.get_logt_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_t_sp(s, p, 0)
     elif eos == 'mixture':
@@ -177,7 +177,7 @@ def get_rho_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
     if eos == 'aqua':
         return aqua_eos.get_rho_sp_tab(s, p)
     elif eos == 'ppv':
-        return ppv_eos.get_rho_sp_tab(s, p)
+        return ppv_eos.get_logrho_sp_tab(s, p)
     elif eos == 'ppv2':
         return ppv2_eos.get_logrho_sp_tab(s, p)
     elif eos == 'serpentine':
@@ -185,7 +185,7 @@ def get_rho_sp_tab(s, p, eos, f_ppv=0.333, f_fe=0.166):
     elif eos == 'fo':
         return aneos_forsterite_eos.get_rho_sp_tab(s/MJ_to_kbbar, (10**p)*1e-10)
     elif eos == 'iron':
-        return fe_eos.get_rho_sp_tab(s, p)
+        return fe_eos.get_logrho_sp_tab(s, p)
     elif eos == 'ideal':
         return ideal_water.get_rho_sp(s, p, 0)
     elif eos == 'mixture':
