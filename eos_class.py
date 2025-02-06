@@ -472,7 +472,7 @@ class mixtures(hhe):
     # logp, logt tables
     def get_s_pt_tab(self, _lgp, _lgt, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - (_z))
+        _y = _y if self.y_prime else _y / (1 - (_z+1e-10))
 
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -485,7 +485,7 @@ class mixtures(hhe):
 
     def get_logrho_pt_tab(self, _lgp, _lgt, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -498,7 +498,7 @@ class mixtures(hhe):
 
     def get_logu_pt_tab(self, _lgp, _lgt, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         
         args = (_lgp, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -512,7 +512,7 @@ class mixtures(hhe):
     # logrho, logt tables
     def get_s_rhot_tab(self, _lgrho, _lgt, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -525,7 +525,7 @@ class mixtures(hhe):
 
     def get_logp_rhot_tab(self, _lgrho, _lgt, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_lgrho, _lgt, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -539,7 +539,7 @@ class mixtures(hhe):
     # S, logp tables
     def get_logt_sp_tab(self, _s, _lgp, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -552,7 +552,7 @@ class mixtures(hhe):
 
     def get_logrho_sp_tab(self, _s, _lgp, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_s, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -567,7 +567,7 @@ class mixtures(hhe):
 
     def get_logt_rhop_tab(self, _lgrho, _lgp, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_lgrho, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -580,7 +580,7 @@ class mixtures(hhe):
 
     def get_s_rhop_tab(self, _lgrho, _lgp, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_lgrho, _lgp, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -595,7 +595,7 @@ class mixtures(hhe):
     # S, logrho tables
     def get_logp_srho_tab(self, _s, _lgrho, _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - (_z))
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_s, _lgrho, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -608,7 +608,7 @@ class mixtures(hhe):
 
     def get_logt_srho_tab(self, _s, _lgrho,  _y, _z, _frock=0.0):
 
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         args = (_s, _lgrho, _y, _z)
         v_args = [np.atleast_1d(arg) for arg in args]
@@ -786,7 +786,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        #_y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-20)
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _lgrho, _lgt, _y, _z = np.broadcast_arrays(_lgrho, _lgt, _y, _z)
 
@@ -923,7 +923,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        #_y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -1057,7 +1057,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-       # _y = _y if self.y_prime else _y / (1 - _z)
+       # _y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -1192,7 +1192,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        #_y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _s, _lgrho, _y, _z = np.broadcast_arrays(_s, _lgrho, _y, _z)
@@ -1311,7 +1311,7 @@ class mixtures(hhe):
         if tab:
             logp, logt = self.get_logp_srho_tab(_s, _lgrho, _y, _z), self.get_logt_srho_tab(_s, _lgrho, _y, _z)
         else:
-            #_y = _y if self.y_prime else _y / (1 - _z)
+            #_y = _y if self.y_prime else _y / (1 - _z+1e-20)
             # WARNING: do not rely on in-situ derivatives because the y prime is not implemented here (yet)
             logp, convp = self.get_logp_srho_inv( _s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_p_guess, method=method)
             logt, convt = self.get_logt_sp_inv( _s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_t_guess, method=method)
@@ -1340,7 +1340,7 @@ class mixtures(hhe):
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
 
-        #_y = _y if self.y_prime else _y / (1 - _z)
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-20)
 
         # Ensure inputs are numpy arrays and broadcasted to the same shape
         _lgrho, _lgp, _y, _z = np.broadcast_arrays(_lgrho, _lgp, _y, _z)
@@ -1484,7 +1484,7 @@ class mixtures(hhe):
         _lgrho, _lgp, _y, _z = np.broadcast_arrays(_lgrho, _lgp, _y, _z)
 
         if ideal_guess:
-            #y_call = _y if self.y_prime else _y / (1 - _z)
+            #y_call = _y if self.y_prime else _y / (1 - _z+1e-20)
             guess = ideal_xy.get_s_rhop(_lgrho, _lgp, _y)
         else:
             if arr_guess is None:
@@ -2755,48 +2755,48 @@ class multifraction_mixtures(mixtures):
     
     # --- pt: s_pt, logrho_pt
     def get_s_pt(self, _lgp, _lgt, _y, _z, _frock):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['pt']['interp_0'](( _lgp, _lgt, _y, _z, _frock))
 
     def get_logrho_pt(self, _lgp, _lgt, _y, _z, _frock):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['pt']['interp_1'](( _lgp, _lgt, _y, _z, _frock))
 
     def get_logu_pt(self, _lgp, _lgt, _y, _z, _frock):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['pt']['interp_2'](( _lgp, _lgt, _y, _z, _frock))
 
     # --- rhot: s_rhot, logp_rhot
     def get_s_rhot(self, _lgrho, _lgt, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['rhot']['interp_0']((_lgrho, _lgt, _y, _z, _frock))
     
     def get_logp_rhot(self, _lgrho, _lgt, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['rhot']['interp_1']((_lgrho, _lgt, _y, _z, _frock))
 
     # --- sp: logt_sp, logrho_sp
     def get_logt_sp(self, _s, _lgp, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['sp']['interp_0']((_s, _lgp, _y, _z, _frock))
 
     def get_logrho_sp(self, _s, _lgp, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['sp']['interp_1']((_s, _lgp, _y, _z, _frock))
 
     # --- srho: logp_srho, logt_srho
     def get_logp_srho(self, _s, _lgrho, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['srho']['interp_0']((_s, _lgrho, _y, _z, _frock))
 
     def get_logt_srho(self, _s, _lgrho, _y, _z, _frock, 
                         ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
-        _y = _y if self.y_prime else _y / (1 - _z)
+        _y = _y if self.y_prime else _y / (1 - _z+1e-20)
         return self.data_combined['srho']['interp_1']((_s, _lgrho, _y, _z, _frock))
 
     def get_logu_srho(self, _s, _lgrho, _y, _z, _frock,
