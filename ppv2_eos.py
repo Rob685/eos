@@ -23,12 +23,12 @@ mgsio3 = mg+si+o3 # molecular weight of post-perovskite
 ideal_z = ideal_eos.IdealEOS(m=mgsio3)
 
 ### S, P ###
-s_grid = np.loadtxt('eos/zhang_eos/zhang_multiphase/s_grid.txt')*J_to_kbbar
-logpgrid = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/P_grid.txt')*10)
+s_grid = np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/s_grid.txt')*J_to_kbbar
+logpgrid = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/P_grid.txt')*10)
 
-logtvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/T_table_ppv.txt'))
-logrhovals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/rho_table_ppv.txt')*1e-3)
-loguvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/E_table_ppv.txt')*J_to_erg)
+logtvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/T_table_ppv.txt'))
+logrhovals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/rho_table_ppv.txt')*1e-3)
+loguvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/E_table_ppv.txt')*J_to_erg)
 
 rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
 t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
@@ -36,7 +36,7 @@ u_rgi = RGI((s_grid, logpgrid), loguvals, method='linear', bounds_error=False, f
 
 ### P, T ###
 
-pt_data = np.load('eos/zhang_eos/zhang_multiphase/zhang_ppv_2024_pt.npz')
+pt_data = np.load('eos/zhang_eos/zhang_multiphase/ppv2/zhang_ppv_2024_pt.npz')
 
 logpvals_pt = pt_data['logpvals'] # log g/cm^3
 logtvals_pt = pt_data['logtvals'] # log K
