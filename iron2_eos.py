@@ -1,61 +1,72 @@
-from eos import ideal_eos
+from eos import fe_eos as iron
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.interpolate import interp1d
 from scipy.optimize import root, root_scalar, newton, brentq
 from astropy.constants import k_B
 from astropy.constants import u as amu
 from astropy import units as u
-from tqdm import tqdm
+
 
 mp = amu.to('g') # grams
-kb = k_B.to('erg/K') # ergs/K
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
-J_to_erg = (u.J / (u.kg * u.K)).to('erg/(K*g)')
-J_to_kbbar = (u.J / (u.kg * u.K)).to(k_B/mp)
+J_K_kg_to_erg_K_g = (u.J / (u.kg * u.K)).to('erg/(K*g)') # specific entropy conversion
+J_kg_to_erg_g = (u.J / u.kg).to('erg/g') # specific internal energy conversion
+J_to_kbbar = (u.J / (u.kg * u.K)).to(k_B/mp) # specific entropy conversion
+kg_to_g = (u.kg/u.m**3).to('g/cm^3')
+Pa_to_cgs = u.Pa.to('dyn/cm^2')
 
-mg = 24.305
-si = 28.085
-o3 = 48.000
+from eos import ideal_eos
 
-mgsio3 = mg+si+o3 # molecular weight of post-perovskite
-
-# for guesses
-ideal_z = ideal_eos.IdealEOS(m=mgsio3)
-
-### S, P ###
-s_grid = np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/s_grid.txt')*J_to_kbbar
-logpgrid = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/P_grid.txt')*10)
-
-logtvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/T_table_ppv.txt'))
-logrhovals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/rho_table_ppv.txt')*1e-3)
-loguvals = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/ppv2/E_table_ppv.txt')*J_to_erg)
-
-rho_rgi = RGI((s_grid, logpgrid), logrhovals, method='linear', bounds_error=False, fill_value=None)
-t_rgi = RGI((s_grid, logpgrid), logtvals, method='linear', bounds_error=False, fill_value=None)
-u_rgi = RGI((s_grid, logpgrid), loguvals, method='linear', bounds_error=False, fill_value=None)
+ideal_water = ideal_eos.IdealEOS(m=56)
 
 ### P, T ###
+logpvals_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Pgrid_Fel.txt')*Pa_to_cgs)
+logtvals_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Tgrid_Fel.txt'))
 
-pt_data = np.load('eos/zhang_eos/zhang_multiphase/ppv2/zhang_ppv_2024_pt.npz')
+s_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/s_Fel.txt')*J_K_kg_to_erg_K_g
+logrho_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/rho_Fel.txt')*kg_to_g)
+logu_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Eth_Fel.txt')*J_kg_to_erg_g)
+cp_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cP_Fel.txt')*J_K_kg_to_erg_K_g
+cv_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cV_Fel.txt')*J_K_kg_to_erg_K_g
 
-logpvals_pt = pt_data['logpvals'] # log g/cm^3
-logtvals_pt = pt_data['logtvals'] # log K
-logrho_grid_pt = pt_data['logrhovals'] # in dyn/cm2
-s_grid_pt = pt_data['svals'] # in erg/g/K
-logu_grid_pt = pt_data['loguvals'] # in erg/g
-
-rho_rgi_pt = RGI((logpvals_pt, logtvals_pt), logrho_grid_pt, method='linear', \
+logrho_rgi_pt = RGI((logpvals_pt, logtvals_pt), logrho_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
 s_rgi_pt = RGI((logpvals_pt, logtvals_pt), s_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
-u_rgi_pt = RGI((logpvals_pt, logtvals_pt), logu_grid_pt, method='linear', \
+logu_rgi_pt = RGI((logpvals_pt, logtvals_pt), logu_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
+cp_rgi_pt = RGI((logpvals_pt, logtvals_pt), cp_grid_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+cv_rgi_pt = RGI((logpvals_pt, logtvals_pt), cv_grid_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+
+### S, P ###
+
+sp_data = np.load('eos/zhang_eos/zhang_multiphase/iron2_sp.npz')
+
+# S, P basis
+svals_sp = sp_data['s_vals'] # erg/g/K
+logpvals_sp = sp_data['logpvals'] # log K
+
+logrho_grid_sp = sp_data['logrho_sp'] # in g/cm^3
+logt_grid_sp = sp_data['logt_sp'] # in K
+logu_grid_pt = sp_data['logu_sp'] # in erg/g
+
+logt_rgi_sp = RGI((svals_sp, logpvals_sp), logt_grid_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+logrho_rgi_sp = RGI((svals_sp, logpvals_sp), logrho_grid_sp, method='linear', \
+            bounds_error=False, fill_value=None)
+logu_rgi_sp = RGI((svals_sp, logpvals_sp), logu_grid_pt, method='linear', \
+            bounds_error=False, fill_value=None)
+
+# TABLE FUNCTIONS (P, T)
 
 def get_logrho_pt_tab(_lgp, _lgt): 
     args = (_lgp, _lgt)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = rho_rgi_pt(pts)
+    result = logrho_rgi_pt(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
@@ -71,82 +82,97 @@ def get_s_pt_tab(_lgp, _lgt): # returns in erg/g/K
     else:
         return result
 
-def get_logu_pt_tab(_lgp, _lgt): # returns in log10 erg/g
+def get_logu_pt_tab(_lgp, _lgt): # returns in erg/g
     args = (_lgp, _lgt)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = u_rgi_pt(pts)
+    result = logu_rgi_pt(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
         return result
 
-def get_logrho_sp_tab(_s, _lgp):
+def get_c_p_pt(_lgp, _lgt):
+    args = (_lgp, _lgt)
+    v_args = [np.atleast_1d(arg) for arg in args]
+    pts = np.column_stack(v_args)
+    result = cp_rgi_pt(pts)
+    if all(np.isscalar(arg) for arg in args):
+        return result.item()
+    else:
+        return result
+
+def get_c_v_pt(_lgp, _lgt):
+    args = (_lgp, _lgt)
+    v_args = [np.atleast_1d(arg) for arg in args]
+    pts = np.column_stack(v_args)
+    result = cv_rgi_pt(pts)
+    if all(np.isscalar(arg) for arg in args):
+        return result.item()
+    else:
+        return result
+
+def get_logt_sp_tab(_s, _lgp): 
     args = (_s, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = rho_rgi(pts)
+    result = logt_rgi_sp(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
         return result
-def get_logt_sp_tab(_s, _lgp):
+
+def get_logrho_sp_tab(_s, _lgp): # returns in erg/g/K
     args = (_s, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = t_rgi(pts)
+    result = logrho_rgi_sp(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
         return result
-        
-def get_logu_sp_tab(_s, _lgp):
+
+def get_logu_sp_tab(_s, _lgp): # returns in erg/g
     args = (_s, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
-    result = u_rgi(pts)
+    result = logu_rgi_sp(pts)
     if all(np.isscalar(arg) for arg in args):
         return result.item()
     else:
         return result
 
+### DERIVATIVES ###
+def get_c_p(_s, _lgp):
+    logt = get_logt_sp_tab(_s, _lgp)
+    return get_c_p_pt(_lgp, logt)
 
-##### P, T inversion function #####
+def get_c_v(_s, _lgp):
+    logt = get_logt_sp_tab(_s, _lgp)
+    return get_c_v_pt(_lgp, logt)
 
-def get_s_pt_inv(_lgp, _lgt, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+##### S, P inversion function #####
 
-    """
-    Compute the pressure given density, temperature, helium abundance, and metallicity.
+def get_logt_sp_inv(_s, _lgp, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
-    Parameters:
-        _lgrho (array_like): Log10 density values.
-        _lgt (array_like): Log10 temperature values.
-        ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
-        logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
-
-    Returns:
-        ndarray: Computed temperature values.
-    """
-
+    _s = np.atleast_1d(_s)
     _lgp = np.atleast_1d(_lgp)
-    _lgt = np.atleast_1d(_lgt)
 
-    #_y = _y if self.y_prime else _y / (1 - _z)
-    # Ensure inputs are numpy arrays and broadcasted to the same shape
-    _lgp, _lgt = np.broadcast_arrays(_lgp, _lgt)
+    _s, _lgp = np.broadcast_arrays(_s, _lgp)
 
     if ideal_guess:
-        guess = ideal_z.get_s_pt(_lgp, _lgt, 0)
+        guess = iron.get_logt_sp_tab(_s, _lgp)
     else:
         if arr_guess is None:
             raise ValueError("logt_guess must be provided when ideal_guess is False.")
         guess = arr_guess
    # Define a function to compute root and capture convergence
-    def root_func(lgp_i, lgt_i, guess_i):
-        def err(_s):
+    def root_func(s_i, lgp_i, guess_i):
+        def err(_lgt):
             # Error function for logt(S, logp)
-            logt_test = get_t_sp_tab(_s, lgp_i)
-            return (logt_test/lgt_i) - 1
+            
+            s_test = get_s_pt_tab(lgp_i, _lgt)*erg_to_kbbar
+            return (s_test/s_i) - 1
 
         if method == 'root':
             sol = root(err, guess_i, tol=1e-8)
@@ -237,6 +263,8 @@ def get_s_pt_inv(_lgp, _lgt, ideal_guess=True, arr_guess=None, method='newton_br
     vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
 
     # Apply the vectorized function
-    entropy, converged = vectorized_root_func(_lgp, _lgt, guess)
+    temperature, converged = vectorized_root_func(_s, _lgp, guess)
 
-    return entropy
+    # s, logrho, logu = get_s_logrho_logu_pt_mixture(_lgp, temperature, _frock, _firon)
+
+    return temperature
