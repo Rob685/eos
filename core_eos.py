@@ -14,30 +14,30 @@ mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 
-def get_s_pt_val(_lgp, _lgt, _frock, _firon):
+def get_s_pt_val(_lgp, _lgt, _frock, _firon=0.0):
     s_water = aqua_mlcp.get_s_pt_tab(_lgp, _lgt)
     s_rock = ppv2.get_s_pt_tab(_lgp, _lgt)
-    s_iron = iron2.get_s_pt_tab(_lgp, _lgt)
+    #s_iron = iron2.get_s_pt_tab(_lgp, _lgt)
 
-    return s_water*(1 - _frock)*(1 - _firon) + s_rock*_frock*(1 - _firon) + s_iron*_firon
+    return s_water*(1 - _frock)*(1 - _firon) + s_rock*_frock*(1 - _firon)# + s_iron*_firon
 
-def get_logrho_pt_val(_lgp, _lgt, _frock, _firon):
+def get_logrho_pt_val(_lgp, _lgt, _frock, _firon=0.0):
     rho_water = 10**aqua_mlcp.get_logrho_pt_tab(_lgp, _lgt)
     rho_rock = 10**ppv2.get_logrho_pt_tab(_lgp, _lgt)
-    rho_iron = 10**iron2.get_logrho_pt_tab(_lgp, _lgt)
+    #rho_iron = 10**iron2.get_logrho_pt_tab(_lgp, _lgt)
 
-    rho_mix_inv = (1 - _frock)*(1 - _firon)/rho_water + _frock*(1 - _firon)/rho_rock + _firon/rho_iron
+    rho_mix_inv = (1 - _frock)*(1 - _firon)/rho_water + _frock*(1 - _firon)/rho_rock# + _firon/rho_iron
 
     return np.log10(1/rho_mix_inv)
     
 
-def get_logu_pt_val(_lgp, _lgt, _frock, _firon):
+def get_logu_pt_val(_lgp, _lgt, _frock, _firon=0.0):
 
     u_water = 10**aqua_mlcp.get_logu_pt_tab(_lgp, _lgt)
     u_rock = 10**ppv2.get_logu_pt_tab(_lgp, _lgt)
-    u_iron = 10**iron2.get_logu_pt_tab(_lgp, _lgt)
+    #u_iron = 10**iron2.get_logu_pt_tab(_lgp, _lgt)
     
-    return np.log10(u_water*(1 - _frock)*(1 - _firon) + u_rock*_frock*(1 - _firon) + u_iron*_firon)
+    return np.log10(u_water*(1 - _frock)*(1 - _firon) + u_rock*_frock*(1 - _firon))# + u_iron*_firon)
 
 ##### INVERSION FUNCTIONS #####
 
@@ -290,27 +290,76 @@ def get_logt_srho_inv(_s, _lgrho, _frock, _firon):
 
 #### INVERSION TABLES ####
 
-sp_data = np.load('eos/metal_mixtures/water_ppv2_iron_sp.npz')
+# sp_data = np.load('eos/metal_mixtures/water_ppv2_iron_sp.npz')
+
+# # S, P basis
+# svals_sp = sp_data['s_vals'] # erg/g/K
+# logpvals_sp = sp_data['logpvals'] # log K
+# frockvals_sp = sp_data['f_rock_vals']
+# fironvals_sp = sp_data['f_iron_vals']
+
+# logrho_grid_sp = sp_data['logrho_sp'] # in g/cm^3
+# logt_grid_sp = sp_data['logt_sp'] # in K
+# logu_grid_sp = sp_data['logu_sp'] # in erg/g
+
+# logt_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logt_grid_sp, method='linear', \
+#             bounds_error=False, fill_value=None)
+# logrho_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logrho_grid_sp, method='linear', \
+#             bounds_error=False, fill_value=None)
+# logu_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logu_grid_sp, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+# def get_logt_sp_tab(_s, _lgp, _frock, _firon): 
+#     args = (_s, _lgp, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logt_rgi_sp(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
+
+# def get_logrho_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g/K
+#     args = (_s, _lgp, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logrho_rgi_sp(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
+
+# def get_logu_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g
+#     args = (_s, _lgp, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logu_rgi_sp(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
+
+sp_data = np.load('eos/metal_mixtures/water_ppv2_sp.npz')
 
 # S, P basis
 svals_sp = sp_data['s_vals'] # erg/g/K
 logpvals_sp = sp_data['logpvals'] # log K
 frockvals_sp = sp_data['f_rock_vals']
-fironvals_sp = sp_data['f_iron_vals']
+# fironvals_sp = sp_data['f_iron_vals']
 
 logrho_grid_sp = sp_data['logrho_sp'] # in g/cm^3
 logt_grid_sp = sp_data['logt_sp'] # in K
 logu_grid_sp = sp_data['logu_sp'] # in erg/g
 
-logt_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logt_grid_sp, method='linear', \
+logt_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp), logt_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
-logrho_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logrho_grid_sp, method='linear', \
+logrho_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp), logrho_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
-logu_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp, fironvals_sp), logu_grid_sp, method='linear', \
+logu_rgi_sp = RGI((svals_sp, logpvals_sp, frockvals_sp), logu_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_logt_sp_tab(_s, _lgp, _frock, _firon): 
-    args = (_s, _lgp, _frock, _firon)
+def get_logt_sp_tab(_s, _lgp, _frock, _firon=0.0): 
+    args = (_s, _lgp, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logt_rgi_sp(pts)
@@ -319,8 +368,8 @@ def get_logt_sp_tab(_s, _lgp, _frock, _firon):
     else:
         return result
 
-def get_logrho_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g/K
-    args = (_s, _lgp, _frock, _firon)
+def get_logrho_sp_tab(_s, _lgp, _frock, _firon=0.0): # returns in erg/g/K
+    args = (_s, _lgp, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logrho_rgi_sp(pts)
@@ -329,8 +378,8 @@ def get_logrho_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g/K
     else:
         return result
 
-def get_logu_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g
-    args = (_s, _lgp, _frock, _firon)
+def get_logu_sp_tab(_s, _lgp, _frock, _firon=0.0): # returns in erg/g
+    args = (_s, _lgp, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logu_rgi_sp(pts)
@@ -339,27 +388,28 @@ def get_logu_sp_tab(_s, _lgp, _frock, _firon): # returns in erg/g
     else:
         return result
 
-srho_data = np.load('eos/metal_mixtures/water_ppv2_iron_srho.npz')
+
+srho_data = np.load('eos/metal_mixtures/water_ppv2_srho.npz')
 
 # S, Rho basis
 svals_srho = srho_data['s_vals'] # erg/g/K
 logrhovals_srho = srho_data['logrhovals'] # log K
 frockvals_srho = srho_data['f_rock_vals']
-fironvals_srho = srho_data['f_iron_vals']
+# fironvals_srho = srho_data['f_iron_vals']
 
 logp_grid_srho = srho_data['logp_srho'] # in g/cm^3
 logt_grid_srho = srho_data['logt_srho'] # in K
 logu_grid_srho = srho_data['logu_srho'] # in erg/g
 
-logp_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logp_grid_srho, method='linear', \
+logp_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho), logp_grid_srho, method='linear', \
             bounds_error=False, fill_value=None)
-logt_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logt_grid_srho, method='linear', \
+logt_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho), logt_grid_srho, method='linear', \
             bounds_error=False, fill_value=None)
-logu_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logu_grid_srho, method='linear', \
+logu_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho), logu_grid_srho, method='linear', \
             bounds_error=False, fill_value=None)
 
-def get_logp_srho_tab(_s, _lgrho, _frock, _firon): 
-    args = (_s, _lgrho, _frock, _firon)
+def get_logp_srho_tab(_s, _lgrho, _frock, _firon=0.0): 
+    args = (_s, _lgrho, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logp_rgi_srho(pts)
@@ -368,8 +418,8 @@ def get_logp_srho_tab(_s, _lgrho, _frock, _firon):
     else:
         return result
 
-def get_logt_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g/K
-    args = (_s, _lgrho, _frock, _firon)
+def get_logt_srho_tab(_s, _lgrho, _frock, _firon=0.0): # returns in erg/g/K
+    args = (_s, _lgrho, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logt_rgi_srho(pts)
@@ -378,8 +428,8 @@ def get_logt_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g/K
     else:
         return result
 
-def get_logu_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g
-    args = (_s, _lgrho, _frock, _firon)
+def get_logu_srho_tab(_s, _lgrho, _frock, _firon=0.0): # returns in erg/g
+    args = (_s, _lgrho, _frock)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
     result = logu_rgi_srho(pts)
@@ -387,6 +437,55 @@ def get_logu_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g
         return result.item()
     else:
         return result
+
+# srho_data = np.load('eos/metal_mixtures/water_ppv2_iron_srho.npz')
+
+# # S, Rho basis
+# svals_srho = srho_data['s_vals'] # erg/g/K
+# logrhovals_srho = srho_data['logrhovals'] # log K
+# frockvals_srho = srho_data['f_rock_vals']
+# fironvals_srho = srho_data['f_iron_vals']
+
+# logp_grid_srho = srho_data['logp_srho'] # in g/cm^3
+# logt_grid_srho = srho_data['logt_srho'] # in K
+# logu_grid_srho = srho_data['logu_srho'] # in erg/g
+
+# logp_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logp_grid_srho, method='linear', \
+#             bounds_error=False, fill_value=None)
+# logt_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logt_grid_srho, method='linear', \
+#             bounds_error=False, fill_value=None)
+# logu_rgi_srho = RGI((svals_srho, logrhovals_srho, frockvals_srho, fironvals_srho), logu_grid_srho, method='linear', \
+#             bounds_error=False, fill_value=None)
+
+# def get_logp_srho_tab(_s, _lgrho, _frock, _firon): 
+#     args = (_s, _lgrho, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logp_rgi_srho(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
+
+# def get_logt_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g/K
+#     args = (_s, _lgrho, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logt_rgi_srho(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
+
+# def get_logu_srho_tab(_s, _lgrho, _frock, _firon): # returns in erg/g
+#     args = (_s, _lgrho, _frock, _firon)
+#     v_args = [np.atleast_1d(arg) for arg in args]
+#     pts = np.column_stack(v_args)
+#     result = logu_rgi_srho(pts)
+#     if all(np.isscalar(arg) for arg in args):
+#         return result.item()
+#     else:
+#         return result
 
 
 #### RELEVANT DERIVATIVES #####
