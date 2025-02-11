@@ -21,14 +21,15 @@ from eos import ideal_eos
 ideal_water = ideal_eos.IdealEOS(m=56)
 
 ### P, T ###
-logpvals_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Pgrid_Fel.txt')*Pa_to_cgs)
+pvals_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Pgrid_Fel.txt')
+logpvals_pt = np.log10(pvals_pt[pvals_pt > 3.5e9]*Pa_to_cgs) # avoids negative density values
 logtvals_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Tgrid_Fel.txt'))
 
-s_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/s_Fel.txt')*J_K_kg_to_erg_K_g
-logrho_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/rho_Fel.txt')*kg_to_g)
-logu_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Eth_Fel.txt')*J_kg_to_erg_g)
-cp_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cP_Fel.txt')*J_K_kg_to_erg_K_g
-cv_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cV_Fel.txt')*J_K_kg_to_erg_K_g
+s_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/s_Fel.txt')[pvals_pt > 3.5e9]*J_K_kg_to_erg_K_g
+logrho_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/rho_Fel.txt')[pvals_pt > 3.5e9]*kg_to_g)
+logu_grid_pt = np.log10(np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/Eth_Fel.txt')[pvals_pt > 3.5e9]*J_kg_to_erg_g)
+cp_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cP_Fel.txt')[pvals_pt > 3.5e9]*J_K_kg_to_erg_K_g
+cv_grid_pt = np.loadtxt('eos/zhang_eos/zhang_multiphase/iron2/cV_Fel.txt')[pvals_pt > 3.5e9]*J_K_kg_to_erg_K_g
 
 logrho_rgi_pt = RGI((logpvals_pt, logtvals_pt), logrho_grid_pt, method='linear', \
             bounds_error=False, fill_value=None)
@@ -51,13 +52,13 @@ logpvals_sp = sp_data['logpvals'] # log K
 
 logrho_grid_sp = sp_data['logrho_sp'] # in g/cm^3
 logt_grid_sp = sp_data['logt_sp'] # in K
-logu_grid_pt = sp_data['logu_sp'] # in erg/g
+logu_grid_sp = sp_data['logu_sp'] # in erg/g
 
 logt_rgi_sp = RGI((svals_sp, logpvals_sp), logt_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
 logrho_rgi_sp = RGI((svals_sp, logpvals_sp), logrho_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
-logu_rgi_sp = RGI((svals_sp, logpvals_sp), logu_grid_pt, method='linear', \
+logu_rgi_sp = RGI((svals_sp, logpvals_sp), logu_grid_sp, method='linear', \
             bounds_error=False, fill_value=None)
 
 # TABLE FUNCTIONS (P, T)
