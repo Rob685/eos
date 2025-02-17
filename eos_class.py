@@ -1577,7 +1577,7 @@ class mixtures(hhe):
         return entropies / erg_to_kbbar, converged
 
     # adaptive delta function for z and y derivatives
-    def adaptive_dx(self, x_profile, initial_dx=0.01, tolerance=1e-2):
+    def adaptive_dx(self, x_profile, initial_dx=0.1, tolerance=1e-2):
         # Initialize dx as an array with an initial value
         dx = np.full_like(x_profile, initial_dx, dtype=float)
 
@@ -2855,6 +2855,13 @@ class multifraction_mixtures(mixtures):
         lgt1 = self.get_logt_sp(_s, _lgp - dp, _y, _z, _frock, **kwargs)
         lgt2 = self.get_logt_sp(_s, _lgp + dp, _y, _z, _frock, **kwargs)
         return (lgt2 - lgt1)/(2 * dp)
+
+    def get_dpdt_rhot_rhoy(self, _lgrho, _lgt, _y, _z, _frock, dt=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dt = _lgt*0.1 if dt is None else dt
+        p1 = 10**self.get_logp_rhot(_lgrho, _lgt - dt, _y, _z, _frock, **kwargs)
+        p2 = 10**self.get_logp_rhot(_lgrho, _lgt + dt, _y, _z, _frock, **kwargs)
+        return (p2 - p1)/(2 * dt)
 
     # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
     def get_dsdy_pt(self, _lgp, _lgt, _y, _z, _frock, dy=0.1):
