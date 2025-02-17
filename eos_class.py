@@ -1577,7 +1577,7 @@ class mixtures(hhe):
         return entropies / erg_to_kbbar, converged
 
     # adaptive delta function for z and y derivatives
-    def adaptive_dx(self, x_profile, initial_dx=0.05, tolerance=1e-2):
+    def adaptive_dx(self, x_profile, initial_dx=0.01, tolerance=1e-2):
         # Initialize dx as an array with an initial value
         dx = np.full_like(x_profile, initial_dx, dtype=float)
 
