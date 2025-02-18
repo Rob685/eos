@@ -2284,7 +2284,9 @@ class mixtures(hhe):
         dt = _lgt*0.1 if dt is None else dt
         p1 = 10**self.get_logp_rhot(_lgrho, _lgt - dt, _y, _z, _frock, **kwargs)
         p2 = 10**self.get_logp_rhot(_lgrho, _lgt + dt, _y, _z, _frock, **kwargs)
-        return (p2 - p1)/(2 * dt)
+        t1 = 10**(_lgt - dt)
+        t2 = 10**(_lgt + dt)
+        return (p2 - p1)/(t2 - t1)
 
     # DS/DX|_P, T - DERIVATIVES NECESSARY FOR THE SCHWARZSCHILD CONDITION
     def get_dsdy_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dy=0.1):
