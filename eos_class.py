@@ -2279,7 +2279,7 @@ class mixtures(hhe):
         lgt2 = self.get_logt_sp(_s, _lgp + dp, _y, _z, _frock, **kwargs)
         return (lgt2 - lgt1)/(2 * dp)
 
-    def get_dpdt_rhot_rhoy(self, _lgrho, _lgt, _y, _z, _frock, dt=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+    def get_dpdt_rhot_rhoy(self, _lgrho, _lgt, _y, _z, _frock=0.0, dt=1e-2, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         dt = _lgt*0.1 if dt is None else dt
         p1 = 10**self.get_logp_rhot(_lgrho, _lgt - dt, _y, _z, _frock, **kwargs)
