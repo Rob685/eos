@@ -2240,7 +2240,7 @@ class mixtures(hhe):
         s2 = self.get_s_pt_tab(_lgp, _lgt, _y + dy, _z, _frock)
         return (s2 - s1)/(2 * dy)
 
-    def get_ds2dy2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dy=0.1):
+    def get_d2sdy2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dy=0.1):
         dy = _y*0.1 if dy is None else dy
         s0 = self.get_s_pt_tab(_lgp, _lgt, _y, _z, _frock)
         s1 = self.get_s_pt_tab(_lgp, _lgt, _y - dy, _z, _frock)
@@ -2253,7 +2253,7 @@ class mixtures(hhe):
         s2 = self.get_s_pt_tab(_lgp, _lgt, _y, _z + dz, _frock)
         return (s2 - s1)/(2 * dz)
 
-    def get_ds2dz2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dz=0.1):
+    def get_d2sdz2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dz=0.1):
         dz = _z*0.1 if dz is None else dz
         s0 = self.get_s_pt_tab(_lgp, _lgt, _y, _z, _frock)
         s1 = self.get_s_pt_tab(_lgp, _lgt, _y, _z - dz, _frock)
