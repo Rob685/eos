@@ -2240,11 +2240,25 @@ class mixtures(hhe):
         s2 = self.get_s_pt_tab(_lgp, _lgt, _y + dy, _z, _frock)
         return (s2 - s1)/(2 * dy)
 
+    def get_ds2dy2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dy=0.1):
+        dy = _y*0.1 if dy is None else dy
+        s0 = self.get_s_pt_tab(_lgp, _lgt, _y, _z, _frock)
+        s1 = self.get_s_pt_tab(_lgp, _lgt, _y - dy, _z, _frock)
+        s2 = self.get_s_pt_tab(_lgp, _lgt, _y + dy, _z, _frock)
+        return (s2 - 2 * s0 + s1)/(dy * log10_to_loge) ** 2
+
     def get_dsdz_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dz=0.1):
         dz = _z*0.1 if dz is None else dz
         s1 = self.get_s_pt_tab(_lgp, _lgt, _y, _z - dz, _frock)
         s2 = self.get_s_pt_tab(_lgp, _lgt, _y, _z + dz, _frock)
         return (s2 - s1)/(2 * dz)
+
+    def get_ds2dz2_pt(self, _lgp, _lgt, _y, _z, _frock=0.0, dz=0.1):
+        dz = _z*0.1 if dz is None else dz
+        s0 = self.get_s_pt_tab(_lgp, _lgt, _y, _z, _frock)
+        s1 = self.get_s_pt_tab(_lgp, _lgt, _y, _z - dz, _frock)
+        s2 = self.get_s_pt_tab(_lgp, _lgt, _y, _z + dz, _frock)
+        return (s2 - 2 * s0 + s1)/(dz * log10_to_loge) ** 2
 
     # def get_dsdy_rhop(self, _lgrho, _lgp, _y, _z, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
     #     kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
@@ -2325,7 +2339,6 @@ class mixtures(hhe):
 
     #### Triple Product Rule Derivatives ###*
 
-
     def get_dpds_rhoy_srho(self, _s, _lgrho, _y, _z,_frock=0.0, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         ds = _s*0.1 if ds is None else ds
@@ -2366,6 +2379,14 @@ class mixtures(hhe):
 
         return dsdy_rhopy
 
+    def get_d2sdy2_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dy=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+
+        dsdy_rhopy1 = self.get_dsdy_rhop_srho(_s, _lgrho, _y - dy, _z, _frock, ds=ds, dy=dy, **kwargs)
+        dsdy_rhopy2 = self.get_dsdy_rhop_srho(_s, _lgrho, _y + dy, _z, _frock, ds=ds, dy=dy, **kwargs)
+
+        return (dsdy_rhopy2 - dsdy_rhopy1) / (2 * dy)
+
 
     def get_dsdz_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
@@ -2378,6 +2399,12 @@ class mixtures(hhe):
         dsdz_rhopy = -dpdz_srho/dpds_rhoy_srho # triple product rule
 
         return dsdz_rhopy
+
+    def get_d2sdz2_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dsdz_rhopy1 = self.get_dsdz_rhop_srho(_s, _lgrho, _y, _z - dz, _frock, ds=ds, dz=dz, **kwargs)
+        dsdz_rhopy2 = self.get_dsdz_rhop_srho(_s, _lgrho, _y, _z + dz, _frock, ds=ds, dz=dz, **kwargs)
+        return (dsdz_rhopy2 - dsdz_rhopy1) / (2 * dz)
 
 
     # def get_drhods_rhoy_sp(self, _s, _lgp, _y, _z, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
