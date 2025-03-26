@@ -2393,6 +2393,13 @@ class mixtures(hhe):
         dsdy_rhopz2 = self.get_dsdy_rhop_srho(_s, _lgrho, _y, _z + dz, _frock, ds=ds, dy=dy, **kwargs)
         return (dsdy_rhopz2 - dsdy_rhopz1) / (2 * dz)
 
+    def get_d2sdsdy_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dy=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dsdy_rhops1 = self.get_dsdy_rhop_srho(_s - ds, _lgrho, _y, _z, _frock, ds=ds, dy=dy, **kwargs)
+        dsdy_rhops2 = self.get_dsdy_rhop_srho(_s + ds, _lgrho, _y, _z, _frock, ds=ds, dy=dy, **kwargs)
+        return (dsdy_rhops2 - dsdy_rhops1) / (2 * ds / erg_to_kbbar)
+
+
     def get_dsdz_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
         kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
         #dPdS|{rho, Y, Z}:
@@ -2416,6 +2423,12 @@ class mixtures(hhe):
         dsdz_rhopz1 = self.get_dsdz_rhop_srho(_s, _lgrho, _y - dy, _z, _frock, ds=ds, dz=dz, **kwargs)
         dsdz_rhopz2 = self.get_dsdz_rhop_srho(_s, _lgrho, _y + dy, _z, _frock, ds=ds, dz=dz, **kwargs)
         return (dsdz_rhopz2 - dsdz_rhopz1) / (2 * dy)
+
+    def get_d2sdsdz_rhop_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ds=0.1, dy=0.1, dz=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
+        kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
+        dsdz_rhops1 = self.get_dsdz_rhop_srho(_s - ds, _lgrho, _y, _z, _frock, ds=ds, dz=dz, **kwargs)
+        dsdz_rhops2 = self.get_dsdz_rhop_srho(_s + ds, _lgrho, _y, _z, _frock, ds=ds, dz=dz, **kwargs)
+        return (dsdz_rhops2 - dsdz_rhops1) / (2 * ds / erg_to_kbbar)
 
     # def get_drhods_rhoy_sp(self, _s, _lgp, _y, _z, ds=0.1, ideal_guess=True, arr_guess=None, method='newton_brentq', tab=True):
     #     kwargs = {'ideal_guess': ideal_guess, 'arr_guess': arr_guess, 'method': method, 'tab':tab}
