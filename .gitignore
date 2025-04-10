@@ -2,6 +2,12 @@
 __pycache__
 gonzales_eos/*
 scvh/eos_adam/*
+cd/cd_aqua_smooth_pt.npz
+cd/cd_aqua_smooth_rhot.npz
+cd/cd_aqua_smooth_sp.npz
+cd/cd_aqua_smooth_srho.npz
+cd/cd_aqua_smooth2_sp.npz
+cd/cd_aqua_smooth2_srho.npz
 cms/coolTLusty_adam/*
 figs/*
 coolTlust_tables_new/*

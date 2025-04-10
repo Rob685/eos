@@ -163,11 +163,7 @@ class mixtures(hhe):
                     zmix_eos2 = 'methane',
                     zmix_eos3 = 'ammonia',
                     zmix_eos4 = 'ppv2',
-                    zmix_eos5 = 'iron',
-                    z_methane = 0.0,
-                    z_ammonia = 0.0,
-                    z_ppv = 0.0,
-                    z_fe = 0.0,
+                    zmix_eos5 = 'iron2',
                     hg=True,
                     y_prime=False,
                     interp_method='linear',
@@ -188,10 +184,10 @@ class mixtures(hhe):
             self.zmix_eos3 = zmix_eos3
             self.zmix_eos4 = zmix_eos4
             self.zmix_eos5 = zmix_eos5
-            self.z_methane = z_methane
-            self.z_ammonia = z_ammonia
-            self.z_ppv = z_ppv
-            self.z_fe = z_fe
+            # self.z_methane = z_methane
+            # self.z_ammonia = z_ammonia
+            # self.z_ppv = z_ppv
+            # self.z_fe = z_fe
 
             # z_water is not defined because it is defined as what is left over from the sum of methane, ammonia, ppv, and iron, just like the hydrogen fraction is defined
 
@@ -494,8 +490,6 @@ class mixtures(hhe):
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
         # mz = get_mz(self.z_eos)
-
-
         return (
             s_xy * (1 - _z)
             + s_z * _z
@@ -765,7 +759,7 @@ class mixtures(hhe):
 
     ### Inversion Functions ###
 
-    def get_logt_sp_inv(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_sp_inv(self, _s, _lgp, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -786,10 +780,14 @@ class mixtures(hhe):
         _lgp = np.atleast_1d(_lgp)
         _y = np.atleast_1d(_y)
         _z = np.atleast_1d(_z)
+        _zm = np.atleast_1d(_zm)
+        _za = np.atleast_1d(_za)
+        _zr = np.atleast_1d(_zr)
+        _zfe = np.atleast_1d(_zfe)
 
         # _y = _y if self.y_prime else _y * (1 - _z)
         # Ensure inputs are numpy arrays and broadcasted to the same shape
-        _s, _lgp, _y, _z = np.broadcast_arrays(_s, _lgp, _y, _z)
+        _s, _lgp, _y, _z, _zm, _za, _zr, _zfe = np.broadcast_arrays(_s, _lgp, _y, _z, _zm, _za, _zr, _zfe)
 
         if ideal_guess:
             guess = ideal_xy.get_t_sp(_s, _lgp, _y)
@@ -799,10 +797,10 @@ class mixtures(hhe):
             guess = arr_guess
 
     # Define a function to compute root and capture convergence
-        def root_func(s_i, lgp_i, y_i, z_i, guess_i):
+        def root_func(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
+                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i, zm_i, za_i, zr_i, zfe_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -899,15 +897,15 @@ class mixtures(hhe):
         vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
 
         # Apply the vectorized function
-        temperatures, converged = vectorized_root_func(_s, _lgp, _y, _z, guess)
+        temperatures, converged = vectorized_root_func(_s, _lgp, _y, _z, _zm, _za, _zr, _zfe, guess)
 
         return temperatures, converged
 
-    def get_logrho_sp_inv(self, _s, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logt, conv = self.get_logt_sp_inv( _s, _lgp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+    def get_logrho_sp_inv(self, _s, _lgp, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logt, conv = self.get_logt_sp_inv( _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_logrho_pt_tab(_lgp, logt, _y, _z)
 
-    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the pressure given density, temperature, helium abundance, and metallicity.
@@ -1040,11 +1038,11 @@ class mixtures(hhe):
 
         return pressure, converged
 
-    def get_s_rhot_inv(self, _lgrho, _lgt, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logp, conv = self.get_logp_rhot_inv(_lgrho, _lgt, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+    def get_s_rhot_inv(self, _lgrho, _lgt, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logp, conv = self.get_logp_rhot_inv(_lgrho, _lgt, _y, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=_zfe, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_s_pt_tab(logp, _lgt, _y, _z)
 
-    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the pressure given entropy, density, helium abundance, and metallicity.
@@ -1178,7 +1176,7 @@ class mixtures(hhe):
 
         return temperatures, converged
 
-    def get_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_srho_inv(self, _s, _lgrho, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, density, helium abundance, and metallicity.
@@ -1312,7 +1310,7 @@ class mixtures(hhe):
 
         return temperatures, converged
 
-    def get_logp_logt_srho_2Dinv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='root'):
+    def get_logp_logt_srho_2Dinv(self, _s, _lgrho, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='root'):
         """
         Compute temperature and pressure given entropy, density, helium abundance, and metallicity.
 
@@ -1444,12 +1442,12 @@ class mixtures(hhe):
         return logp_values, logt_values, converged
 
 
-    def get_logp_logt_srho_inv(self, _s, _lgrho, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
-        logp, convp = self.get_logp_srho_inv(_s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
-        logt, convt = self.get_logt_sp_inv(_s, logp, _y, _z, ideal_guess=True, arr_guess=None, method=method)
+    def get_logp_logt_srho_inv(self, _s, _lgrho, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logp, convp = self.get_logp_srho_inv(_s, _lgrho, _y, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=_zfe, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+        logt, convt = self.get_logt_sp_inv(_s, logp, _y, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=_zfe, ideal_guess=True, arr_guess=None, method=method)
         return logp, logt
 
-    def get_logu_srho(self, _s, _lgrho, _y, _z, _frock=0.0, ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
+    def get_logu_srho(self, _s, _lgrho, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_p_guess=None, arr_t_guess=None, method='newton_brentq', tab=True):
 
         if tab:
             if self.z_eos == 'aqua_smooth2':
@@ -1466,12 +1464,12 @@ class mixtures(hhe):
         else:
             #_y = _y if self.y_prime else _y / (1 - _z+1e-6)
             # WARNING: do not rely on in-situ derivatives because the y prime is not implemented here (yet)
-            logp, convp = self.get_logp_srho_inv( _s, _lgrho, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_p_guess, method=method)
-            logt, convt = self.get_logt_sp_inv( _s, logp, _y, _z, ideal_guess=ideal_guess, arr_guess=arr_t_guess, method=method)
+            logp, convp = self.get_logp_srho_inv( _s, _lgrho, _y, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=_zfe, ideal_guess=ideal_guess, arr_guess=arr_p_guess, method=method)
+            logt, convt = self.get_logt_sp_inv( _s, logp, _y, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=_zfe, ideal_guess=ideal_guess, arr_guess=arr_t_guess, method=method)
             return self.get_logu_pt_tab(logp, logt, _y, _z)
 
 
-    def get_logt_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_rhop_inv(self, _lgrho, _lgp, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given density, pressure, helium abundance, and metallicity.
@@ -1610,7 +1608,7 @@ class mixtures(hhe):
         return temperatures, converged
 
 
-    def get_s_rhop_inv(self, _lgrho, _lgp, _y, _z, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_s_rhop_inv(self, _lgrho, _lgp, _y, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
         """
         Compute the entropy given density, pressure, helium abundance, and metallicity.
 
