@@ -63,7 +63,7 @@ logu_rgi_sp = RGI((svals_sp, logpvals_sp), logu_grid_sp, method='linear', \
 
 # TABLE FUNCTIONS (P, T)
 
-def get_logrho_pt_tab(_lgp, _lgt): 
+def get_logrho_pt_tab(_lgp, _lgt):
     args = (_lgp, _lgt)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
@@ -113,7 +113,7 @@ def get_c_v_pt(_lgp, _lgt):
     else:
         return result
 
-def get_logt_sp_tab(_s, _lgp): 
+def get_logt_sp_tab(_s, _lgp):
     args = (_s, _lgp)
     v_args = [np.atleast_1d(arg) for arg in args]
     pts = np.column_stack(v_args)
@@ -171,7 +171,7 @@ def get_logt_sp_inv(_s, _lgp, ideal_guess=True, arr_guess=None, method='newton_b
     def root_func(s_i, lgp_i, guess_i):
         def err(_lgt):
             # Error function for logt(S, logp)
-            
+
             s_test = get_s_pt_tab(lgp_i, _lgt)*erg_to_kbbar
             return (s_test/s_i) - 1
 

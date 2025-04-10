@@ -7,7 +7,7 @@ import pdb
 import pandas as pd
 from tqdm import tqdm
 from numba import njit
-from eos import ideal_eos, metals_eos
+from eos import ideal_eos, metals_eos, ice_eos
 from scipy.optimize import root, newton, brentq, brenth, minimize
 from scipy.ndimage import gaussian_filter1d, gaussian_filter
 from astropy.constants import k_B
@@ -20,6 +20,8 @@ ideal_xy = ideal_eos.IdealHHeMix()
 
 mh = 1
 mhe = 4.0026
+
+ices = ice_eos.ice_eos() # for water, methane, ammonia, rock, and iron mixture
 
 ##### useful unit conversions #####
 
@@ -158,10 +160,14 @@ class mixtures(hhe):
     def __init__(self, hhe_eos,
                     z_eos,
                     zmix_eos1 = 'aqua',
-                    zmix_eos2 = 'ppv2',
-                    zmix_eos3 = 'iron',
-                    f_ppv = 0.0,
-                    f_fe = 0.0,
+                    zmix_eos2 = 'methane',
+                    zmix_eos3 = 'ammonia',
+                    zmix_eos4 = 'ppv2',
+                    zmix_eos5 = 'iron',
+                    z_methane = 0.0,
+                    z_ammonia = 0.0,
+                    z_ppv = 0.0,
+                    z_fe = 0.0,
                     hg=True,
                     y_prime=False,
                     interp_method='linear',
@@ -176,12 +182,18 @@ class mixtures(hhe):
         self.hg = hg
         self.z_eos = z_eos
 
-        if self.z_eos == 'mixture':
+        if self.z_eos == 'mixture' or self.z_eos == 'total_mixture':
             self.zmix_eos1 = zmix_eos1
             self.zmix_eos2 = zmix_eos2
             self.zmix_eos3 = zmix_eos3
-            self.f_ppv = f_ppv
-            self.f_fe = f_fe
+            self.zmix_eos4 = zmix_eos4
+            self.zmix_eos5 = zmix_eos5
+            self.z_methane = z_methane
+            self.z_ammonia = z_ammonia
+            self.z_ppv = z_ppv
+            self.z_fe = z_fe
+
+            # z_water is not defined because it is defined as what is left over from the sum of methane, ammonia, ppv, and iron, just like the hydrogen fraction is defined
 
         self.interp_method = interp_method
 
@@ -352,10 +364,55 @@ class mixtures(hhe):
         q = mh*xh + mhe*xhe + mz*xz
         return -1*(self.guarded_log(xh) + self.guarded_log(xhe) + self.guarded_log(xz)) / q
 
+    def get_smix_ideal(self, _y, _zw, _zm, _za, _zr, _zfe):
+        # Mass fractions:
+        f_h       = (1 - _y) * (1 - _zw) * (1 - _zm) * (1 - _za) * (1 - _zr) * (1 - _zfe)
+        f_he      = _y * (1 - _zw) * (1 - _zm) * (1 - _za) * (1 - _zr) * (1 - _zfe)
+        f_water   = _zw * (1 - _zm) * (1 - _za) * (1 - _zr) * (1 - _zfe)
+        f_methane = _zm * (1 - _za) * (1 - _zr) * (1 - _zfe)
+        f_ammonia = _za * (1 - _zr) * (1 - _zfe)
+        f_rock    = _zr * (1 - _zfe)
+        f_iron    = _zfe
+
+        # # Compute ideal mixing entropy:
+        m_h = 1.0
+        m_he = 4.0026
+        m_water = 18.015
+        m_methane = 17.031
+        m_ammonia = 16.04
+        m_rock = 100.3887
+        m_iron = 55.845
+
+        n_h       = f_h / m_h
+        n_he      = f_he / m_he
+        n_water   = f_water   / m_water
+        n_methane = f_methane / m_methane
+        n_ammonia = f_ammonia / m_ammonia
+        n_rock    = f_rock    / m_rock
+        n_iron    = f_iron    / m_iron
+        Ntot = n_h + n_he+ n_water + n_methane + n_ammonia + n_rock + n_iron
+
+        # Number fractions:
+        x_h       = n_h       / Ntot
+        x_he      = n_he      / Ntot
+        x_water   = n_water   / Ntot
+        x_methane = n_methane / Ntot
+        x_ammonia = n_ammonia / Ntot
+        x_rock    = n_rock    / Ntot
+        x_iron    = n_iron    / Ntot
+
+        #Compute average molecular weight weighted by these number fractions:
+        q = m_h * x_h + m_he * x_he + m_water * x_water + m_methane * x_methane + m_ammonia * x_ammonia + m_rock * x_rock + m_iron * x_iron
+
+        #Ideal entropy of mixing term (using natural logs and a guarded logarithm):
+        s_mix_id = - (self.guarded_log(x_h) + self.guarded_log(x_he) + self.guarded_log(x_water) + self.guarded_log(x_methane) + self.guarded_log(x_ammonia) \
+                        + self.guarded_log(x_rock) + self.guarded_log(x_iron)) / q
+
+        return s_mix_id
 
     ####### Volume-Addition Law #######
 
-    def get_s_pt_val(self, _lgp, _lgt, _y_prime, _z):
+    def get_s_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
         """
         This calculates the entropy for a metallicity mixture using the volume addition law.
         These terms contain the ideal entropy of mixing, so
@@ -367,6 +424,10 @@ class mixtures(hhe):
         is Y/(1 - Z). So the y value that should be
         used to calculate the entropy of mixing should be Y*(1 - Z).
         """
+
+        logt_arr = np.atleast_1d(_lgt)
+        logp_arr = np.atleast_1d(_lgp)
+        pts = np.column_stack((logt_arr, logp_arr))
 
         def validate_mass_fractions(_y_prime, _z):
             if (
@@ -390,6 +451,7 @@ class mixtures(hhe):
                 raise ValueError('Only water (aqua or mazevet+19 (mlcp)), ppv, and iron supported for now.')
 
         _y = _y_prime * (1 - _z)
+
         validate_mass_fractions(_y_prime, _z)
 
         smix_xy_ideal = self.get_smix_id_y(_y_prime) / erg_to_kbbar
@@ -400,27 +462,39 @@ class mixtures(hhe):
 
         s_xy = np.zeros_like(_lgp)
 
-        # logt_span = np.where(_lgt[_lgt >= 2.1])[0]
-        # logt_cold = np.where(_lgt[_lgt < 2.1])[0]
-
         s_x = 10 ** self.get_s_h(_lgp, _lgt)
         s_y = 10 ** self.get_s_he(_lgp, _lgt)
 
-        #s_xy[logt_span] = s_x[logt_span] * (1 - _y_prime[logt_span]) + s_y[logt_span] * _y_prime[logt_span]
         s_xy = s_x * (1 - _y_prime) + s_y * _y_prime
-        #s_xy[logt_cold] = ideal_xy.get_s_pt(_lgp[logt_cold], _lgt[logt_cold], _y_prime[logt_cold]) / erg_to_kbbar
 
         if self.z_eos == 'mixture':
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
-        elif self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
+        elif self.z_eos == 'total_mixture':
+            _zw = _z * (1 - _zmarfe)
+            _zm = _zmarfe * (1 - _zarfe)
+            _za = _zarfe * (1 - _zrfe)
+            _zr = _zrfe * (1 - _zfe)
+            s_z = ices.get_s_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
+            smix_xyz_ideal = self.get_smix_ideal(_y, _zw, _zm, _za, _zr, _zfe) / erg_to_kbbar
+
+        elif self.z_eos == 'aqua' or self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
+            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=_z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0) / erg_to_kbbar
+
+        elif self.z_eos == 'ppv' or self.z_eos == 'ppv2':
+            s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
+            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=0.0, _zm=0.0, _za=0.0, _zr=1.0, _zfe=0.0) / erg_to_kbbar
+
+        elif self.z_eos == 'iron' or self.z_eos == 'iron2':
+            s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
+            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=0.0, _zm=0.0, _za=0.0, _zr=0.0, _zfe=1.0) / erg_to_kbbar
         else:
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
-        mz = get_mz(self.z_eos)
-        smix_xyz_ideal = self.get_smix_id_yz(_y, _z, mz) / erg_to_kbbar
+        # mz = get_mz(self.z_eos)
+
 
         return (
             s_xy * (1 - _z)
@@ -429,7 +503,7 @@ class mixtures(hhe):
             + smix_xy_nonideal * (1 - _z)
         )
 
-    def get_logrho_pt_val(self, _lgp, _lgt, _y_prime, _z):
+    def get_logrho_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
         """
         This function calculates the density of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -458,7 +532,6 @@ class mixtures(hhe):
                 return self.vmix_interp(_lgp, _lgt) * (1 - _y_prime) * _y_prime
             return 0.0
 
-        _y = _y_prime * (1 - _z)
         validate_mass_fractions(_y_prime, _z)
 
         vmix = calculate_vmix(_lgp, _lgt, _y_prime)
@@ -469,6 +542,9 @@ class mixtures(hhe):
         if self.z_eos == 'mixture':
             rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
+        elif self.z_eos == 'total_mixture':
+            rho_z = 10 ** ices.get_logrho_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
+
         elif self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
             rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos)
@@ -479,7 +555,7 @@ class mixtures(hhe):
 
         return np.log10(1 / mixture_density)
 
-    def get_logu_pt_val(self, _lgp, _lgt, _y_prime, _z):
+    def get_u_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
         """
         This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -506,6 +582,8 @@ class mixtures(hhe):
         if self.z_eos == 'mixture':
             u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
+        elif self.z_eos == 'total_mixture':
+            u_z = ices.get_u_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
         elif self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
             u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
@@ -519,7 +597,7 @@ class mixtures(hhe):
             + u_z * _z
         )
 
-        return np.log10(mixture_energy)
+        return mixture_energy
 
 
     ####### EOS table calls #######
@@ -1919,94 +1997,94 @@ class mixtures(hhe):
 
                     elif basis == 'srho':
 
-                        if twoD_inv:
-                            try:
-                                if prev_res1_temp is None:
-                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
-                                        a_const, b_const, y_const, z_arr, ideal_guess=True, method='root'
-                                        )
-                                else:
-                                    res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
-                                        a_const, b_const, y_const, z_arr, ideal_guess=False, method='root', arr_guess=[prev_res1_temp, prev_res2_temp]
-                                        )
-                            except:
-                                print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                                raise
+                        # if twoD_inv:
+                        #     try:
+                        #         if prev_res1_temp is None:
+                        #             res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
+                        #                 a_const, b_const, y_const, z_arr, ideal_guess=True, method='root'
+                        #                 )
+                        #         else:
+                        #             res1_temp, res2_temp, conv = self.get_logp_logt_srho_2Dinv(
+                        #                 a_const, b_const, y_const, z_arr, ideal_guess=False, method='root', arr_guess=[prev_res1_temp, prev_res2_temp]
+                        #                 )
+                        #     except:
+                        #         print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+                        #         raise
 
-                            res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_arr, res1_temp, conv, interp_kind='quadratic'
+                        #     res1_interp = self.interpolate_non_converged_temperatures_1d(
+                        #         z_arr, res1_temp, conv, interp_kind='quadratic'
+                        #     )
+
+                        #     res2_interp = self.interpolate_non_converged_temperatures_1d(
+                        #         z_arr, res2_temp, conv, interp_kind='quadratic'
+                        #     )
+
+                        #     res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                        #     res1 = self.return_noglitch(z_arr, res1_noglitch)
+
+                        #     res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                        #     res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                        #     prev_res1_temp = res1
+                        #     prev_res2_temp = res2
+
+                        # else: # uses 1-D inversion via SP inverted table
+
+                        try:
+                            if prev_res1_temp is None:
+
+                                res1_temp, conv = self.get_logp_srho_inv(
+                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                    )
+                                res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, res1_temp, conv, interp_kind='quadratic'
+                                    )
+
+                                # res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=True
+                                #     )
+                                # res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                #     z_arr, res2_temp, conv, interp_kind='quadratic'
+                                #     )
+
+
+                            else:
+                                res1_temp, conv = self.get_logp_srho_inv(
+                                    a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
+                                    )
+                                res1_interp = self.interpolate_non_converged_temperatures_1d(
+                                    z_arr, res1_temp, conv, interp_kind='quadratic'
+                                    )
+                                # res2_temp, conv2_1 = self.get_logt_sp_inv(
+                                #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp
+                                #     )
+
+                                # res2_interp = self.interpolate_non_converged_temperatures_1d(
+                                #     z_arr, res2_temp, conv2_1, interp_kind='quadratic'
+                                #     )
+
+                        except:
+                            print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
+                            raise
+
+                        res1_noglitch = self.return_noglitch(z_arr, res1_interp)
+                        res1_noglitch2 = self.return_noglitch(z_arr, res1_noglitch)
+
+                        res1 = self.fill_nans_1d(res1_noglitch2, kind='linear')
+
+                        # res2_noglitch = self.return_noglitch(z_arr, res2_interp)
+                        # res2 = self.return_noglitch(z_arr, res2_noglitch)
+
+                        if gauss_smooth:
+                            if a_ <= 4.0: # smooth only the coldest regions
+                                res1 = gaussian_filter1d(res1, sigma=3.0)
+
+                        res2 = self.get_logt_sp_tab(
+                            a_const, res1, y_const, z_arr
                             )
 
-                            res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                z_arr, res2_temp, conv, interp_kind='quadratic'
-                            )
-
-                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                            res1 = self.return_noglitch(z_arr, res1_noglitch)
-
-                            res2_noglitch = self.return_noglitch(z_arr, res2_interp)
-                            res2 = self.return_noglitch(z_arr, res2_noglitch)
-
-                            prev_res1_temp = res1
-                            prev_res2_temp = res2
-
-                        else: # uses 1-D inversion via SP inverted table
-
-                            try:
-                                if prev_res1_temp is None:
-
-                                    res1_temp, conv = self.get_logp_srho_inv(
-                                        a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=True
-                                        )
-                                    res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                        z_arr, res1_temp, conv, interp_kind='quadratic'
-                                        )
-
-                                    # res2_temp, conv2_1 = self.get_logt_sp_inv(
-                                    #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=True
-                                    #     )
-                                    # res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                    #     z_arr, res2_temp, conv, interp_kind='quadratic'
-                                    #     )
-
-
-                                else:
-                                    res1_temp, conv = self.get_logp_srho_inv(
-                                        a_const, b_const, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res1_temp
-                                        )
-                                    res1_interp = self.interpolate_non_converged_temperatures_1d(
-                                        z_arr, res1_temp, conv, interp_kind='quadratic'
-                                        )
-                                    # res2_temp, conv2_1 = self.get_logt_sp_inv(
-                                    #     a_const, res1_interp, y_const, z_arr, method=inversion_method, ideal_guess=False, arr_guess=prev_res2_temp
-                                    #     )
-
-                                    # res2_interp = self.interpolate_non_converged_temperatures_1d(
-                                    #     z_arr, res2_temp, conv2_1, interp_kind='quadratic'
-                                    #     )
-
-                            except:
-                                print('Failed at s={}, rho={}, y={}'.format(a_const[0], b_const[0], y_const[0]))
-                                raise
-
-                            res1_noglitch = self.return_noglitch(z_arr, res1_interp)
-                            res1_noglitch2 = self.return_noglitch(z_arr, res1_noglitch)
-
-                            res1 = self.fill_nans_1d(res1_noglitch2, kind='linear')
-
-                            # res2_noglitch = self.return_noglitch(z_arr, res2_interp)
-                            # res2 = self.return_noglitch(z_arr, res2_noglitch)
-
-                            if gauss_smooth:
-                                if a_ <= 4.0: # smooth only the coldest regions
-                                    res1 = gaussian_filter1d(res1, sigma=3.0)
-
-                            res2 = self.get_logt_sp_tab(
-                                a_const, res1, y_const, z_arr
-                                )
-
-                            prev_res1_temp = res1
-                            prev_res2_temp = res2
+                        prev_res1_temp = res1
+                        prev_res2_temp = res2
 
                     elif basis == 'rhop':
                         try:
