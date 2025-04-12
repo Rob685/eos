@@ -800,7 +800,7 @@ class mixtures(hhe):
         def root_func(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i, zm_i, za_i, zr_i, zfe_i) * erg_to_kbbar
+                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -1890,6 +1890,32 @@ class mixtures(hhe):
         y_interpolated = self.interpolate_missing(x_clean, y_clean, x, kind='linear')
 
         return y_interpolated
+
+    def glitch_correct_1d(self, x, y, window=5, n_sigmas=3):
+        """
+        1) Identify outliers in y with a hampel filter, window +/- 'window'.
+        2) Mark them as nan in a copy.
+        3) Interpolate the nans.
+        Returns y_corrected.
+        """
+        y_copy = np.asarray(y, float).copy()
+        n = len(y_copy)
+        outlier_inds = []
+        for i in range(n):
+            w_start = max(0, i-window)
+            w_end   = min(n, i+window+1)
+            local_y = y_copy[w_start:w_end]
+            med = np.median(local_y)
+            mad = 1.4826 * np.median(np.abs(local_y - med)) or 1e-6
+            if abs(y_copy[i] - med) > n_sigmas*mad:
+                outlier_inds.append(i)
+
+        # set them to nan
+        y_copy[outlier_inds] = np.nan
+
+        # now interpolate the nan
+        y_fixed = fill_nans_1d(y_copy, kind='linear')
+        return y_fixed
 
     def inversion(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False, gauss_smooth=False):
 
@@ -3117,3 +3143,568 @@ class multifraction_mixtures(mixtures):
         t2 = 10**self.get_logt_sp(_s + ds, _lgp, _y, _z, _frock, **kwargs)
 
         return (t2 - t1)/(2 * ds / erg_to_kbbar)
+
+
+class total_eos(mixtures):
+
+    def __init__(self,
+                 hhe_eos = 'cd',
+                 hg: bool = False,
+                 y_prime: bool = False,
+                 interp_method: str = 'linear',
+                    ):
+
+        self.hhe_eos = hhe_eos
+        self.y_prime = y_prime
+        self.table_types  = ['pt', 'rhot', 'sp', 'srho']  # or add 'rhop' if needed
+        self.interp_method = interp_method
+
+        self.pt_data = np.load('eos/total_mixture_eos/{}_aqua_merged_eos_pt.npz'.format(hhe_eos))
+
+        # RGI interpolation functions
+        rgi_args = {'method': self.interp_method, 'bounds_error': False, 'fill_value': None}
+        # 1-D independent grids (P, T)
+        self.logpvals = self.pt_data['logpvals'] # these are shared. Units: log10 dyn/cm^2
+        self.logtvals = self.pt_data['logtvals'] # log10 K
+        self.yvals_pt = self.pt_data['yvals'] # mass fraction -- yprime
+        self.zvals_pt = self.pt_data['zvals'] # mass fraction
+        self.zmvals_pt = self.pt_data['zmvals']
+        self.zavals_pt = self.pt_data['zavals']
+        self.zrvals_pt = self.pt_data['zrvals']
+        # 4-D dependent grids (P, T)
+        self.s_pt_tab = self.pt_data['s'] # erg/g/K
+        self.logrho_pt_tab = self.pt_data['logrho'] # log10 g/cc
+        self.u_pt_tab = self.pt_data['u'] # log10 erg/g
+
+        self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+                                self.s_pt_tab, **rgi_args)
+        self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+                                self.logrho_pt_tab, **rgi_args)
+        self.u_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+                                self.u_pt_tab, **rgi_args)
+
+    def get_s_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+        if self.y_prime:
+            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+        else:
+            _y = _y / (1 - _z+1e-6)
+            _zm = _z / (1 - _za+1e-6)
+            _za = _z / (1 - _zr+1e-6)
+            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+
+
+    def get_logrho_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+        if self.y_prime:
+            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+        else:
+            _y = _y / (1 - _z+1e-6)
+            _zm = _z / (1 - _za+1e-6)
+            _za = _z / (1 - _zr+1e-6)
+            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+
+    def get_u_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+        if self.y_prime:
+            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+        else:
+            _y = _y / (1 - _z+1e-6)
+            _zm = _z / (1 - _za+1e-6)
+            _za = _z / (1 - _zr+1e-6)
+            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+
+   ### Inversion Functions ###
+
+    def get_logt_sp_inv(self, _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+
+        """
+        Compute the temperature given entropy, pressure, helium abundance, and metallicity.
+
+        Parameters:
+            _s (array_like): Entropy values.
+            _lgp (array_like): Log10 pressure values.
+            _y (array_like): Helium mass fraction values.
+            _z (array_like): Heavy metal mass fraction values.
+            ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
+            logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
+
+        Returns:
+            ndarray: Computed temperature values.
+        """
+
+        _s = np.atleast_1d(_s)
+        _lgp = np.atleast_1d(_lgp)
+        _y = np.atleast_1d(_y)
+        _z = np.atleast_1d(_z)
+        _zm = np.atleast_1d(_zm)
+        _za = np.atleast_1d(_za)
+        _zr = np.atleast_1d(_zr)
+        _zfe = np.atleast_1d(_zfe)
+
+        # _y = _y if self.y_prime else _y * (1 - _z)
+        # Ensure inputs are numpy arrays and broadcasted to the same shape
+        _s, _lgp, _y, _z, _zm, _za, _zr, _zfe = np.broadcast_arrays(_s, _lgp, _y, _z, _zm, _za, _zr, _zfe)
+
+        if ideal_guess:
+            guess = ideal_xy.get_t_sp(_s, _lgp, _y)
+        else:
+            if arr_guess is None:
+                raise ValueError("arr_guess must be provided when ideal_guess is False.")
+            guess = arr_guess
+
+    # Define a function to compute root and capture convergence
+        def root_func(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
+            def err(_lgt):
+                # Error function for logt(S, logp)
+                s_test = self.get_s_pt(lgp_i, _lgt, y_i, z_i, zm_i, za_i, zr_i) * erg_to_kbbar
+                return (s_test/s_i) - 1
+
+            if method == 'root':
+                sol = root(err, guess_i, tol=1e-8)
+                if sol.success:
+                    return sol.x[0], True
+                else:
+                    return np.nan, False  # Assign np.nan to non-converged elements
+
+            elif method == 'newton':
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    #Convergence failed
+                    return np.nan, False
+                except Exception as e:
+                    #Handle other exceptions
+                    return np.nan, False
+
+            elif method == 'brentq':
+                # Define an initial interval around the guess
+                delta = 0.1  # Initial interval half-width
+                a = guess_i - delta
+                b = guess_i + delta
+
+                # Try to find a valid interval where the function changes sign
+                max_attempts = 5
+                factor = 2.0  # Factor to expand the interval if needed
+
+                for attempt in range(max_attempts):
+                    try:
+                        fa = err(a)
+                        fb = err(b)
+                        if np.isnan(fa) or np.isnan(fb):
+                            raise ValueError("Function returned NaN.")
+
+                        if fa * fb < 0:
+                            # Valid interval found
+                            sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                            return sol_root, True
+                        else:
+                            # Expand the interval and try again
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor  # Increase delta for next iteration
+                    except ValueError:
+                        # If err() cannot be evaluated, expand the interval
+                        a -= delta * factor
+                        b += delta * factor
+                        delta *= factor
+
+                # If no valid interval is found after max_attempts
+                return np.nan, False
+
+            elif method == 'newton_brentq':
+                # Try the Newton method first
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Fall back to the Brentq method if Newton fails
+                    delta = 0.1
+                    a = guess_i - delta
+                    b = guess_i + delta
+                    max_attempts = 5
+                    factor = 2.0
+
+                    for attempt in range(max_attempts):
+                        try:
+                            fa = err(a)
+                            fb = err(b)
+                            if np.isnan(fa) or np.isnan(fb):
+                                raise ValueError("Function returned NaN.")
+                            if fa * fb < 0:
+                                sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                                return sol_root, True
+                            else:
+                                a -= delta * factor
+                                b += delta * factor
+                                delta *= factor
+                        except ValueError:
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor
+                    return np.nan, False
+
+                except OverflowError:
+                    print('Failed at s={}, logp={}, y={}, z={}'.format(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i))
+                    raise
+            else:
+                raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
+        # Vectorize the root_func
+        vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
+
+        # Apply the vectorized function
+        temperatures, converged = vectorized_root_func(_s, _lgp, _y, _z, _zm, _za, _zr, _zfe, guess)
+
+        return temperatures, converged
+
+    def get_logrho_sp_inv(self, _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+        logt, conv = self.get_logt_sp_inv( _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
+        return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
+
+    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+
+        """
+        Compute the pressure given density, temperature, helium abundance, and metallicity.
+
+        Parameters:
+            _lgrho (array_like): Log10 density values.
+            _lgt (array_like): Log10 temperature values.
+            _y (array_like): Helium mass fraction values.
+            _z (array_like): Heavy metal mass fraction values.
+            ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
+            logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
+
+        Returns:
+            ndarray: Computed temperature values.
+        """
+
+        _lgrho = np.atleast_1d(_lgrho)
+        _lgt = np.atleast_1d(_lgt)
+        _y = np.atleast_1d(_y)
+        _z = np.atleast_1d(_z)
+        _zm = np.atleast_1d(_zm)
+        _za = np.atleast_1d(_za)
+        _zr = np.atleast_1d(_zr)
+        _zfe = np.atleast_1d(_zfe)
+
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-6)
+        # Ensure inputs are numpy arrays and broadcasted to the same shape
+        _lgrho, _lgt, _y, _z, _zm, _za, _zr, _zfe = np.broadcast_arrays(_lgrho, _lgt, _y, _z, _zm, _za, _zr, _zfe)
+
+        if ideal_guess:
+            guess = ideal_xy.get_p_rhot(_lgrho, _lgt, _y)
+        else:
+            if arr_guess is None:
+                raise ValueError("logt_guess must be provided when ideal_guess is False.")
+            guess = arr_guess
+       # Define a function to compute root and capture convergence
+        def root_func(lgrho_i, lgt_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
+            def err(_lgp):
+                # Error function for logt(S, logp)
+                # _y_call = y_i if self.y_prime else y_i / (1 - z_i)
+                logrho_test = self.get_logrho_pt(_lgp, lgt_i, y_i, z_i, zm_i, za_i, zr_i)
+                return (logrho_test/lgrho_i) - 1
+
+            if method == 'root':
+                sol = root(err, guess_i, tol=1e-8)
+                if sol.success:
+                    return sol.x[0], True
+                else:
+                    return np.nan, False  # Assign np.nan to non-converged elements
+
+            elif method == 'newton':
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    #Convergence failed
+                    return np.nan, False
+                except Exception as e:
+                    #Handle other exceptions
+                    return np.nan, False
+
+            elif method == 'brentq':
+                # Define an initial interval around the guess
+                delta = 0.1  # Initial interval half-width
+                a = guess_i - delta
+                b = guess_i + delta
+
+                # Try to find a valid interval where the function changes sign
+                max_attempts = 5
+                factor = 2.0  # Factor to expand the interval if needed
+
+                for attempt in range(max_attempts):
+                    try:
+                        fa = err(a)
+                        fb = err(b)
+                        if np.isnan(fa) or np.isnan(fb):
+                            raise ValueError("Function returned NaN.")
+
+                        if fa * fb < 0:
+                            # Valid interval found
+                            sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                            return sol_root, True
+                        else:
+                            # Expand the interval and try again
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor  # Increase delta for next iteration
+                    except ValueError:
+                        # If err() cannot be evaluated, expand the interval
+                        a -= delta * factor
+                        b += delta * factor
+                        delta *= factor
+
+            elif method == 'newton_brentq':
+                # Try the Newton method first
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Fall back to the Brentq method if Newton fails
+                    delta = 0.1
+                    a = guess_i - delta
+                    b = guess_i + delta
+                    max_attempts = 5
+                    factor = 2.0
+
+                    for attempt in range(max_attempts):
+                        try:
+                            fa = err(a)
+                            fb = err(b)
+                            if np.isnan(fa) or np.isnan(fb):
+                                raise ValueError("Function returned NaN.")
+                            if fa * fb < 0:
+                                sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                                return sol_root, True
+                            else:
+                                a -= delta * factor
+                                b += delta * factor
+                                delta *= factor
+                        except ValueError:
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor
+                    return np.nan, False
+                # If no valid interval is found after max_attempts
+                return np.nan, False
+            else:
+                raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
+        # Vectorize the root_func
+        vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
+
+        # Apply the vectorized function
+        pressure, converged = vectorized_root_func(_lgrho, _lgt, _y, _z, _zm, _za, _zr, _zfe, guess)
+
+        return pressure, converged
+
+
+    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+
+        """
+        Compute the pressure given entropy, density, helium abundance, and metallicity.
+
+        Parameters:
+            _s (array_like): Entropy values.
+            _lgrho (array_like): Log10 density values.
+            _y (array_like): Helium mass fraction values.
+            _z (array_like): Heavy metal mass fraction values.
+            ideal_guess (bool, optional): If True, use the ideal EOS for the initial guess (default is True).
+            logt_guess (array_like, optional): User-provided initial guess for log temperature when `ideal_guess` is False.
+
+        Returns:
+            ndarray: Computed temperature values.
+        """
+
+        _s = np.atleast_1d(_s)
+        _lgrho = np.atleast_1d(_lgrho)
+        _y = np.atleast_1d(_y)
+        _z = np.atleast_1d(_z)
+        _zm = np.atleast_1d(_zm)
+        _za = np.atleast_1d(_za)
+        _zr = np.atleast_1d(_zr)
+        _zfe = np.atleast_1d(_zfe)
+
+        #_y = _y if self.y_prime else _y / (1 - _z+1e-6)
+
+        # Ensure inputs are numpy arrays and broadcasted to the same shape
+        _s, _lgrho, _y, _z, _zm, _za, _zr, _zfe = np.broadcast_arrays(_s, _lgrho, _y, _z, _zm, _za, _zr, _zfe)
+
+        if ideal_guess:
+            guess = ideal_xy.get_p_srho(_s, _lgrho, _y)
+        else:
+            if arr_guess is None:
+                raise ValueError("logt_guess must be provided when ideal_guess is False.")
+            guess = arr_guess
+    # Define a function to compute root and capture convergence
+        def root_func(s_i, lgrho_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
+            def err(_lgp):
+                # Error function for logt(S, logp)
+                logrho_test = self.get_logrho_sp_inv(s_i, _lgp, y_i, z_i, zm_i, za_i, zr_i)
+                return (logrho_test/lgrho_i) - 1
+
+            if method == 'root':
+                sol = root(err, guess_i, tol=1e-8)
+                if sol.success:
+                    return sol.x[0], True
+                else:
+                    return np.nan, False  # Assign np.nan to non-converged elements
+
+            elif method == 'newton':
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    #Convergence failed
+                    return np.nan, False
+                except Exception as e:
+                    #Handle other exceptions
+                    return np.nan, False
+
+            elif method == 'brentq':
+                # Define an initial interval around the guess
+                delta = 0.1  # Initial interval half-width
+                a = guess_i - delta
+                b = guess_i + delta
+
+                # Try to find a valid interval where the function changes sign
+                max_attempts = 5
+                factor = 2.0  # Factor to expand the interval if needed
+
+                for attempt in range(max_attempts):
+                    try:
+                        fa = err(a)
+                        fb = err(b)
+                        if np.isnan(fa) or np.isnan(fb):
+                            raise ValueError("Function returned NaN.")
+
+                        if fa * fb < 0:
+                            # Valid interval found
+                            sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                            return sol_root, True
+                        else:
+                            # Expand the interval and try again
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor  # Increase delta for next iteration
+                    except ValueError:
+                        # If err() cannot be evaluated, expand the interval
+                        a -= delta * factor
+                        b += delta * factor
+                        delta *= factor
+
+                # If no valid interval is found after max_attempts
+                return np.nan, False
+
+            elif method == 'newton_brentq':
+                # Try the Newton method first
+                try:
+                    sol_root = newton(err, x0=guess_i, tol=1e-5, maxiter=100)
+                    return sol_root, True
+                except RuntimeError:
+                    # Fall back to the Brentq method if Newton fails
+                    delta = 0.1
+                    a = guess_i - delta
+                    b = guess_i + delta
+                    max_attempts = 5
+                    factor = 2.0
+
+                    for attempt in range(max_attempts):
+                        try:
+                            fa = err(a)
+                            fb = err(b)
+                            if np.isnan(fa) or np.isnan(fb):
+                                raise ValueError("Function returned NaN.")
+                            if fa * fb < 0:
+                                sol_root = brentq(err, a, b, xtol=1e-5, maxiter=100)
+                                return sol_root, True
+                            else:
+                                a -= delta * factor
+                                b += delta * factor
+                                delta *= factor
+                        except ValueError:
+                            a -= delta * factor
+                            b += delta * factor
+                            delta *= factor
+                    return np.nan, False
+            else:
+                raise ValueError("Invalid method specified. Use 'root', 'newton', or 'brentq'.")
+        # Vectorize the root_func
+        vectorized_root_func = np.vectorize(root_func, otypes=[np.float64, bool])
+
+        # Apply the vectorized function
+        temperatures, converged = vectorized_root_func(_s, _lgrho, _y, _z, _zm, _za, _zr, _zfe, guess)
+
+        return temperatures, converged
+
+
+    def glitch_correct_1d(self, y, window=5, n_sigmas=3):
+        """
+        1) Identify outliers in y with a hampel filter, window +/- 'window'.
+        2) Mark them as nan in a copy.
+        3) Interpolate the nans.
+        Returns y_corrected.
+        """
+        y_copy = np.asarray(y, float).copy()
+        n = len(y_copy)
+        outlier_inds = []
+        for i in range(n):
+            w_start = max(0, i-window)
+            w_end   = min(n, i+window+1)
+            local_y = y_copy[w_start:w_end]
+            med = np.median(local_y)
+            mad = 1.4826 * np.median(np.abs(local_y - med)) or 1e-6
+            if abs(y_copy[i] - med) > n_sigmas*mad:
+                outlier_inds.append(i)
+
+        # set them to nan
+        y_copy[outlier_inds] = np.nan
+
+        # now interpolate the nan
+        y_fixed = self.fill_nans_1d(y_copy, kind='linear')
+        return y_fixed
+
+    def fill_nans_1d(self, arr, kind='linear'):
+        """
+        Fill NaNs in a 1D array by interpolation of any specified 'kind'
+        recognized by scipy.interpolate.interp1d:
+        'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', etc.
+
+        Parameters
+        ----------
+        arr : 1D numpy array
+            Array that may contain NaNs.
+        kind : str
+            Interpolation type to pass to interp1d (e.g. 'linear', 'quadratic').
+
+        Returns
+        -------
+        arr_filled : 1D numpy array
+            A copy of arr with NaNs replaced by interpolation of the specified kind.
+            If there are not enough valid points to interpolate (e.g., all NaN),
+            we simply return arr unchanged.
+        """
+
+        arr = np.asarray(arr)
+        if arr.ndim != 1:
+            raise ValueError("This function only handles 1D arrays.")
+
+        x = np.arange(len(arr))
+        valid_mask = ~np.isnan(arr)
+
+        # If everything is NaN, or only 1 valid point, we can’t do a real polynomial interpolation.
+        if np.count_nonzero(valid_mask) < 2:
+            return arr  # or decide on a default fill approach
+
+        # Build the interpolator.  'fill_value="extrapolate"' lets us fill beyond the data range.
+        f = interp1d(
+            x[valid_mask],
+            arr[valid_mask],
+            kind=kind,
+            fill_value="extrapolate"
+        )
+
+        # Create a copy for the result
+        arr_filled = arr.copy()
+        # Where arr is NaN, replace with the interpolation
+        arr_filled[~valid_mask] = f(x[~valid_mask])
+
+        return arr_filled
