@@ -167,9 +167,9 @@ class ice_eos:
         mixture_logrho = np.log10(rho_mix)
 
         # Create a boolean mask for where the water EOS should apply
-        mask = (logt_arr < 3.0) | (logp_arr < 10.0)
-        # For those indices, override the mixture with the water-only value.
-        mixture_logrho[mask] = logrho_water[mask]
+        # mask = (logt_arr < 3.0) | (logp_arr < 10.0)
+        # # For those indices, override the mixture with the water-only value.
+        # mixture_logrho[mask] = logrho_water[mask]
 
         # Return scalar if inputs were scalars.
         if np.isscalar(_lgp) and np.isscalar(_lgt):
@@ -224,8 +224,8 @@ class ice_eos:
         u_mix = f_water * u_water + f_methane * u_methane + f_ammonia * u_ammonia + f_rock * u_rock + f_iron * u_iron
 
         # Override: if logt < 3.0 or logp < 10.0, use water-only value.
-        mask = (logt_arr < 3.0) | (logp_arr < 10.0)
-        u_mix[mask] = u_water[mask]
+        # mask = (logt_arr < 3.0) | (logp_arr < 10.0)
+        # u_mix[mask] = u_water[mask]
 
         if np.isscalar(_lgp) and np.isscalar(_lgt):
             return u_mix.item() if hasattr(u_mix, 'item') else u_mix
@@ -274,6 +274,9 @@ class ice_eos:
         s_rock    = self.rock.get_s_pt_tab(logp_arr, logt_arr)
         s_iron    = self.iron.get_s_pt_tab(logp_arr, logt_arr)
 
+        s_methane[(s_water > s_methane)] = s_water[(s_water > s_methane)]
+        s_ammonia[(s_water > s_ammonia)] = s_water[(s_water > s_ammonia)]
+
         # Mass fractions:
         f_water   = (1 - _zm) * (1 - _za) * (1 - _zr) * (1 - _zfe)
         f_methane = _zm * (1 - _za) * (1 - _zr) * (1 - _zfe)
@@ -286,8 +289,9 @@ class ice_eos:
         s_mix = s_intrinsic
 
         # Override: for logt < 3.0 or logp < 10.0, use water-only value.
-        mask = (logt_arr < 3.0) | (logp_arr < 10.0)
-        s_mix[mask] = s_water[mask]
+        # mask = (logt_arr < 3.0) | (logp_arr < 10.0)
+        # s_mix[mask] = s_water[mask]
+
 
         if np.isscalar(_lgp) and np.isscalar(_lgt):
             return s_mix.item() if hasattr(s_mix, 'item') else s_mix
