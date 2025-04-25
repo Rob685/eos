@@ -10,7 +10,7 @@ from astropy import units as u
 import importlib
 from tqdm import tqdm
 import os
-from eos import aqua_eos, ppv2_eos, iron2_eos
+from eos import aqua_eos, ppv2_eos, iron2_eos#, ch4, nh3
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -34,27 +34,69 @@ class ice_eos:
             Path to the directory containing the data files.
         """
 
-        self.methane = np.load('%s/methane_ammonia/methane_eos_pt.npz' % CURR_DIR)
-        self.ammonia = np.load('%s/methane_ammonia/ammonia_eos_pt.npz' % CURR_DIR)
+        # self.methane = np.load('%s/methane_ammonia/methane_eos_pt.npz' % CURR_DIR)
+        # self.ammonia = np.load('%s/methane_ammonia/ammonia_eos_pt.npz' % CURR_DIR)
+
+        self.methane = np.load('%s/methane_ammonia/methane_eos_pt_extended.npz' % CURR_DIR)
+        self.ammonia = np.load('%s/methane_ammonia/ammonia_eos_pt_extended.npz' % CURR_DIR)
+
         self.water = aqua_eos
         self.rock = ppv2_eos
         self.iron = iron2_eos
 
         # For methane:
 
-        self.rho_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        # self.rho_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        #                         self.methane["logrho"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        # self.u_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        #                         self.methane["u"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        # self.s_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        #                         self.methane["s"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        # # For ammonia:
+
+        # self.rho_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        #                         self.ammonia["logrho"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        # self.u_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        #                         self.ammonia["u"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        # self.s_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        #                         self.ammonia["s"],
+        #                         method='linear',
+        #                         bounds_error=False,
+        #                         fill_value=None)
+
+        self.rho_pt_methane_rgi = RGI((self.methane["logT"], self.methane["logP"]),
                                 self.methane["logrho"],
                                 method='linear',
                                 bounds_error=False,
                                 fill_value=None)
 
-        self.u_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        self.u_pt_methane_rgi = RGI((self.methane["logT"], self.methane["logP"]),
                                 self.methane["u"],
                                 method='linear',
                                 bounds_error=False,
                                 fill_value=None)
 
-        self.s_pt_methane_rgi = RGI((self.methane["logt"][:, 0], self.methane["logp"][0, :]),
+        self.s_pt_methane_rgi = RGI((self.methane["logT"], self.methane["logP"]),
                                 self.methane["s"],
                                 method='linear',
                                 bounds_error=False,
@@ -62,19 +104,19 @@ class ice_eos:
 
         # For ammonia:
 
-        self.rho_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        self.rho_pt_ammonia_rgi = RGI((self.ammonia["logT"], self.ammonia["logP"]),
                                 self.ammonia["logrho"],
                                 method='linear',
                                 bounds_error=False,
                                 fill_value=None)
 
-        self.u_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        self.u_pt_ammonia_rgi = RGI((self.ammonia["logT"], self.ammonia["logP"]),
                                 self.ammonia["u"],
                                 method='linear',
                                 bounds_error=False,
                                 fill_value=None)
 
-        self.s_pt_ammonia_rgi = RGI((self.ammonia["logt"][:, 0], self.ammonia["logp"][0, :]),
+        self.s_pt_ammonia_rgi = RGI((self.ammonia["logT"], self.ammonia["logP"]),
                                 self.ammonia["s"],
                                 method='linear',
                                 bounds_error=False,
@@ -274,8 +316,8 @@ class ice_eos:
         s_rock    = self.rock.get_s_pt_tab(logp_arr, logt_arr)
         s_iron    = self.iron.get_s_pt_tab(logp_arr, logt_arr)
 
-        s_methane[(s_water > s_methane)] = s_water[(s_water > s_methane)]
-        s_ammonia[(s_water > s_ammonia)] = s_water[(s_water > s_ammonia)]
+        # s_methane[(s_water > s_methane)] = s_water[(s_water > s_methane)]
+        # s_ammonia[(s_water > s_ammonia)] = s_water[(s_water > s_ammonia)]
 
         # Mass fractions:
         f_water   = (1 - _zm) * (1 - _za) * (1 - _zr) * (1 - _zfe)
