@@ -289,16 +289,16 @@ class mixtures(hhe):
                 # elif self.z_eos == 'aqua':
                 #     z_eos_srho = 'aqua'
 
-                self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos_rhop))
+                #self.rhop_data = np.load('eos/{}/{}_{}_rhop.npz'.format(hhe_eos, hhe_eos, z_eos_rhop))
                 self.srho_data = np.load('eos/{}/{}_{}_srho.npz'.format(hhe_eos, hhe_eos, self.z_eos))
                 # 1-D independent grids (rho, P)
-                self.logpvals_rhop = self.rhop_data['logpvals']
-                self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
-                self.yvals_rhop = self.rhop_data['yvals']
-                self.zvals_rhop = self.rhop_data['zvals']
+                # self.logpvals_rhop = self.rhop_data['logpvals']
+                # self.logrhovals_rhop = self.rhop_data['logrhovals'] # log10 g/cc -- rho, P table range
+                # self.yvals_rhop = self.rhop_data['yvals']
+                # self.zvals_rhop = self.rhop_data['zvals']
                 # 4-D dependent grids (rho, P)
-                self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
-                self.logt_rhop_tab = self.rhop_data['logt_rhop']
+                # self.s_rhop_tab = self.rhop_data['s_rhop'] # erg/g/K
+                # self.logt_rhop_tab = self.rhop_data['logt_rhop']
 
                 # # 1-D independent grids (S, rho)
                 self.svals_srho = self.srho_data['s_vals'] # kb/baryon
@@ -309,10 +309,10 @@ class mixtures(hhe):
                 self.logp_srho_tab = self.srho_data['logp_srho']
                 self.logt_srho_tab = self.srho_data['logt_srho']
 
-                self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop),
-                                        self.s_rhop_tab, **rgi_args)
-                self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop),
-                                        self.logt_rhop_tab, **rgi_args)
+                # self.s_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop),
+                #                         self.s_rhop_tab, **rgi_args)
+                # self.logt_rhop_rgi = RGI((self.logrhovals_rhop, self.logpvals_rhop, self.yvals_rhop, self.zvals_rhop),
+                #                         self.logt_rhop_tab, **rgi_args)
 
                 if self.z_eos == 'aqua_smooth2':
                     self.logp_srho_rgi = RGI((self.zvals_srho, self.yvals_srho, self.svals_srho, self.logrhovals_srho),
@@ -393,7 +393,7 @@ class mixtures(hhe):
         n_ammonia = f_ammonia / m_ammonia
         n_rock    = f_rock    / m_rock
         n_iron    = f_iron    / m_iron
-        Ntot = n_h + n_he+ n_water + n_methane + n_ammonia + n_rock + n_iron
+        Ntot = n_h + n_he + n_water + n_methane + n_ammonia + n_rock + n_iron
 
         # Number fractions:
         x_h       = n_h       / Ntot
@@ -415,7 +415,7 @@ class mixtures(hhe):
 
     ####### Volume-Addition Law #######
 
-    def get_s_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
+    def get_s_pt_val(self, _lgp, _lgt, _y_prime, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0):
         """
         This calculates the entropy for a metallicity mixture using the volume addition law.
         These terms contain the ideal entropy of mixing, so
@@ -453,7 +453,7 @@ class mixtures(hhe):
             else:
                 raise ValueError('Only water (aqua or mazevet+19 (mlcp)), ppv, and iron supported for now.')
 
-        _y = _y_prime * (1 - _z)
+        #_y = _y_prime * (1 - _z)
 
         validate_mass_fractions(_y_prime, _z)
 
@@ -473,30 +473,32 @@ class mixtures(hhe):
         if self.z_eos == 'mixture':
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
-        elif self.z_eos == 'total_mixture':
-            _zw = _z * (1 - _zmarfe)
-            _zm = _zmarfe * (1 - _zarfe)
-            _za = _zarfe * (1 - _zrfe)
-            _zr = _zrfe * (1 - _zfe)
-            s_z = ices.get_s_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
-            smix_xyz_ideal = self.get_smix_ideal(_y, _zw, _zm, _za, _zr, _zfe) / erg_to_kbbar
+        elif self.z_eos == 'ice_mixture':
+            s_z = ices.get_s_pt_val(_lgp, _lgt, _zm, _za)
+            smix_xyz_ideal = self.get_smix_ideal(_y_prime, _z, _zm=_zm, _za=_za, _zr=0.0, _zfe=0.0) / erg_to_kbbar
+
+        elif self.z_eos == 'ice_rock_mixture':
+            s_z_ice = ices.get_s_pt_val(_lgp, _lgt, _zm, _za)
+            s_z_rock = metals_eos.get_s_pt_tab(_lgp, _lgt, eos='ppv2')
+
+            s_z = (1 - _zr) * s_z_ice + _zr * s_z_rock
+            smix_xyz_ideal = self.get_smix_ideal(_y_prime, _z, _zm=_zm, _za=_za, _zr=_zr, _zfe=0.0) / erg_to_kbbar
 
         elif self.z_eos == 'aqua' or self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
-            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=_z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0) / erg_to_kbbar
+            smix_xyz_ideal = self.get_smix_ideal(_y_prime, _zw=_z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0) / erg_to_kbbar
 
         elif self.z_eos == 'ppv' or self.z_eos == 'ppv2':
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
-            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=0.0, _zm=0.0, _za=0.0, _zr=1.0, _zfe=0.0) / erg_to_kbbar
+            smix_xyz_ideal = self.get_smix_ideal(_y_prime, _zw=0.0, _zm=0.0, _za=0.0, _zr=1.0, _zfe=0.0) / erg_to_kbbar
 
         elif self.z_eos == 'iron' or self.z_eos == 'iron2':
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
-            smix_xyz_ideal = self.get_smix_ideal(_y, _zw=0.0, _zm=0.0, _za=0.0, _zr=0.0, _zfe=1.0) / erg_to_kbbar
+            smix_xyz_ideal = self.get_smix_ideal(_y_prime, _zw=0.0, _zm=0.0, _za=0.0, _zr=0.0, _zfe=1.0) / erg_to_kbbar
         else:
             s_z = metals_eos.get_s_pt_tab(_lgp, _lgt, eos=self.z_eos)
 
-        # mz = get_mz(self.z_eos)
         return (
             s_xy * (1 - _z)
             + s_z * _z
@@ -504,7 +506,7 @@ class mixtures(hhe):
             + smix_xy_nonideal * (1 - _z)
         )
 
-    def get_logrho_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
+    def get_logrho_pt_val(self, _lgp, _lgt, _y_prime, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0):
         """
         This function calculates the density of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -543,8 +545,13 @@ class mixtures(hhe):
         if self.z_eos == 'mixture':
             rho_z = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
-        elif self.z_eos == 'total_mixture':
-            rho_z = 10 ** ices.get_logrho_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
+        elif self.z_eos == 'ice_mixture':
+            rho_z = 10 ** ices.get_logrho_pt_val(_lgp, _lgt, _zm, _za)
+        elif self.z_eos == 'ice_rock_mixture':
+            rho_z_ice = 10 ** ices.get_logrho_pt_val(_lgp, _lgt, _zm, _za)
+            rho_z_rock = 10 ** metals_eos.get_rho_pt_tab(_lgp, _lgt, eos='ppv2')
+
+            rho_z = 1 / ((1 - _zr) / rho_z_ice + _zr / rho_z_rock)
 
         elif self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
@@ -556,7 +563,7 @@ class mixtures(hhe):
 
         return np.log10(1 / mixture_density)
 
-    def get_u_pt_val(self, _lgp, _lgt, _y_prime, _z, _zmarfe=0.0, _zarfe=0.0, _zrfe=0.0, _zfe=0.0):
+    def get_u_pt_val(self, _lgp, _lgt, _y_prime, _z, _zm=0.0, _za=0.0, _zr=0.0, _zfe=0.0):
         """
         This function calculates the internal energy per unit mass of a H-He-Z mixture using the volume addition law.
         When including the non-ideal corrections, this function adds the volume of mixing from Howard & Guillot (2023a).
@@ -583,8 +590,15 @@ class mixtures(hhe):
         if self.z_eos == 'mixture':
             u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos, f_ppv=self.f_ppv, f_fe=self.f_fe,
                                             z_eos1=self.zmix_eos1, z_eos2=self.zmix_eos2, z_eos3=self.zmix_eos3)
-        elif self.z_eos == 'total_mixture':
-            u_z = ices.get_u_pt_val(_lgp, _lgt, _zmarfe, _zarfe, _zrfe, _zfe)
+        elif self.z_eos == 'ice_mixture':
+            u_z = ices.get_u_pt_val(_lgp, _lgt, _zm, _za)
+
+        elif self.z_eos == 'ice_rock_mixture':
+            u_z_ice = ices.get_u_pt_val(_lgp, _lgt, _zm, _za)
+            u_z_rock = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos='ppv2')
+
+            u_z = (1 - _zr) * u_z_ice + _zr * u_z_rock
+
         elif self.z_eos == 'aqua_smooth' or self.z_eos == 'aqua_smooth2':
             self.z_eos = 'aqua'
             u_z = 10 ** metals_eos.get_u_pt_tab(_lgp, _lgt, eos=self.z_eos)
@@ -1898,7 +1912,7 @@ class mixtures(hhe):
 
         return y_interpolated
 
-    def glitch_correct_1d(self, x, y, window=5, n_sigmas=3):
+    def glitch_correct_1d(self, y, window=5, n_sigmas=3):
         """
         1) Identify outliers in y with a hampel filter, window +/- 'window'.
         2) Mark them as nan in a copy.
@@ -1921,7 +1935,7 @@ class mixtures(hhe):
         y_copy[outlier_inds] = np.nan
 
         # now interpolate the nan
-        y_fixed = fill_nans_1d(y_copy, kind='linear')
+        y_fixed = self.fill_nans_1d(y_copy, kind='linear')
         return y_fixed
 
     def inversion(self, a_arr, b_arr, y_arr, z_arr, basis, inversion_method='newton_brentq', twoD_inv=False, calc_derivatives=False, gauss_smooth=False):
@@ -3156,19 +3170,26 @@ class total_eos(mixtures):
 
     def __init__(self,
                  hhe_eos = 'cd',
+                 z_eos = 'total_mixture',
                  hg: bool = False,
                  y_prime: bool = False,
                  interp_method: str = 'linear',
                  pt_only: bool = False, # for new inversions PT is calculated first to get Rho, T and S, P later
                  srho_table: bool = True, # To obtain S, Rho table, we need Rho, T and S, P tables first or perform a double inversion
+                 new_z_mix: bool = True
                     ):
 
+        super().__init__(hhe_eos=hhe_eos, z_eos=z_eos, hg=hg, y_prime=y_prime, interp_method=interp_method, new_z_mix=new_z_mix)
+
         self.hhe_eos = hhe_eos
+        self.z_eos = z_eos
         self.y_prime = y_prime
+        self.hg = hg
+        self.interp_method = interp_method
         self.table_types  = ['pt', 'rhot', 'sp', 'srho']  # or add 'rhop' if needed
         self.interp_method = interp_method
 
-        self.pt_data = np.load('eos/total_mixture_eos/{}_aqua_merged_eos_pt.npz'.format(hhe_eos))
+        self.pt_data = np.load('eos/total_mixture_eos/merged_eos_pt.npz')
 
         # RGI interpolation functions
 
@@ -3181,174 +3202,180 @@ class total_eos(mixtures):
         self.zvals_pt = self.pt_data['zvals'] # mass fraction
         self.zmvals_pt = self.pt_data['zmvals']
         self.zavals_pt = self.pt_data['zavals']
-        self.zrvals_pt = self.pt_data['zrvals']
+        #self.zrvals_pt = self.pt_data['zrvals']
 
         # 7-D dependent grids (P, T)
         self.s_pt_tab = self.pt_data['s'] # erg/g/K
         self.logrho_pt_tab = self.pt_data['logrho'] # log10 g/cc
         self.u_pt_tab = self.pt_data['u'] # log10 erg/g
 
-        self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+        self.s_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt,
+                                    #self.zrvals_pt
+                                    ),
                                 self.s_pt_tab, **rgi_args)
-        self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+        self.logrho_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt,
+                                    #self.zrvals_pt
+                                    ),
                                 self.logrho_pt_tab, **rgi_args)
-        self.u_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt, self.zrvals_pt),
+        self.u_pt_rgi = RGI((self.logpvals, self.logtvals, self.yvals_pt, self.zvals_pt, self.zmvals_pt, self.zavals_pt,
+                                #self.zrvals_pt
+                                ),
                                 self.u_pt_tab, **rgi_args)
 
         if not pt_only:
             # RGI interpolation functions
 
             ####### Rho, T ####### tables
-            self.rhot_data = np.load('eos/total_mixture_eos/{}_aqua_merged_eos_rhot.npz'.format(hhe_eos))
-            self.logrhovals = self.rhot_data['logrhovals'] # log10 g/cc
-            self.logtvals_rhot = self.rhot_data['logtvals'] # log10 K
-            self.yvals_rhot = self.rhot_data['yvals'] # mass fraction -- yprime
-            self.zvals_rhot = self.rhot_data['zvals'] # mass fraction
-            self.zmvals_rhot = self.rhot_data['zmvals']
-            self.zavals_rhot = self.rhot_data['zavals']
-            self.zrvals_rhot = self.rhot_data['zrvals']
+            # self.rhot_data = np.load('eos/total_mixture_eos/merged_eos_rhot.npz'))
+            # self.logrhovals = self.rhot_data['logrhovals'] # log10 g/cc
+            # self.logtvals_rhot = self.rhot_data['logtvals'] # log10 K
+            # self.yvals_rhot = self.rhot_data['yvals'] # mass fraction -- yprime
+            # self.zvals_rhot = self.rhot_data['zvals'] # mass fraction
+            # self.zmvals_rhot = self.rhot_data['zmvals']
+            # self.zavals_rhot = self.rhot_data['zavals']
+            ## self.zrvals_rhot = self.rhot_data['zrvals']
 
-            # 7-D dependent grids (Rho, T)-- S(rho, T) can be calculated with S(P(rho, T), T)
-            self.logp_rhot_tab = self.rhot_data['logP']
+            # # 7-D dependent grids (Rho, T)-- S(rho, T) can be calculated with S(P(rho, T), T)
+            # self.logp_rhot_tab = self.rhot_data['logP']
 
-            self.logp_rhot_rgi = RGI((self.logrhovals, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot,
-                                    self.zmvals_rhot, self.zavals_rhot, self.zrvals_rhot),
-                                    self.logp_rhot_tab, **rgi_args)
+            # self.logp_rhot_rgi = RGI((self.logrhovals, self.logtvals_rhot, self.yvals_rhot, self.zvals_rhot,
+            #                         self.zmvals_rhot, self.zavals_rhot,
+            #                         self.logp_rhot_tab, **rgi_args)
 
             ####### S, P ####### tables
-            self.sp_data = np.load('eos/total_mixture_eos/{}_aqua_merged_eos_sp.npz'.format(hhe_eos))
+            self.sp_data = np.load('eos/total_mixture_eos/merged_eos_sp.npz')
             self.svals_sp = self.sp_data['svals'] # erg/g/K
             self.logpvals_sp = self.sp_data['logpvals'] # log10 dyn/cm^2
             self.yvals_sp = self.sp_data['yvals'] # mass fraction -- yprime
             self.zvals_sp = self.sp_data['zvals'] # mass fraction
             self.zmvals_sp = self.sp_data['zmvals']
             self.zavals_sp = self.sp_data['zavals']
-            self.zrvals_sp = self.sp_data['zrvals']
+            #self.zrvals_sp = self.sp_data['zrvals']
 
             # 7-D dependent grids (S, P)-- Rho(S, P) can be calculated with Rho(P, T(S, P))
             self.logt_sp_tab = self.sp_data['logT'] # log10 K
 
             self.logt_sp_rgi = RGI((self.svals_sp, self.logpvals_sp, self.yvals_sp, self.zvals_sp,
-                                    self.zmvals_sp, self.zavals_sp, self.zrvals_sp),
+                                    self.zmvals_sp, self.zavals_sp),
                                     self.logt_sp_tab, **rgi_args)
 
-        if srho_table:
-            # S, Rho tables
-            self.srho_data = np.load('eos/total_mixture_eos/{}_aqua_merged_eos_srho.npz'.format(hhe_eos))
-            self.svals_srho = self.srho_data['svals']
-            self.logrhovals_srho = self.srho_data['logrhovals']
-            self.yvals_srho = self.srho_data['yvals'] # mass fraction -- yprime
-            self.zvals_srho = self.srho_data['zvals']
-            self.zmvals_srho = self.srho_data['zmvals']
-            self.zavals_srho = self.srho_data['zavals']
+            if srho_table:
+                # S, Rho tables
+                self.srho_data = np.load('eos/total_mixture_eos/merged_eos_srho.npz')
+                self.svals_srho = self.srho_data['svals']
+                self.logrhovals_srho = self.srho_data['logrhovals']
+                self.yvals_srho = self.srho_data['yvals'] # mass fraction -- yprime
+                self.zvals_srho = self.srho_data['zvals']
+                self.zmvals_srho = self.srho_data['zmvals']
+                self.zavals_srho = self.srho_data['zavals']
 
-            # 7-D dependent grids (S, Rho)-- T(S, Rho) can be calculated with T(S, P(S, Rho))
-            self.logp_srho_tab = self.srho_data['logP'] # log10 dyn/cm^2
+                # 7-D dependent grids (S, Rho)-- T(S, Rho) can be calculated with T(S, P(S, Rho))
+                self.logp_srho_tab = self.srho_data['logP'] # log10 dyn/cm^2
 
-            self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho,
-                                    self.zmvals_srho, self.zavals_srho, self.zrvals_srho),
-                                    self.logp_srho_tab, **rgi_args)
+                self.logp_srho_rgi = RGI((self.svals_srho, self.logrhovals_srho, self.yvals_srho, self.zvals_srho,
+                                        self.zmvals_srho, self.zavals_srho, self.zrvals_srho),
+                                        self.logp_srho_tab, **rgi_args)
 
     ######## P, T ####### getters
-    def get_s_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+    def get_s_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
-            _za = _z / (1 - _zr+1e-6)
-            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            #_za = _z / (1 - _zr+1e-6)
+            return self.s_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
 
 
-    def get_logrho_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+    def get_logrho_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
-            _za = _z / (1 - _zr+1e-6)
-            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            #_za = _z / (1 - _zr+1e-6)
+            return self.logrho_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
 
-    def get_u_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr):
+    def get_u_pt(self, _lgp, _lgt, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
-            _za = _z / (1 - _zr+1e-6)
-            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za, _zr))
+            #_za = _z / (1 - _zr+1e-6)
+            return self.u_pt_rgi(( _lgp, _lgt, _y, _z, _zm, _za))
 
     ######## Rho, T ####### getters
-    def get_logp_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr):
+    def get_logp_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            return self.logp_rhot_rgi(( _lgrho, _lgt, _y, _z, _zm, _za, _zr))
+            return self.logp_rhot_rgi(( _lgrho, _lgt, _y, _z, _zm, _za))
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
             _za = _z / (1 - _zr+1e-6)
-            return self.logp_rhot_rgi(( _lgrho, _lgt, _y, _z, _zm, _za, _zr))
+            return self.logp_rhot_rgi(( _lgrho, _lgt, _y, _z, _zm, _za))
 
-    def get_s_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr):
+    def get_s_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za, _zr)
-            return self.get_s_pt(logp, _lgt, _y, _z, _zm, _za, _zr)
-        else:
-            _y = _y / (1 - _z+1e-6)
-            _zm = _z / (1 - _za+1e-6)
-            _za = _z / (1 - _zr+1e-6)
-
-            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za, _zr)
-            return self.get_s_pt(logp, _lgt, _y, _z, _zm, _za, _zr)
-
-    def get_u_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr):
-        if self.y_prime:
-            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za, _zr)
-            return self.get_u_pt(logp, _lgt, _y, _z, _zm, _za, _zr)
+            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za)
+            return self.get_s_pt(logp, _lgt, _y, _z, _zm, _za)
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
             _za = _z / (1 - _zr+1e-6)
 
-            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za, _zr)
-            return self.get_u_pt(logp, _lgt, _y, _z, _zm, _za, _zr)
+            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za)
+            return self.get_s_pt(logp, _lgt, _y, _z, _zm, _za)
+
+    def get_u_rhot(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr=0.0):
+        if self.y_prime:
+            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za)
+            return self.get_u_pt(logp, _lgt, _y, _z, _zm, _za)
+        else:
+            _y = _y / (1 - _z+1e-6)
+            _zm = _z / (1 - _za+1e-6)
+            _za = _z / (1 - _zr+1e-6)
+
+            logp = self.get_logp_rhot( _lgrho, _lgt, _y, _z, _zm, _za)
+            return self.get_u_pt(logp, _lgt, _y, _z, _zm, _za)
 
     ######## S, P ####### getters
-    def get_logt_sp(self, _s, _lgp, _y, _z, _zm, _za, _zr):
+    def get_logt_sp(self, _s, _lgp, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            return self.logt_sp_rgi(( _s, _lgp, _y, _z, _zm, _za, _zr))
+            return self.logt_sp_rgi(( _s, _lgp, _y, _z, _zm, _za))
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
             _za = _z / (1 - _zr+1e-6)
-            return self.logt_sp_rgi(( _s, _lgp, _y, _z, _zm, _za, _zr))
+            return self.logt_sp_rgi(( _s, _lgp, _y, _z, _zm, _za))
 
-    def get_logrho_sp(self, _s, _lgp, _y, _z, _zm, _za, _zr):
+    def get_logrho_sp(self, _s, _lgp, _y, _z, _zm, _za, _zr=0.0):
         if self.y_prime:
-            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za, _zr)
-            return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
-        else:
-            _y = _y / (1 - _z+1e-6)
-            _zm = _z / (1 - _za+1e-6)
-            _za = _z / (1 - _zr+1e-6)
-
-            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za, _zr)
-            return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
-
-    def get_logu_sp(self, _s, _lgp, _y, _z, _zm, _za, _zr):
-        if self.y_prime:
-            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za, _zr)
-            return self.get_u_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
+            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za)
+            return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za)
         else:
             _y = _y / (1 - _z+1e-6)
             _zm = _z / (1 - _za+1e-6)
             _za = _z / (1 - _zr+1e-6)
 
-            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za, _zr)
-            return self.get_u_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
+            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za)
+            return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za)
+
+    def get_logu_sp(self, _s, _lgp, _y, _z, _zm, _za):
+        if self.y_prime:
+            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za)
+            return self.get_u_pt(_lgp, logt, _y, _z, _zm, _za)
+        else:
+            _y = _y / (1 - _z+1e-6)
+            _zm = _z / (1 - _za+1e-6)
+            _za = _z / (1 - _zr+1e-6)
+
+            logt = self.get_logt_sp( _s, _lgp, _y, _z, _zm, _za)
+            return self.get_u_pt(_lgp, logt, _y, _z, _zm, _za)
 
    ### Inversion Functions ###
 
-    def get_logt_sp_inv(self, _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logt_sp_inv(self, _s, _lgp, _y, _z, _zm, _za, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the temperature given entropy, pressure, helium abundance, and metallicity.
@@ -3389,7 +3416,8 @@ class total_eos(mixtures):
         def root_func(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt(lgp_i, _lgt, y_i, z_i, zm_i, za_i, zr_i) * erg_to_kbbar
+                #s_test = self.get_s_pt(lgp_i, _lgt, y_i, z_i, zm_i, za_i) * erg_to_kbbar
+                s_test = self.get_s_pt_val(lgp_i, _lgt, y_i, z_i, zm_i, za_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -3494,7 +3522,7 @@ class total_eos(mixtures):
         logt, conv = self.get_logt_sp_inv( _s, _lgp, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=ideal_guess, arr_guess=arr_guess, method=method)
         return self.get_logrho_pt(_lgp, logt, _y, _z, _zm, _za, _zr)
 
-    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_rhot_inv(self, _lgrho, _lgt, _y, _z, _zm, _za, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the pressure given density, temperature, helium abundance, and metallicity.
@@ -3535,7 +3563,7 @@ class total_eos(mixtures):
             def err(_lgp):
                 # Error function for logt(S, logp)
                 # _y_call = y_i if self.y_prime else y_i / (1 - z_i)
-                logrho_test = self.get_logrho_pt(_lgp, lgt_i, y_i, z_i, zm_i, za_i, zr_i)
+                logrho_test = self.get_logrho_pt(_lgp, lgt_i, y_i, z_i, zm_i, za_i)
                 return (logrho_test/lgrho_i) - 1
 
             if method == 'root':
@@ -3632,7 +3660,7 @@ class total_eos(mixtures):
         return pressure, converged
 
 
-    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, _zm, _za, _zr, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
+    def get_logp_srho_inv(self, _s, _lgrho, _y, _z, _zm, _za, _zr=0.0, _zfe=0.0, ideal_guess=True, arr_guess=None, method='newton_brentq'):
 
         """
         Compute the pressure given entropy, density, helium abundance, and metallicity.
@@ -3673,7 +3701,7 @@ class total_eos(mixtures):
         def root_func(s_i, lgrho_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
             def err(_lgp):
                 # Error function for logt(S, logp)
-                logrho_test = self.get_logrho_sp(s_i, _lgp, y_i, z_i, zm_i, za_i, zr_i)
+                logrho_test = self.get_logrho_sp(s_i, _lgp, y_i, z_i, zm_i, za_i)
                 return (logrho_test/lgrho_i) - 1
 
             if method == 'root':

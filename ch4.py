@@ -2,6 +2,7 @@ import numpy as np
 from eos import ch4_setzmann as setz
 from eos import ch4_nh3_mandy as mandy
 from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.ndimage import gaussian_filter1d
 from astropy.constants import k_B
 from astropy.constants import u as amu
 from astropy import units as u
@@ -34,10 +35,11 @@ def logistic(x, k=10.0):
 
 def pressure_blend(rho, T,
                    rho_switch   = 0.60,  delta_rho = 0.001,
-                   delta_T      = 50.0,  k        = 10.0,
+                   delta_T      = 5.0,  k        = 10.0,
                    Tmax_analytic= 500.0,
                    p_switch     = 1e10,  # 1 GPa  (dyn cm⁻²)
-                   delta_p      = None):
+                   delta_p      = None,
+                   sigma=3.0):
     """
     • Analytic EOS for ρ < rho_switch   (hard cut)
     • ρ–T logistic blend for rho>rho_switch, P<=p_switch
@@ -95,9 +97,10 @@ def pressure_blend(rho, T,
 def _blend_scalar(quantity_analytic, quantity_dft,
                   rho, T,
                   rho_switch=0.60, delta_rho=0.001,
-                  delta_T=50.0,  k=10.0,
+                  delta_T=5.0,  k=10.0,
                   Tmax_analytic=500.0,
-                  p_switch=1e10, delta_p=None):
+                  p_switch=1e10, delta_p=None,
+                  sigma=3.0):
     """
     Generic helper: blends `quantity_analytic` with `quantity_dft`
     using the same switches as pressure_blend.
@@ -173,7 +176,7 @@ def pressure_dft(rho, T):
     return mandy.get_p_rhot(rho, T, molecule='methane')
 
 def energy_analytic(rho, T):
-    return setz.get_u_rhot(rho, T)-2.248e12
+    return setz.get_u_rhot(rho, T)+52869137549.447876 # offset wrt DFT at 1000 K
 
 def energy_dft(rho, T):
     return mandy.get_u_rhot(rho, T, molecule='methane')

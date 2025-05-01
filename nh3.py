@@ -2,6 +2,7 @@ import numpy as np
 from eos import nh3_gao as gao
 from eos import ch4_nh3_mandy as mandy
 from scipy.interpolate import RegularGridInterpolator as RGI
+from scipy.ndimage import gaussian_filter1d
 from astropy.constants import k_B
 from astropy.constants import u as amu
 from astropy import units as u
@@ -10,8 +11,6 @@ mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
 erg_to_kbbar = (u.erg/u.Kelvin/u.gram).to(k_B/mp)
 erg_to_kJ = (u.erg/u.gram).to('kJ/g')
-
-#np.log10((u.MJ/u.kg).to('erg/g'))
 
 
 """
@@ -31,56 +30,14 @@ def logistic(x, k=10.0):
 # ---------------------------------------------------------------------
 # blended pressure
 # ---------------------------------------------------------------------
-# def pressure_blend(rho, T,
-#                    rho_switch=0.60, delta_rho=0.01,
-#                    delta_T=100.0,  k=10.0,
-#                    Tmax_analytic=1000.0):
-
-#     rho = np.atleast_1d(rho).astype(float)
-#     T   = np.atleast_1d(T).astype(float)
-
-#     p_a = pressure_analytic(rho, T)
-#     p_d = pressure_dft     (rho, T)
-
-#     # -------------------------------------------------- analytic zone
-#     mask_lo = rho < rho_switch
-#     if np.all(mask_lo):
-#         return p_a                          # all below threshold
-
-#     out = p_a.copy()
-
-#     # ------------------------------------------------- blend zone
-#     idx_hi = ~mask_lo
-#     rho_hi = rho[idx_hi]
-#     T_hi   = T [idx_hi]
-#     p_a_hi = p_a[idx_hi]
-#     p_d_hi = p_d[idx_hi]
-
-#     # --- correct T0 & p_peak ----------------------------------------
-#     mask_pos = (p_a_hi >= 0) & (T_hi <= Tmax_analytic)
-#     if np.any(mask_pos):
-#         T0     = T_hi[mask_pos].max()            # last positive T
-#         p_peak = p_a_hi[mask_pos].max()          # maximum positive p
-#     else:                                        # analytic always neg
-#         T0     = Tmax_analytic
-#         p_peak = 0.0
-
-#     p_a_hi = np.where(T_hi > T0, p_peak, p_a_hi)  # clamp
-
-#     # logistic weights
-#     w_r = logistic((rho_hi - rho_switch) / delta_rho, k=k)
-#     w_t = logistic((T_hi   - T0        ) / delta_T,   k=k)
-#     w   = w_r * w_t          # requires BOTH switches
-
-#     out[idx_hi] = (1.0 - w) * p_a_hi + w * p_d_hi
-#     return out
 
 def pressure_blend(rho, T,
                    rho_switch   = 0.60,  delta_rho = 0.001,
-                   delta_T      = 50.0,  k        = 10.0,
+                   delta_T      = 5.0,  k        = 10.0,
                    Tmax_analytic= 1000.0,
                    p_switch     = 1e10,  # 1 GPa  (dyn cm⁻²)
-                   delta_p      = None):
+                   delta_p      = None,
+                   sigma=3.0):
     """
     • Analytic EOS for ρ < rho_switch   (hard cut)
     • ρ–T logistic blend for rho>rho_switch, P<=p_switch
@@ -131,104 +88,13 @@ def pressure_blend(rho, T,
     out[mask_hi] = (1.0 - w)*p_a_clamped + w*p_d_hi
     return out.squeeze()
 
-# def energy_blend(rho, T,
-#                    rho_switch=0.60, delta_rho=0.01,
-#                    delta_T=100.0,  k=10.0,
-#                    Tmax_analytic=1000.0):
-
-#     # rho = np.asarray(rho, dtype=float)
-#     # T   = np.asarray(T,   dtype=float)
-
-#     # make sure we always have *1-D arrays*, even for single numbers
-#     rho = np.atleast_1d(rho).astype(float)
-#     T   = np.atleast_1d(T).astype(float)
-
-#     p_a = energy_analytic(rho, T)
-#     p_d = energy_dft     (rho, T)
-
-#     # -------------------------------------------------- analytic zone
-#     mask_lo = rho <= rho_switch
-#     if np.all(mask_lo):
-#         return p_a                          # all below threshold
-
-#     out = p_a.copy()
-
-#     # ------------------------------------------------- blend zone
-#     idx_hi = ~mask_lo
-#     rho_hi = rho[idx_hi]
-#     T_hi   = T [idx_hi]
-#     p_a_hi = p_a[idx_hi]
-#     p_d_hi = p_d[idx_hi]
-
-#     # --- correct T0 & p_peak ----------------------------------------
-#     mask_pos = (p_a_hi >= 0) & (T_hi <= Tmax_analytic)
-#     if np.any(mask_pos):
-#         T0     = T_hi[mask_pos].max()            # last positive T
-#         p_peak = p_a_hi[mask_pos].max()          # maximum positive p
-#     else:                                        # analytic always neg
-#         T0     = Tmax_analytic
-#         p_peak = 0.0
-
-#     p_a_hi = np.where(T_hi > T0, p_peak, p_a_hi)  # clamp
-
-#     # logistic weights
-#     w_r = logistic((rho_hi - rho_switch) / delta_rho, k=k)
-#     w_t = logistic((T_hi   - T0        ) / delta_T,   k=k)
-#     w   = w_r * w_t          # requires BOTH switches
-
-#     out[idx_hi] = (1.0 - w) * p_a_hi + w * p_d_hi
-#     return out
-
-# def entropy_blend(rho, T,
-#                    rho_switch=0.60, delta_rho=0.01,
-#                    delta_T=100.0,  k=10.0,
-#                    Tmax_analytic=1000.0):
-
-#     rho = np.atleast_1d(rho).astype(float)
-#     T   = np.atleast_1d(T).astype(float)
-
-#     p_a = entropy_analytic(rho, T)
-#     p_d = entropy_dft     (rho, T)
-
-#     # -------------------------------------------------- analytic zone
-#     mask_lo = rho <= rho_switch
-#     if np.all(mask_lo):
-#         return p_a                          # all below threshold
-
-#     out = p_a.copy()
-
-#     # ------------------------------------------------- blend zone
-#     idx_hi = ~mask_lo
-#     rho_hi = rho[idx_hi]
-#     T_hi   = T [idx_hi]
-#     p_a_hi = p_a[idx_hi]
-#     p_d_hi = p_d[idx_hi]
-
-#     # --- correct T0 & p_peak ----------------------------------------
-#     mask_pos = (p_a_hi >= 0) & (T_hi <= Tmax_analytic)
-#     if np.any(mask_pos):
-#         T0     = T_hi[mask_pos].max()            # last positive T
-#         p_peak = p_a_hi[mask_pos].max()          # maximum positive p
-#     else:                                        # analytic always neg
-#         T0     = Tmax_analytic
-#         p_peak = 0.0
-
-#     p_a_hi = np.where(T_hi > T0, p_peak, p_a_hi)  # clamp
-
-#     # logistic weights
-#     w_r = logistic((rho_hi - rho_switch) / delta_rho, k=k)
-#     w_t = logistic((T_hi   - T0        ) / delta_T,   k=k)
-#     w   = w_r * w_t          # requires BOTH switches
-
-#     out[idx_hi] = (1.0 - w) * p_a_hi + w * p_d_hi
-#     return out
-
 def _blend_scalar(quantity_analytic, quantity_dft,
                   rho, T,
                   rho_switch=0.60, delta_rho=0.001,
-                  delta_T=50.0,  k=10.0,
+                  delta_T=5.0,  k=10.0,
                   Tmax_analytic=1000.0,
-                  p_switch=1e10, delta_p=None):
+                  p_switch=1e10, delta_p=None,
+                  sigma=3.0):
     """
     Generic helper: blends `quantity_analytic` with `quantity_dft`
     using the same switches as pressure_blend.
@@ -303,7 +169,7 @@ def pressure_dft(rho, T):
     return mandy.get_p_rhot(rho, T, molecule='ammonia')
 
 def energy_analytic(rho, T):
-    return gao.get_u_rhot(rho, T)-1.791e12
+    return gao.get_u_rhot(rho, T)+159023421379.96707
 
 def energy_dft(rho, T):
     return mandy.get_u_rhot(rho, T, molecule='ammonia')
