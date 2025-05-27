@@ -6,6 +6,7 @@ from scipy.ndimage import gaussian_filter1d
 from astropy.constants import k_B
 from astropy.constants import u as amu
 from astropy import units as u
+import pdb
 
 mp = amu.to('g') # grams
 kb = k_B.to('erg/K') # ergs/K
@@ -96,7 +97,7 @@ def pressure_blend(rho, T,
 
 def _blend_scalar(quantity_analytic, quantity_dft,
                   rho, T,
-                  rho_switch=0.60, delta_rho=0.001,
+                  rho_switch=0.60, delta_rho=0.01,
                   delta_T=5.0,  k=10.0,
                   Tmax_analytic=500.0,
                   p_switch=1e10, delta_p=None,
@@ -110,6 +111,12 @@ def _blend_scalar(quantity_analytic, quantity_dft,
 
     q_a = quantity_analytic(rho, T)
     q_d = quantity_dft     (rho, T)
+
+    #pdb.set_trace()
+    delta = q_d[rho >= rho_switch][0] - q_a[rho >= rho_switch][0]
+
+    q_a += delta
+    #q_a += 0.0
 
     # region 1 – always analytic
     out     = q_a.copy()
@@ -148,7 +155,6 @@ def _blend_scalar(quantity_analytic, quantity_dft,
     out[mask_hi] = (1.0 - w) * q_a_hi + w * q_d_hi
     return out.squeeze()
 
-
 # ---------------------------------------------------------------------
 # user-facing wrappers
 # ---------------------------------------------------------------------
@@ -167,7 +173,20 @@ def entropy_blend(rho, T, **kwargs):
     """
     return _blend_scalar(entropy_analytic, entropy_dft, rho, T, **kwargs)
 
+def free_energy_blend(rho, T, **kwargs):
+    """
+    Blended specific entropy (erg g⁻¹ K⁻¹) following the same
+    rules as pressure_blend.
+    """
+    return _blend_scalar(free_energy_analytic, free_energy_dft, rho, T, **kwargs)
 
+
+
+def free_energy_analytic(rho, T):
+    return setz.free_energy(rho, T)
+
+def free_energy_dft(rho, T):
+    return mandy.get_a_rhot(rho, T, molecule='methane')
 
 def pressure_analytic(rho, T):
     return setz.get_p_rhot(rho, T)
@@ -176,13 +195,13 @@ def pressure_dft(rho, T):
     return mandy.get_p_rhot(rho, T, molecule='methane')
 
 def energy_analytic(rho, T):
-    return setz.get_u_rhot(rho, T)+52869137549.447876 # offset wrt DFT at 1000 K
+    return setz.get_u_rhot(rho, T)#+37880829214.13139#+52869137549.447876 # offset wrt DFT at 1000 K
 
 def energy_dft(rho, T):
     return mandy.get_u_rhot(rho, T, molecule='methane')
 
 def entropy_analytic(rho, T):
-    return setz.get_s_rhot(rho, T)+1.713e8
+    return setz.get_s_rhot(rho, T)#+1.713e8
 
 def entropy_dft(rho, T):
     return mandy.get_s_rhot(rho, T, molecule='methane')

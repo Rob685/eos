@@ -268,7 +268,7 @@ class ice_eos:
         u_mix = f_water * u_water + f_methane * u_methane + f_ammonia * u_ammonia# + f_rock * u_rock + f_iron * u_iron
 
         # Override: if logt < 3.0 or logp < 10.0, use water-only value.
-        # mask = (logt_arr < 3.0) | (logp_arr < 10.0)
+        # mask = (logt_arr < 2.6) | (logp_arr < 10.0)
         # u_mix[mask] = u_water[mask]
 
         if np.isscalar(_lgp) and np.isscalar(_lgt):
@@ -335,8 +335,8 @@ class ice_eos:
         #s_mix = s_intrinsic
 
         # Override: for logt < 3.0 or logp < 10.0, use water-only value.
-        # mask = (logt_arr < 3.0) | (logp_arr < 10.0)
-        # s_mix[mask] = s_water[mask]
+        # mask = (logt_arr < 2.6) | (logp_arr < 9.0)
+        # s_intrinsic[mask] = s_water[mask]
 
 
         if np.isscalar(_lgp) and np.isscalar(_lgt):

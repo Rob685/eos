@@ -28,3 +28,7 @@ FPEOS/*
 coolTlusty_tables_brianna/*
 total_mixture_eos/*
 sesame-unc.ascii2.ascii
+cd/cd_ice_mixture_pt.npz
+cd/cd_ice_mixture_rhot.npz
+cd/cd_ice_mixture_sp.npz
+cd/cd_ice_mixture_srho.npz

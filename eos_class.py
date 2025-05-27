@@ -177,6 +177,7 @@ class mixtures(hhe):
         self.y_prime = y_prime
         self.hg = hg
         self.z_eos = z_eos
+        self.new_z_mix = new_z_mix
 
         if self.z_eos == 'mixture' or self.z_eos == 'total_mixture':
             self.zmix_eos1 = zmix_eos1
@@ -821,7 +822,11 @@ class mixtures(hhe):
         def root_func(s_i, lgp_i, y_i, z_i, zm_i, za_i, zr_i, zfe_i, guess_i):
             def err(_lgt):
                 # Error function for logt(S, logp)
-                s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
+                #
+                if self.new_z_mix:
+                    s_test = self.get_s_pt_val(lgp_i, _lgt, y_i, z_i, zm_i, za_i, zr_i, zfe_i) * erg_to_kbbar
+                else:
+                    s_test = self.get_s_pt_tab(lgp_i, _lgt, y_i, z_i) * erg_to_kbbar
                 return (s_test/s_i) - 1
 
             if method == 'root':
@@ -2666,9 +2671,9 @@ class multifraction_mixtures(mixtures):
     """
 
     def __init__(self,
-                 zmix_eos1,
-                 zmix_eos2,
-                 zmix_eos3,
+                #  zmix_eos1,
+                #  zmix_eos2,
+                #  zmix_eos3,
                  hhe_eos = 'cd',
                  z_eos_list: list = None,
                  f_ppv_vals: np.ndarray = None,
@@ -2710,16 +2715,26 @@ class multifraction_mixtures(mixtures):
         #                  new_z_mix=new_z_mix)
 
         # If user doesn't provide a list, use a default range of fractions:
+        # if z_eos_list is None:
+        #     z_eos_list = [
+        #         f'{zmix_eos1}_{zmix_eos2}_0.0',
+        #         f'{zmix_eos1}_{zmix_eos2}_0.25',
+        #         f'{zmix_eos1}_{zmix_eos2}_0.5',
+        #         f'{zmix_eos1}_{zmix_eos2}_0.75',
+        #         f'{zmix_eos1}_{zmix_eos2}_1.0'
+        #     ]
+
         if z_eos_list is None:
             z_eos_list = [
-                f'{zmix_eos1}_{zmix_eos2}_0.0',
-                f'{zmix_eos1}_{zmix_eos2}_0.25',
-                f'{zmix_eos1}_{zmix_eos2}_0.5',
-                f'{zmix_eos1}_{zmix_eos2}_0.75',
-                f'{zmix_eos1}_{zmix_eos2}_1.0'
+                '1.0_0.0_ice_rock_mixture',
+                '0.75_0.25_ice_rock_mixture',
+                '0.5_0.5_ice_rock_mixture',
+                '0.25_0.75_ice_rock_mixture',
+                '0.0_1.0_ice_rock_mixture',
             ]
         if f_ppv_vals is None:
             f_ppv_vals = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
+            #f_ppv_vals = np.array([0.0, 0.25, 0.5, 1.0])
 
         self.hhe_eos = hhe_eos
         self.y_prime = y_prime

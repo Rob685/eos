@@ -105,6 +105,9 @@ def _blend_scalar(quantity_analytic, quantity_dft,
     q_a = quantity_analytic(rho, T)
     q_d = quantity_dft     (rho, T)
 
+    delta = q_d[rho >= rho_switch][0] - q_a[rho >= rho_switch][0]
+    q_a += delta
+
     # region 1 – always analytic
     out     = q_a.copy()
     mask_hi = rho > rho_switch
