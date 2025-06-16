@@ -1,4 +1,4 @@
-(!!!) IF YOU ENCOUNTER GIT LFS STORAGE ISSUES: Anyone can download a .zip file version stored here: https://drive.google.com/drive/u/1/folders/1V13BQLZ9_VKWoZQp6T5i7OXp8zreIrt7
+(!!!) IF YOU ENCOUNTER GIT LFS STORAGE ISSUES: Anyone can download a .zip file version stored here: https://drive.google.com/drive/u/1/folders/1V13BQLZ9_VKWoZQp6T5i7OXp8zreIrt7 and the following Zenodo: https://zenodo.org/records/15659606.
 
 If you download the Google Drive zipfile: This zip file contains the entire EOS data and code presented in Tejada Arevalo et al. (2024). I realized that some users have encountered problems with Git LFS in the GitHub repository (https://github.com/Rob685/eos/tree/main), so this is another option for obtaining the EOS data. 
 
