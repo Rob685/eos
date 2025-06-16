@@ -25,6 +25,7 @@ Initialization and usage example:
 
 
 ```
+# in a folder above the eos directory:
 from eos import eos_class
 
 mix_aqua = eos_class.mixtures(hhe_eos='cd', z_eos='aqua', y_prime=True) # y_prime indicates whether the subsequent Y inputs are Y/(X+Y)
