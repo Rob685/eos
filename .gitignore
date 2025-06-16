@@ -26,6 +26,7 @@ cms/*aqua_mlcp_ppv2*
 methane_ammonia/*
 FPEOS/*
 coolTlusty_tables_brianna/*
+coolTlusty_tables_yixian/*
 total_mixture_eos/*
 sesame-unc.ascii2.ascii
 cd/cd_ice_mixture_pt.npz
